@@ -1,0 +1,48 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+            <isis>
+                <isis-instance>{{ isis.instance }}</isis-instance>
+                <admin-state>enable</admin-state>
+                <area-address>{{ isis.area_address }}</area-address>
+                <traffic-engineering>true</traffic-engineering>
+
+                {% for intf in isis.active_interfaces %}
+                <interface>
+                    <interface-name>{{ intf }}</interface-name>
+                    <admin-state>enable</admin-state>
+                    <interface-type>point-to-point</interface-type>
+                </interface>
+                {% endfor %}
+
+                {% for intf in isis.passive_interfaces %}
+                <interface>
+                    <interface-name>{{ intf }}</interface-name>
+                    <admin-state>enable</admin-state>
+                    <interface-type>point-to-point</interface-type>
+                    <passive>true</passive>
+                </interface>
+                {% endfor %}
+
+                {% if isis is defined and 'core_links' in isis %}
+                    {% for intf in isis.core_links %}
+                    <interface>
+                        <interface-name>{{ intf }}</interface-name>
+                        <level>
+                            <level-number>1</level-number>
+                            <metric>5</metric>
+                        </level>
+                        <level>
+                            <level-number>2</level-number>
+                            <metric>5</metric>
+                        </level>
+                    </interface>
+                    {% endfor %}
+                {% endif %}
+
+                <level-capability>{{ isis.level_capability }}</level-capability>
+            </isis>
+        </router>
+    </configure>
+</config>

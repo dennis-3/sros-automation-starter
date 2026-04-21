@@ -1,0 +1,139 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+
+            {# Global AS and Router ID #}
+            <autonomous-system>{{ bgp.asn }}</autonomous-system>
+
+            {# Global Aggregates (Summary Routes) #}
+            {% if bgp.aggregates is defined %}
+            {% for agg in bgp.aggregates %}
+            <aggregates>
+                <aggregate>
+                    <ip-prefix>{{ agg.prefix }}</ip-prefix>
+                    {# <summary-only>true</summary-only> #}
+                </aggregate>
+            </aggregates>
+            {% endfor %}
+            {% endif %}
+
+            <bgp>
+                <admin-state>enable</admin-state>
+                <router-id>{{ bgp.router_id }}</router-id>
+
+                {# 1. The Inter-AS Model B Essence #}
+                {% if bgp.inter_as_vpn | default(false) %}
+                <inter-as-vpn>true</inter-as-vpn>
+                {% endif %}
+
+                {# For Inter-AS Model B #}
+                {% if bgp.asbr | default(false) %}
+                <vpn-apply-export>true</vpn-apply-export>
+                <vpn-apply-import>true</vpn-apply-import>
+                {% endif %}
+
+                {# Loop through every BGP group (iBGP and eBGP) #}
+                {% for group in bgp.groups %}
+                <group>
+                    <group-name>{{ group.name }}</group-name>
+                    <admin-state>enable</admin-state>
+                    <description>{{ group.description }}</description>
+
+                    {% if group.local_address is defined %}
+                    <local-address>{{ group.local_address }}</local-address>
+                    {% endif %}
+
+                    {# {% if group.advertise_inactive  %}
+                    <advertise-inactive>{{ group.advertise_inactive | default(false) }}</advertise-inactive>
+                    {% endif %} #}
+
+                    {# Use peer_as if defined (eBGP), otherwise use local asn (iBGP) #}
+                    <peer-as>{{ group.peer_as | default(bgp.asn) }}</peer-as>
+
+                    {# eBGP Specific Flags #}
+                    {% if group.loop_detect is defined %}
+                    <loop-detect>{{ group.loop_detect }}</loop-detect>
+                    {% endif %}
+
+                    {% if group.next_hop_self | default(false) %}
+                    <next-hop-self>true</next-hop-self>
+                    {% endif %}
+
+                    {# Route Reflector Logic #}
+                    {% if group.cluster_id is defined %}
+                    <cluster>
+                        <cluster-id>{{ group.cluster_id }}</cluster-id>
+                    </cluster>
+                    {% endif %}
+
+                    {# Enable Multihop for PE-to-PE peering #}
+                    {% if group.multihop is defined %}
+                    <multihop>{{ group.multihop }}</multihop>
+                    {% endif %}
+
+                    <family>
+                        {# IPv4 Family Toggle #}
+                        {% if group.family_ipv4 | default(false) %}
+                        <ipv4>true</ipv4>
+                        {% else %}
+                        <ipv4>false</ipv4>
+                        {% endif %}
+
+                        {# L2-VPN Family Toggle #}
+                        {% if group.family_l2vpn | default(false) %}
+                        <l2-vpn>true</l2-vpn>
+                        {% else %}
+                        <l2-vpn>false</l2-vpn>
+                        {% endif %}
+
+                        {# VPN-IPv4 Family Toggle #}
+                        {% if group.family_vpn_ipv4 | default(false) %}
+                        <vpn-ipv4>true</vpn-ipv4>
+                        {% else %}
+                        <vpn-ipv4>false</vpn-ipv4>
+                        {% endif %}
+
+                        {# Label-IPv4 Family Toggle #}
+                        {% if group.family_label_ipv4 | default(false) %}
+                        <label-ipv4>true</label-ipv4>
+                        {% else %}
+                        <label-ipv4>false</label-ipv4>
+                        {% endif %}
+                    </family>
+
+
+                    {# Policy Handling #}
+                    {% if group.export_policy is defined %}
+                    {% for policy in group.export_policy %}
+                    <export>
+                        <policy>{{ policy }}</policy>
+                    </export>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if group.import_policy is defined %}
+                    {% for policy in group.import_policy %}
+                    <import>
+                        <policy>{{ policy }}</policy>
+                    </import>
+                    {% endfor %}
+                    {% endif %}
+                </group>
+                {% endfor %}
+
+                {# Neighbor Configuration #}
+                {% for group in bgp.groups %}
+                {% for neighbor in group.neighbors %}
+                <neighbor>
+                    <ip-address>{{ neighbor.ip }}</ip-address>
+                    <admin-state>enable</admin-state>
+                    <description>{{ neighbor.description }}</description>
+                    <group>{{ group.name }}</group>
+                </neighbor>
+                {% endfor %}
+                {% endfor %}
+            </bgp>
+        </router>
+    </configure>
+</config>

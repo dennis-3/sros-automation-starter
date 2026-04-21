@@ -1,0 +1,38 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+            <ospf>
+                <ospf-instance>{{ ospf.instance }}</ospf-instance>
+                <admin-state>enable</admin-state>
+                <area>
+                    <area-id>{{ ospf.area }}</area-id>
+
+                    {# Handle Passive Interfaces (System) #}
+                    {% for iface in ospf.passive_interfaces %}
+                    <interface>
+                        <interface-name>{{ iface }}</interface-name>
+                        <interface-type>point-to-point</interface-type>
+                        <passive>true</passive>
+                        <admin-state>enable</admin-state>
+                    </interface>
+                    {% endfor %}
+
+                    {# Handle Active Core Interfaces #}
+                    {% for iface in ospf.active_interfaces %}
+                    <interface>
+                        <interface-name>{{ iface }}</interface-name>
+                        <interface-type>point-to-point</interface-type>
+                        <admin-state>enable</admin-state>
+                        {# Metric logic: Check if a metric is defined in vars, else default to SROS standard #}
+                        {% if ospf.metric is defined %}
+                        <metric>{{ ospf.metric }}</metric>
+                        {% endif %}
+                    </interface>
+                    {% endfor %}
+
+                </area>
+            </ospf>
+        </router>
+    </configure>
+</config>

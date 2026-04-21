@@ -1,0 +1,340 @@
+# =============================================================================
+# SYSTEM AND HARDWARE CONFIGURATION
+# =============================================================================
+
+# System identity and basic setup
+system_name: "R1-PE1"
+
+# Port provisioning and breakout configuration
+provisioned_ports:
+  - id: "1/1/c1" # Facing Traffic Source (1/1/c1/1)
+  - id: "1/1/c2" # Facing R2-P2 (1/1/c2/1)
+  - id: "1/1/c3" # Facing R3-P3 (1/1/c3/1)
+
+# =============================================================================
+# TRAFFIC FILTERS
+# =============================================================================
+
+# Traffic filters (configured before interfaces since they are applied to interfaces)
+filters:
+  - id: 100
+    name: "ingress-filter"
+    description: "Ingress traffic filter"
+    entries:
+      - id: 10
+        description: "Allow all"
+        action: "forward"
+
+# =============================================================================
+# PHYSICAL INTERFACES
+# =============================================================================
+
+# IP interface configurations
+interfaces:
+  - name: "system"
+    address: "10.10.10.1"
+    mask: 32
+  - name: "to-R2" # Core Link to P2
+    address: "10.1.2.1"
+    mask: 27
+    port: "1/1/c2/1:0"
+  - name: "to-R3" # Direct Core Link to P3
+    address: "10.1.3.1"
+    mask: 27
+    port: "1/1/c3/1:0"
+
+# =============================================================================
+# INTERIOR GATEWAY PROTOCOLS (IGP)
+# =============================================================================
+
+# ISIS for underlay reachability
+isis:
+  instance: 0
+  area_address: "49.0001"
+  level_capability: 2
+  active_interfaces:
+    - "to-R2"
+    - "to-R3"
+  passive_interfaces:
+    - "system"
+
+# OSPF configuration (alternative to ISIS)
+ospf:
+  instance: 0
+  area: 0
+  active_interfaces:
+    - "to-R2"
+    - "to-R3"
+  passive_interfaces:
+    - "system"
+
+# =============================================================================
+# ROUTING POLICIES
+# =============================================================================
+
+# Policy options for route filtering and manipulation
+policy_options:
+  prefix_lists:
+    - name: "Client-External"
+      prefixes:
+        - { ip: "192.168.1.8/29", type: "exact" }
+        - { ip: "192.168.1.24/29", type: "exact" }
+        - { ip: "192.168.2.8/29", type: "exact" }
+        - { ip: "192.168.2.24/29", type: "exact" }
+    - name: "Client-CIDR"
+      prefixes:
+        - { ip: "10.17.0.0/16", type: "longer" }
+        - { ip: "10.18.0.0/16", type: "longer" }
+        - { ip: "10.19.0.0/16", type: "longer" }
+        - { ip: "10.20.0.0/14", type: "longer" }
+        - { ip: "10.24.0.0/13", type: "longer" }
+  policy_statements:
+    - name: "IMPORT-EBGP"
+      description: "Filter incoming eBGP routes"
+      default_action: "accept"
+    - name: "EXPORT-EBGP"
+      description: "Export aggregates and specific Client-External routes to eBGP peers"
+      default_action: "reject"
+      entries:
+        - id: 5
+          description: "Advertise aggregate for internal prefixes"
+          from_protocol: "aggregate"
+          action: "accept"
+        - id: 10
+          description: "Match Client prefixes"
+          from_prefix_list: ["Client-External", "Client-CIDR"]
+          from_protocol: "bgp"
+          action: "accept"
+    - name: "accept-all-label-ipv4"
+      description: "Policy to propagate BGP-LU labels for Option C"
+      default_action: "reject"
+      entries:
+        - id: 5
+          description: "Internal -> External: Send our loopbacks to the other AS"
+          from_protocol: "isis"
+          action: "accept"
+        - id: 10
+          description: "Match and accept bgp-label protocol"
+          from_protocol: "bgp-label"
+          to_protocol: "bgp-label"
+          action: "accept"
+    - name: "ACCEPT-ALL"
+      description: "Permit all routes without filtering"
+      default_action: "accept"
+
+# =============================================================================
+# BORDER GATEWAY PROTOCOL (BGP)
+# =============================================================================
+
+# BGP configuration for routing
+bgp:
+  asn: 65540
+  router_id: "10.10.10.1"
+  asbr: true
+  inter_as_vpn: true
+  groups:
+    - name: "iBGP-NORTH"
+      description: "Internal Mesh AS 65540"
+      next_hop_self: true
+      neighbors:
+        - { ip: "10.10.10.2", description: "to-R2" }
+        - { ip: "10.10.10.5", description: "to-R5" }
+        - { ip: "10.10.10.6", description: "to-R6" }
+    - name: "eBGP-PEER"
+      description: "Peering to AS 65550 (R3)"
+      peer_as: 65550
+      loop_detect: "discard-route"
+      import_policy: "IMPORT-EBGP"
+      export_policy: ["EXPORT-EBGP"]
+      family_ipv4: true
+      neighbors:
+        - { ip: "10.0.0.2", description: "to-R3" }
+    - name: "iBGP-Pod1"
+      description: "Internal MP-BGP to PE1"
+      family_vpn_ipv4: true
+      family_label_ipv4: true
+      next_hop_self: true
+      export_policy: ["accept-all-label-ipv4"]
+      neighbors:
+        - { ip: "10.10.10.5", description: "PE1-R5" }
+    - name: "eBGP-InterAS-C"
+      description: "BGP-LU to ASBR3 (AS 64498)"
+      peer_as: 64498
+      advertise_inactive: true
+      family_label_ipv4: true
+      import_policy: ["accept-all-label-ipv4"]
+      export_policy: ["accept-all-label-ipv4"]
+      neighbors:
+        - { ip: "10.1.3.3", description: "ASBR3-R3" }
+    - name: "eBGP-InterAS-B"
+      description: "MP-eBGP to ASBR3 (AS 64498)"
+      peer_as: 64498
+      family_vpn_ipv4: true
+      import_policy: ["ACCEPT-ALL"]
+      export_policy: ["ACCEPT-ALL"]
+      neighbors:
+        - { ip: "10.1.3.3", description: "ASBR3-R3" }
+
+# =============================================================================
+# MPLS INFRASTRUCTURE
+# =============================================================================
+
+# MPLS configuration for label switching
+mpls:
+  interfaces:
+    - "system"
+    - "to-R2"
+    - "to-R3"
+  paths:
+    - name: "via-R2"
+      hops:
+        - address: "10.1.2.2"
+          type: "strict"
+        - address: "10.2.3.3"
+          type: "strict"
+    - name: "direct-to-R3"
+      hops:
+        - address: "10.2.3.3"
+          type: "strict"
+  lsps:
+    - lsp_name: "R1-R2-R3"
+      to: "10.10.10.3"
+      lsp_type: "p2p-rsvp"
+      path_computation_method: "local-cspf"
+      primary_path_name: "via-R2"
+    - lsp_name: "R1-R3"
+      to: "10.10.10.3"
+      lsp_type: "p2p-rsvp"
+      path_computation_method: "local-cspf"
+      primary_path_name: "direct-to-R3"
+
+# RSVP for MPLS LSP signaling
+rsvp:
+  interfaces:
+    - "system"
+    - "to-R2"
+    - "to-R3"
+
+# LDP for label distribution
+ldp:
+  interfaces:
+    - "to-R2"
+    - "to-R3"
+
+# =============================================================================
+# SERVICE DISTRIBUTION POINTS (SDP)
+# =============================================================================
+
+# SDP configurations for service transport
+sdp_configs:
+  - id: 123
+    description: "RSVP-SDP-to-R3-via-R2"
+    far_end_ip: "10.10.10.3"
+    lsp_name: "R1-R2-R3"
+    keep_alive: true
+  - id: 13
+    description: "RSVP-SDP-to-R3"
+    far_end_ip: "10.10.10.3"
+    lsp_name: "R1-R3"
+    keep_alive: true
+  - id: 12
+    description: "RSVP-SDP-PE1-to-PE2"
+    far_end_ip: "10.10.10.2"
+    lsp_name: "to-PE2"
+    keep_alive: true
+  - id: 102
+    description: "BGP-SDP-PE1-to-PE2"
+    far_end_ip: "10.10.10.2"
+    signaling: "bgp"
+    lsp_name: "to-PE2"
+
+# =============================================================================
+# PSEUDOWIRE TEMPLATES
+# =============================================================================
+
+# Pseudowire templates for L2 service construction (used in VPLS and other L2 services)
+pw_templates:
+  - name: "pw-template-1"
+    description: "PW Template for VPLS"
+    vc_type: "ether"
+    control_word: true
+
+# =============================================================================
+# LAYER 2 SERVICES
+# =============================================================================
+
+# EPIPE services (Point-to-Point L2 VPN)
+epipe_services:
+  - id: 11
+    vc_id: 11
+    saps:
+      - id: "1/1/c1/1:0"
+    spokes:
+      - sdp_id: 123
+        vc_id: 11
+  - id: 12
+    vc_id: 12
+    saps:
+      - id: "1/1/c1/1:0"
+    spokes:
+      - sdp_id: 13
+        vc_id: 12
+
+# VPLS services (Multipoint L2 VPN)
+vpls_services:
+  - id: 1
+    vc_id: 1
+    description: "VPLS_Instance_1_Mesh"
+    sap: "1/1/c1/1:30"
+    mesh_sdps: [12]
+  - id: 30
+    vc_id: 30
+    description: "Multipoint-L2-VPN"
+    sap: "1/1/c1/1:30"
+    mesh_sdps: [12]
+
+# =============================================================================
+# LAYER 3 SERVICES
+# =============================================================================
+
+# VPRN services (L3 VPN)
+vprn_services:
+  - id: 10
+    name: "Customer-VPN-A"
+    rd: "65000:10"
+    rt: "target:65000:10"
+    export_policy: "BGP-to-OSPF"
+    interfaces:
+      - name: "toCE1"
+        address: "10.0.10.1"
+        mask: 31
+        sap: "1/1/c1/1:0"
+
+# IES services (Internet Enhanced Service)
+ies_services:
+  - id: 100
+    customer_id: 1
+    description: "Internet Enhanced Service"
+    interfaces:
+      - name: "toCE1"
+        address: "192.168.1.1"
+        mask: 24
+        sap: "1/1/c1/1:100"
+
+# =============================================================================
+# MIRRORING AND ANALYSIS SERVICES
+# =============================================================================
+
+# Mirror destinations for traffic analysis
+mirror_destinations:
+  - id: 100
+    description: "Mirror destination for traffic analysis"
+    type: "ether"
+    remote_source: "10.10.10.2"
+
+# Mirror sources for traffic capture
+mirror_sources:
+  - id: 100
+    description: "Mirror source for traffic capture"
+    dest_id: 100
+    sap: "1/1/c1/1:0"

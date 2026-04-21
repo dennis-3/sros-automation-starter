@@ -1,0 +1,101 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <policy-options>
+            {# Prefix Lists Configuration #}
+            {% if policy_options.prefix_lists is defined %}
+            {% for pl in policy_options.prefix_lists %}
+            <prefix-list>
+                <name>{{ pl.name }}</name>
+                {% for entry in pl.prefixes %}
+                <prefix>
+                    <ip-prefix>{{ entry.ip }}</ip-prefix>
+                    <type>{{ entry.type }}</type>
+                </prefix>
+                {% endfor %}
+            </prefix-list>
+            {% endfor %}
+            {% endif %}
+
+
+            {# --- Community Definitions: Only for Edge Routers (r5-r8) --- #}
+            {% if region is defined %}
+                {% set as_prefix = "40" if asn == 65540 else "50" %}
+                {% set geo_tag = "2020" if region == "West" else "2010" %}
+
+                <community>
+                    <name>Client-CIDR-{{ region }}</name>
+                    <member>
+                        <member>{{ as_prefix|string }}:100</member>
+                    </member>
+                    <member>
+                        <member>{{ as_prefix|string }}:{{ geo_tag|string }}</member>
+                    </member>
+                </community>
+
+                <community>
+                    <name>Client-External-{{ region }}</name>
+                    <member>
+                        <member>{{ as_prefix|string }}:200</member>
+                    </member>
+                    <member>
+                        <member>{{ as_prefix|string }}:{{ geo_tag|string }}</member>
+                    </member>
+                </community>
+            {% endif %}
+
+
+            {# Policy Statements Configuration #}
+            {% for policy in policy_options.policy_statements %}
+            <policy-statement>
+                <name>{{ policy.name }}</name>
+                {# <description>{{ policy.description }}</description> #}
+
+                {% if  policy.entries is defined %}
+                {% for entry in policy.entries %}
+                <entry>
+                    <entry-id>{{ entry.id }}</entry-id>
+                    {# <description>{{ entry.description | default('Entry ' ~ entry.id) }}</description> #}
+                    <from>
+                        {# Loop through prefix lists if provided as a list #}
+                        {% if entry.from_prefix_list is defined %}
+                        {% for pl_name in entry.from_prefix_list %}
+                        <prefix-list>{{ pl_name }}</prefix-list>
+                        {% endfor %}
+                        {% endif %}
+
+                        {% if entry.from_protocol is defined %}
+                        <protocol>
+                            <name>{{ entry.from_protocol }}</name>
+                        </protocol>
+                        {% endif %}
+
+                        {% if entry.to_protocol is defined %}
+                        <protocol>
+                            <name>{{ entry.to_protocol }}</name>
+                        </protocol>
+                        {% endif %}
+                    </from>
+                    <action>
+                        <action-type>{{ entry.action }}</action-type>
+
+                        {# --- Add Communities: Only if they exist in variables --- #}
+                        {% if entry.add_communities is defined %}
+                            {% for comm_name in entry.add_communities %}
+                            <community>
+                                <add>{{ comm_name }}</add>
+                            </community>
+                            {% endfor %}
+                        {% endif %}
+                    </action>
+                </entry>
+                {% endfor %}
+                {% endif %}
+
+                <default-action>
+                    <action-type>{{ policy.default_action }}</action-type>
+                </default-action>
+            </policy-statement>
+            {% endfor %}
+        </policy-options>
+    </configure>
+</config>

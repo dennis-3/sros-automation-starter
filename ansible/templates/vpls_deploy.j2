@@ -1,0 +1,29 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+
+        <service>
+            {% for vpls in vpls_services %}
+            <vpls>
+                <service-name>{{ vpls.id }}</service-name>
+                <customer>1</customer>
+                <description>{{ vpls.description }}</description>
+
+                <sap>
+                    <sap-id>{{ vpls.sap }}</sap-id>
+                    <admin-state>enable</admin-state>
+                </sap>
+
+                {% for sdp_id in vpls.mesh_sdps %}
+                <mesh-sdp>
+                    <sdp-bind-id>{{ sdp_id }}:{{ vpls.vc_id }}</sdp-bind-id>
+                    <admin-state>enable</admin-state>
+                </mesh-sdp>
+                {% endfor %}
+
+                <admin-state>enable</admin-state>
+            </vpls>
+            {% endfor %}
+        </service>
+
+    </configure>
+</config>

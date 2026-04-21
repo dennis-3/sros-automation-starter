@@ -1,0 +1,29 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+            <ldp>
+                <admin-state>enable</admin-state>
+
+                {# Required for BGP-AD Discovery to trigger LDP Label signaling #}
+                <targeted-session>
+                    <ipv4></ipv4>
+                </targeted-session>
+
+                {% if ldp.interfaces is defined %}
+                <interface-parameters>
+                    {# Global IPv4 context #}
+                    <ipv4></ipv4>
+
+                    {% for iface in ldp.interfaces %}
+                    <interface>
+                        <ip-int-name>{{ iface }}</ip-int-name>
+                        <ipv4></ipv4>
+                    </interface>
+                    {% endfor %}
+                </interface-parameters>
+                {% endif %}
+            </ldp>
+        </router>
+    </configure>
+</config>

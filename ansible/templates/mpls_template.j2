@@ -1,0 +1,62 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+
+            <rsvp>
+                <admin-state>enable</admin-state>
+                {% for iface in rsvp.interfaces %}
+                <interface>
+                    <interface-name>{{ iface }}</interface-name>
+                    <admin-state>enable</admin-state>
+                </interface>
+                {% endfor %}
+            </rsvp>
+
+            <mpls>
+                <admin-state>enable</admin-state>
+
+                {% for iface in mpls.interfaces %}
+                <interface>
+                    <interface-name>{{ iface }}</interface-name>
+                    <admin-state>enable</admin-state>
+                </interface>
+                {% endfor %}
+
+                {% if mpls.paths is defined %}
+                {% for path in mpls.paths %}
+                <path>
+                    <path-name>{{ path.name }}</path-name>
+                    <admin-state>enable</admin-state>
+                    {% if path.hops %}
+                    {% for hop in path.hops %}
+                    <hop>
+                        <hop-index>{{ loop.index }}</hop-index>
+                        <ip-address>{{ hop.address }}</ip-address>
+                        <type>{{ hop.type | default('strict') }}</type>
+                    </hop>
+                    {% endfor %}
+                    {% endif %}
+                </path>
+                {% endfor %}
+                {% endif %}
+
+                {% if mpls.lsps is defined %}
+                {% for lsp in mpls.lsps %}
+                <lsp>
+                    <lsp-name>{{ lsp.lsp_name }}</lsp-name>
+                    <admin-state>enable</admin-state>
+                    <type>{{ lsp.lsp_type }}</type>
+                    <path-computation-method>{{ lsp.path_computation_method }}</path-computation-method>
+                    <to>{{ lsp.to }}</to>
+                    <primary>
+                        <path-name>{{ lsp.primary_path_name }}</path-name>
+                        <admin-state>enable</admin-state>
+                    </primary>
+                </lsp>
+                {% endfor %}
+                {% endif %}
+            </mpls>
+        </router>
+    </configure>
+</config>

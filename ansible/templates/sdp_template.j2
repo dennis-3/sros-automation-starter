@@ -1,0 +1,26 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <service>
+            {% for sdp in sdp_configs %}
+            <sdp>
+                <sdp-id>{{ sdp.id }}</sdp-id>
+                <delivery-type>mpls</delivery-type>
+
+                <far-end>
+                  <ip-address>{{ sdp.far_end_ip }}</ip-address>
+                </far-end>
+
+                <ldp>false</ldp>
+
+
+
+                <lsp>
+                  <lsp-name>{{ sdp.lsp_name }}</lsp-name>
+                </lsp>
+
+                <admin-state>enable</admin-state>
+            </sdp>
+            {% endfor %}
+        </service>
+    </configure>
+</config>

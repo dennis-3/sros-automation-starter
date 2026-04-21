@@ -1,0 +1,40 @@
+version: 3
+
+images:
+  base_image:
+    name: registry.fedoraproject.org/fedora:42
+
+dependencies:
+  python_interpreter:
+    package_system: python3
+
+  ansible_core:
+    package_pip: ansible-core
+
+  ansible_runner:
+    package_pip: ansible-runner
+
+  python:
+    - ncclient
+    - netaddr
+    - jmespath
+    - lxml
+    - xmltodict
+    - paramiko
+    - pynetbox
+
+  system:
+    - python3-devel
+    - gcc
+    - libxml2-devel
+    - libxslt-devel
+    - openssh-clients
+    - sshpass
+    - git
+
+  galaxy:
+    collections:
+      - name: ansible.netcommon
+      - name: community.general
+      - name: nokia.sros
+      - name: netbox.netbox

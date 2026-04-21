@@ -1,0 +1,36 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+
+        <service>
+
+            {% for ies in ies_services %}
+            <ies>
+                <service-name>{{ ies.name }}</service-name>
+                <service-id>{{ ies.id }}</service-id>
+                <customer>1</customer>
+
+                <interface>
+                    <interface-name>{{ ies.interface_name }}</interface-name>
+
+                    <ipv4>
+                        <primary>
+                            <address>{{ ies.address }}</address>
+                            <prefix-length>{{ ies.prefix }}</prefix-length>
+                        </primary>
+                    </ipv4>
+
+                    <sap>
+                        <sap-id>{{ ies.sap }}</sap-id>
+                        <admin-state>enable</admin-state>
+                    </sap>
+
+                    <admin-state>enable</admin-state>
+                </interface>
+                <admin-state>enable</admin-state>
+            </ies>
+            {% endfor %}
+
+        </service>
+
+    </configure>
+</config>

@@ -1,0 +1,35 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+
+        {% for filter in filters %}
+        <filter>
+          <log>
+            <log-id>{{ filter.log_id }}</log-id>
+
+            <destination>
+              <memory>
+                <max-entries>{{ filter.max_entries }}</max-entries>
+              </memory>
+            </destination>
+
+            <admin-state>enable</admin-state>
+          </log>
+
+          <ip-filter>
+            <filter-name>{{ filter.name }}</filter-name>
+            <default-action>{{ filter.default_action }}</default-action>
+            <filter-id>{{ filter.id }}</filter-id>
+            <entry>
+              <entry-id>{{ filter.entry_id }}</entry-id>
+              <log>{{ filter.log_id }}</log>
+              <match>
+                <protocol>{{ filter.protocol }}</protocol>
+              </match>
+              <action><{{ filter.action }} /></action>
+            </entry>
+          </ip-filter>
+        </filter>
+        {% endfor %}
+
+    </configure>
+</config>

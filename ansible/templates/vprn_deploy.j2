@@ -1,0 +1,64 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <service>
+            {% for vprn in vprn_services %}
+            <vprn>
+                <service-name>{{ vprn.name }}</service-name>
+                <service-id>{{ vprn.id }}</service-id>
+                <admin-state>enable</admin-state>
+                <customer>{{ vprn.customer_id | default('1') }}</customer>
+
+                {# Service-specific BGP settings #}
+                <autonomous-system>{{ vprn.as_number }}</autonomous-system>
+                <router-id>{{ vprn.router_id }}</router-id>
+
+                <bgp-ipvpn>
+                    <mpls>
+                        <admin-state>enable</admin-state>
+                        <route-distinguisher>{{ vprn.route_distinguisher }}</route-distinguisher>
+                        <vrf-target>
+                            <community>target:{{ vprn.vrf_target }}</community>
+                        </vrf-target>
+
+                        {% if vprn.export_policy is defined %}
+                        <vrf-export>
+                            <policy>{{ vprn.export_policy }}</policy>
+                        </vrf-export>
+                        {% endif %}
+
+                        {% if vprn.import_policy is defined %}
+                        <vrf-import>
+                            <policy>{{ vprn.import_policy }}</policy>
+                        </vrf-import>
+                        {% endif %}
+
+                        {# Resolves the BGP next-hop via the Provider Core #}
+                        <auto-bind-tunnel>
+                            <resolution>filter</resolution>
+                            <resolution-filter>
+                                <bgp>true</bgp>
+                            </resolution-filter>
+                        </auto-bind-tunnel>
+                    </mpls>
+                </bgp-ipvpn>
+
+                {% for interface in vprn.interfaces %}
+                <interface>
+                    <interface-name>{{ interface.name }}</interface-name>
+                    <admin-state>enable</admin-state>
+                    {% if interface.loopback %}
+                    <loopback>true</loopback>
+                    {% endif %}
+                    <ipv4>
+                        <primary>
+                            <address>{{ interface.address}}</address>
+                            <prefix-length>{{ interface.mask }}</prefix-length>
+                        </primary>
+                    </ipv4>
+                </interface>
+                {% endfor %}
+            </vprn>
+            {% endfor %}
+        </service>
+    </configure>
+</config>

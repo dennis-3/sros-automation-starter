@@ -1,0 +1,43 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+
+        {# --- System Identity --- #}
+        <system>
+            <name>{{ system_name }}</name>
+        </system>
+
+        {# --- Card and MDA Provisioning --- #}
+        <card>
+            <slot-number>{{ card_slot }}</slot-number>
+            <card-type>{{ card_type }}</card-type>
+            <admin-state>enable</admin-state>
+            <mda>
+                <mda-slot>{{ mda_slot }}</mda-slot>
+                <mda-type>{{ mda_type }}</mda-type>
+                <admin-state>enable</admin-state>
+            </mda>
+        </card>
+
+        {# --- Port and Connector Breakout --- #}
+        {% for port in provisioned_ports %}
+        <port>
+            <port-id>{{ port.id }}</port-id>
+            <admin-state>enable</admin-state>
+            <connector>
+                <breakout>{{ breakout_type }}</breakout>
+            </connector>
+        </port>
+
+        {# --- Channelized Sub-Port (The /1 portion) --- #}
+        <port>
+            <port-id>{{ port.id }}/1</port-id>
+            <admin-state>enable</admin-state>
+            <ethernet>
+                <mode>{{ port_mode }}</mode>
+                <encap-type>dot1q</encap-type>
+            </ethernet>
+        </port>
+        {% endfor %}
+
+    </configure>
+</config>

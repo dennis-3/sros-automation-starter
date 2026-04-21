@@ -5,11 +5,11 @@
 # System identity and basic setup
 system_name: "R1-PE1"
 
-# Port provisioning and breakout configuration
+# Port provisioning ... breakout configuration in group_vars/all.yml
 provisioned_ports:
-  - id: "1/1/c1" # Facing Traffic Source (1/1/c1/1)
-  - id: "1/1/c2" # Facing R2-P2 (1/1/c2/1)
-  - id: "1/1/c3" # Facing R3-P3 (1/1/c3/1)
+  - id: "1/1/c1" 
+  - id: "1/1/c2" 
+  - id: "1/1/c3" 
 
 # =============================================================================
 # TRAFFIC FILTERS

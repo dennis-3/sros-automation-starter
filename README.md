@@ -13,17 +13,13 @@ This is a universal starter project for building Nokia SR OS (SROS) network auto
   - `execution-environment.yml` - Ansible Execution Environment config
   - `ansible-navigator.yml` - Ansible Navigator configuration
 
-- `testbed.yml` - pyATS testbed configuration
-- `nokia_job.py` - pyATS job runner
-- `nokia_test_suite.py` - pyATS test suite for validation
-
 ## Usage
 
 1. Copy this folder to start a new SROS automation project.
 2. Customize the inventory.yml, host_vars, and group_vars for your topology.
 3. Modify the templates as needed.
 4. Run the playbook: `ansible-navigator run ansible/playbooks/deploy.yml -i ansible/inventory.yml`
-5. Use the testing framework to validate configurations.
+5. Use the testing framework to validate configurations. This can be found in the srsim-labs repository on GitHub.
 
 ## Configuration Order
 

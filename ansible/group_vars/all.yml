@@ -15,6 +15,3 @@ mda_type: "me6-100gb-qsfp28"
 port_connector: "breakout"
 breakout_type: "c1-100g"
 port_mode: "hybrid"
-
-# Common AS for some labs
-common_as: 65000

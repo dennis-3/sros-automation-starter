@@ -8,17 +8,62 @@
                 <customer>1</customer>
                 <description>{{ vpls.description }}</description>
 
+                {# BGP Context: Only renders if RD is defined #}
+                {% if vpls.rd is defined %}
+                <bgp>
+                    <bgp-instance>1</bgp-instance>
+                    {# <instance-id>1</instance-id> #}
+                    <route-distinguisher>{{ vpls.rd }}</route-distinguisher>
+                    <route-target>
+                        <export>{{ vpls.rt }}</export>
+                        <import>{{ vpls.rt }}</import>
+                    </route-target>
+
+                    {# Updated per tree output: pw-template-binding is a list #}
+                    <pw-template-binding>
+                        <pw-template-name>{{ vpls.pw_template }}</pw-template-name>
+                    </pw-template-binding>
+                    {# </bgp-instance> #}
+                </bgp>
+                {% endif %}
+
+                {# BGP-VPLS Context: Only renders if VE parameters exist #}
+                {% if vpls.ve_id is defined %}
+                <bgp-vpls>
+                    <admin-state>enable</admin-state>
+                    <maximum-ve-id>10</maximum-ve-id>
+                    <ve>
+                        <id>{{ vpls.ve_id }}</id>
+                        <name>{{ vpls.ve_name }}</name>
+                    </ve>
+                </bgp-vpls>
+                {% endif %}
+
+                {# BGP Auto-Discovery #}
+                {% if vpls.vpls_id is defined %}
+                <bgp-ad>
+                    <admin-state>enable</admin-state>
+                    <vpls-id>{{ vpls.vpls_id }}</vpls-id>
+                </bgp-ad>
+                {% endif %}
+
+                {% if vpls.sap is defined %}
                 <sap>
                     <sap-id>{{ vpls.sap }}</sap-id>
                     <admin-state>enable</admin-state>
                 </sap>
+                {% endif %}
 
+                {# Forwarding Plane: ONLY for manual LDP services (Instance 1) #}
+                {# We skip this for BGP-VPLS because the PW-Template handles it #}
+                {% if vpls.rd is not defined and vpls.mesh_sdps is defined %}
                 {% for sdp_id in vpls.mesh_sdps %}
                 <mesh-sdp>
                     <sdp-bind-id>{{ sdp_id }}:{{ vpls.vc_id }}</sdp-bind-id>
                     <admin-state>enable</admin-state>
                 </mesh-sdp>
                 {% endfor %}
+                {% endif %}
 
                 <admin-state>enable</admin-state>
             </vpls>

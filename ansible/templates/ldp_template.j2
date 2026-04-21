@@ -5,10 +5,9 @@
             <ldp>
                 <admin-state>enable</admin-state>
 
-                {# Required for BGP-AD Discovery to trigger LDP Label signaling #}
-                <targeted-session>
+                {# <targeted-session>
                     <ipv4></ipv4>
-                </targeted-session>
+                </targeted-session> #}
 
                 {% if ldp.interfaces is defined %}
                 <interface-parameters>

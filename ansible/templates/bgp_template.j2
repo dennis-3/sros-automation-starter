@@ -44,9 +44,9 @@
                     <local-address>{{ group.local_address }}</local-address>
                     {% endif %}
 
-                    {# {% if group.advertise_inactive  %}
+                    {% if group.advertise_inactive  %}
                     <advertise-inactive>{{ group.advertise_inactive | default(false) }}</advertise-inactive>
-                    {% endif %} #}
+                    {% endif %}
 
                     {# Use peer_as if defined (eBGP), otherwise use local asn (iBGP) #}
                     <peer-as>{{ group.peer_as | default(bgp.asn) }}</peer-as>

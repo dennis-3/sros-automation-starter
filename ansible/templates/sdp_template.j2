@@ -5,14 +5,14 @@
             <sdp>
                 <sdp-id>{{ sdp.id }}</sdp-id>
                 <delivery-type>mpls</delivery-type>
+                <description>{{ sdp.description }}</description>
 
                 <far-end>
                   <ip-address>{{ sdp.far_end_ip }}</ip-address>
                 </far-end>
 
                 <ldp>false</ldp>
-
-
+                <signaling>{{ sdp.signaling | default('tldp') }}</signaling>
 
                 <lsp>
                   <lsp-name>{{ sdp.lsp_name }}</lsp-name>

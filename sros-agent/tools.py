@@ -4,7 +4,7 @@ from langchain.tools import tool
 from scrapli import Scrapli
 
 @tool
-def get_lab_inventory(topology_file: str = "../topology.yml"):
+def get_lab_inventory(topology_file: str = "../topology.yaml"):
     """Reads the Containerlab topology file to find node names and management IPs."""
     if not os.path.exists(topology_file):
         return f"Error: {topology_file} not found at {os.path.abspath(topology_file)}"

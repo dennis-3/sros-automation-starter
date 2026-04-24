@@ -4,20 +4,18 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from tools import get_lab_inventory, check_sros_state
 
 load_dotenv()
 
 class SROSAgent:
     def __init__(self, notes_path="./data"):
-        # Use the most stable naming convention for 2026
         self.llm = ChatGoogleGenerativeAI(
-            model="models/gemini-1.5-flash-latest", # Use the 'latest' or '-001' suffix
+            model="gemini-2.5-flash", 
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0
         ).bind_tools([get_lab_inventory, check_sros_state])
-        
         self.notes_path = notes_path
         self.vector_db = self._initialize_rag()
 
@@ -38,44 +36,68 @@ class SROSAgent:
         chunks = splitter.split_documents(docs)
         
         # Updated stable embedding model name
-        embeddings = GoogleGenerativeAIEmbeddings(model="text-embedding-004")
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
         return FAISS.from_documents(chunks, embeddings)
 
     def ask(self, query: str):
-        # context_text = ""
-        # if self.vector_db:
-        #     context_docs = self.vector_db.similarity_search(query, k=3)
-        #     context_text = "\n".join([d.page_content for d in context_docs])
+        # 1. RAG: Pull context from your local notes (FAISS)
+        context_text = ""
+        if self.vector_db:
+            context_docs = self.vector_db.similarity_search(query, k=3)
+            context_text = "\n".join([d.page_content for d in context_docs])
         
-        # messages = [
-        #     SystemMessage(content=(
-        #         "You are a Nokia SROS Network Architect. Use tools for live data and context for rules."
-        #         f"\nContext: {context_text}"
-        #     )),
-        #     HumanMessage(content=query)
-        # ]
-        
-        # try:
-        #     response = self.llm.invoke(messages)
-        #     if response.tool_calls:
-        #         return f"Agent Logic: Calling {response.tool_calls[0]['name']} with {response.tool_calls[0]['args']}"
-        #     return response.content
-        # except Exception as e:
-        #     return f"Network Error: {str(e)}"
-
-        # Temporarily bypass FAISS to check if the LLM works
-        context_text = "Bypassing notes for connectivity test."
-        
+        # 2. Initial System & Human messages
         messages = [
             SystemMessage(content=(
                 "You are a Nokia SROS Network Architect. "
-                f"Context: {context_text}"
+                "Use tools for live topology/state and context for design rules.\n"
+                f"Context from notes:\n{context_text}"
             )),
             HumanMessage(content=query)
         ]
         
-        response = self.llm.invoke(messages)
-        return response.content
+        try:
+            # 3. First Call: LLM decides whether to use a tool or answer directly
+            response = self.llm.invoke(messages)
+            
+            # 4. Tool Execution Loop
+            # If the LLM wants to use tools, we must run them and call the LLM again
+            if response.tool_calls:
+                messages.append(response)  # Add the AI's tool call request to history
+                
+                for tool_call in response.tool_calls:
+                    # Map the tool name to the actual function
+                    tool_map = {
+                        "get_lab_inventory": get_lab_inventory, 
+                        "check_sros_state": check_sros_state
+                    }
+                    
+                    tool_name = tool_call["name"].lower()
+                    selected_tool = tool_map.get(tool_name)
+                    
+                    if selected_tool:
+                        # Execute the tool
+                        print(f"DEBUG: Executing {tool_name}...") 
+                        observation = selected_tool.invoke(tool_call["args"])
+                        
+                        # Add the tool's output to the conversation
+                        messages.append(ToolMessage(
+                            content=str(observation), 
+                            tool_call_id=tool_call["id"]
+                        ))
+                
+                # 5. Final Call: LLM takes the tool results and generates the human answer
+                final_response = self.llm.invoke(messages)
+                return final_response.content
+                
+            return response.content
+
+        except Exception as e:
+            return f"Automation Error: {str(e)}"
+
 
 
 if __name__ == "__main__":
@@ -84,4 +106,5 @@ if __name__ == "__main__":
     notes_dir = os.path.join(script_dir, "data")
     
     bot = SROSAgent(notes_path=notes_dir)
-    print(bot.ask("What is the management IP of R1?"))
+    # print(bot.ask("What is the management IP of R1?"))
+    print(bot.ask("How many router nodes are in the topology?"))

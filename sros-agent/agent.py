@@ -100,33 +100,51 @@ class SROSAgent:
         ]
         
         try:
+            # 1. Initial Call: LLM decides to use tools or answer directly
             response = self.llm.invoke(messages)
             
-            if response.tool_calls:
+            # 2. Tool Execution Loop
+            # We use a while loop in case the LLM needs multiple 'turns' of tools
+            while response.tool_calls:
                 messages.append(response)
                 
+                # Define tool map inside the loop to ensure fresh references
+                tool_map = {
+                    "get_lab_inventory": get_lab_inventory, 
+                    "check_sros_state": check_sros_state,
+                    "get_sros_interfaces": get_sros_interfaces
+                }
+                
                 for tool_call in response.tool_calls:
-                    tool_map = {
-                        "get_lab_inventory": get_lab_inventory, 
-                        "check_sros_state": check_sros_state,
-                        "get_sros_interfaces": get_sros_interfaces
-                    }
-                    
+                    # Normalize tool name (Gemini sometimes uses different casing)
                     tool_name = tool_call["name"].lower()
                     selected_tool = tool_map.get(tool_name)
                     
                     if selected_tool:
-                        print(f"DEBUG: Executing {tool_name}...") 
-                        observation = selected_tool.invoke(tool_call["args"])
+                        print(f"DEBUG: Executing {tool_name} with args: {tool_call['args']}") 
                         
+                        try:
+                            # CRITICAL: Use .invoke() to execute StructuredTool objects
+                            observation = selected_tool.invoke(tool_call["args"])
+                        except Exception as tool_e:
+                            observation = f"Error executing tool {tool_name}: {str(tool_e)}"
+                        
+                        # Add the tool output to the message history
                         messages.append(ToolMessage(
                             content=str(observation), 
                             tool_call_id=tool_call["id"]
                         ))
+                    else:
+                        # Fallback if the model hallucinations a tool name
+                        messages.append(ToolMessage(
+                            content=f"Error: Tool '{tool_name}' not found.",
+                            tool_call_id=tool_call["id"]
+                        ))
                 
-                final_response = self.llm.invoke(messages)
-                return final_response.content
-                
+                # Call LLM again with the new ToolMessages to get the next step or final answer
+                response = self.llm.invoke(messages)
+            
+            # 3. Final return (the response that no longer contains tool_calls)
             return response.content
 
         except Exception as e:
@@ -138,4 +156,5 @@ if __name__ == "__main__":
     
     bot = SROSAgent(notes_path=notes_dir)
     print("\n--- Agent Ready ---")
-    print(bot.ask("What do my notes say about the management IP of R1?"))
+    # Ask the agent to check the interfaces
+    print(bot.ask("Check the status of the interfaces on r1"))

@@ -13,7 +13,7 @@ load_dotenv()
 class SROSAgent:
     def __init__(self, notes_path="./data"):
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-lite", 
+            model="gemini-2.5-flash", 
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             max_retries=6,  # Automatically retry on 429 errors
             temperature=0

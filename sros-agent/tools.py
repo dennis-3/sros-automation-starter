@@ -21,7 +21,7 @@ def check_sros_state(ip: str, command: str):
     device = {
         "host": ip,
         "auth_username": "admin", # Default for clab SROS
-        "auth_password": "admin",
+        "auth_password": "NokiaSros1!",
         "platform": "nokia_sros"
     }
     try:
@@ -30,3 +30,18 @@ def check_sros_state(ip: str, command: str):
             return response.result
     except Exception as e:
         return f"Connection failed: {str(e)}"
+
+@tool
+def get_sros_interfaces(node_name: str, topology_file: str = "../topology.yaml"):
+    """Fetches the interface status for a given SROS node name (e.g., 'r1').
+    It automatically looks up the management IP from the topology file.
+    """
+    inventory = get_lab_inventory(topology_file)
+    if isinstance(inventory, str) and inventory.startswith("Error"):
+        return inventory
+    
+    ip = inventory.get(node_name)
+    if not ip:
+        return f"Error: Node {node_name} not found in inventory. Available nodes: {list(inventory.keys())}"
+    
+    return check_sros_state(ip, "show router interface")

@@ -5,17 +5,17 @@ from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
-from tools import get_lab_inventory, check_sros_state
+from tools import get_lab_inventory, check_sros_state, get_sros_interfaces
 
 load_dotenv()
 
 class SROSAgent:
     def __init__(self, notes_path="./data"):
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash", 
+            model="gemini-2.0-flash-lite", 
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0
-        ).bind_tools([get_lab_inventory, check_sros_state])
+        ).bind_tools([get_lab_inventory, check_sros_state, get_sros_interfaces])
         self.notes_path = notes_path
         self.vector_db = self._initialize_rag()
 
@@ -46,7 +46,7 @@ class SROSAgent:
         # 1. RAG: Pull context from your local notes (FAISS)
         context_text = ""
         if self.vector_db:
-            context_docs = self.vector_db.similarity_search(query, k=3)
+            context_docs = self.vector_db.similarity_search(query, k=1)
             context_text = "\n".join([d.page_content for d in context_docs])
         
         # 2. Initial System & Human messages
@@ -72,7 +72,8 @@ class SROSAgent:
                     # Map the tool name to the actual function
                     tool_map = {
                         "get_lab_inventory": get_lab_inventory, 
-                        "check_sros_state": check_sros_state
+                        "check_sros_state": check_sros_state,
+                        "get_sros_interfaces": get_sros_interfaces
                     }
                     
                     tool_name = tool_call["name"].lower()
@@ -106,5 +107,5 @@ if __name__ == "__main__":
     notes_dir = os.path.join(script_dir, "data")
     
     bot = SROSAgent(notes_path=notes_dir)
-    # print(bot.ask("What is the management IP of R1?"))
-    print(bot.ask("How many router nodes are in the topology?"))
+    # print(bot.ask("What is the management IP of R1 in the topology?"))
+    print(bot.ask("what do my notes say about the management IP of R1?"))

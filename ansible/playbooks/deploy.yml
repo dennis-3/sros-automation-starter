@@ -243,6 +243,22 @@
       tags: ['never','ies-config']
 
     # ============================================================================
+    # QOS CONFIGURATION 
+    # ============================================================================
+
+    - block:
+      - name: Configure QoS
+        ansible.netcommon.netconf_config:
+          target: candidate
+          validate: true
+          commit: true
+          lock: always
+          default_operation: merge
+          content: "{{ lookup('template', 'templates/qos_template.j2') }}"
+        when: qos_policies is defined
+      tags: ['never','qos-config']
+
+    # ============================================================================
     # MIRRORING AND ANALYSIS SERVICES
     # ============================================================================
 

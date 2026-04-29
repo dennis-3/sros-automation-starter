@@ -1,0 +1,127 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <qos>
+            {# --- SAP INGRESS POLICIES --- #}
+            {% for policy in qos_policies.sap_ingress | default([]) %}
+            <sap-ingress>
+                <sap-ingress-policy-name>{{ policy.name }}</sap-ingress-policy-name>
+
+                {% if policy.policy_id is defined %}
+                <policy-id>{{ policy.policy_id }}</policy-id>
+                {% endif %}
+
+                {% if policy.description is defined %}
+                <description>{{ policy.description }}</description>
+                {% endif %}
+
+                {% if policy.default_fc is defined %}
+                <default-fc>{{ policy.default_fc }}</default-fc>
+                {% endif %}
+
+                {% if policy.default_priority is defined %}
+                <default-priority>{{ policy.default_priority }}</default-priority>
+                {% endif %}
+
+                {% for q in policy.queues | default([]) %}
+                <queue>
+                    <queue-id>{{ q.id }}</queue-id>
+                    <rate>
+                        <pir>{{ q.rate_pir | default('max') }}</pir>
+                        <cir>{{ q.rate_cir | default('0') }}</cir>
+                    </rate>
+                </queue>
+                {% endfor %}
+
+                {% for fc in policy.fc_mappings | default([]) %}
+                <fc>
+                    <fc-name>{{ fc.name }}</fc-name>
+                    {% if fc.queue is defined %}
+                        <queue>{{ fc.queue }}</queue>
+                    {% endif %}
+                    {% if fc.policer is defined %}
+                        <policer>{{ fc.policer }}</policer>
+                    {% endif %}
+                </fc>
+                {% endfor %}
+
+                {% for d in policy.dot1p_mappings | default([]) %}
+                <dot1p>
+                    <dot1p-value>{{ d.value }}</dot1p-value>
+                    {% if d.fc is defined %}
+                        <fc>{{ d.fc }}</fc>
+                    {% endif %}
+                    {% if d.priority is defined %}
+                        <priority>{{ d.priority }}</priority>
+                    {% endif %}
+                </dot1p>
+                {% endfor %}
+
+                {% if policy.ip_criteria is defined %}
+                <ip-criteria>
+                    {% for entry in policy.ip_criteria %}
+                    <entry>
+                        <entry-id>{{ entry.entry_id }}</entry-id>
+                        <match>
+                            {% if entry.match_protocol is defined %}
+                                <protocol>{{ entry.match_protocol }}</protocol>
+                            {% endif %}
+                            {% if entry.match_dst_port is defined %}
+                                <dst-port><eq>{{ entry.match_dst_port }}</eq></dst-port>
+                            {% endif %}
+                        </match>
+                        {% if entry.action_fc is defined %}
+                        <action>
+                            <fc>{{ entry.action_fc }}</fc>
+                            <type>{{ entry.action_type }}</type>
+                        </action>
+                        {% endif %}
+                    </entry>
+                    {% endfor %}
+                </ip-criteria>
+                {% endif %}
+            </sap-ingress>
+            {% endfor %}
+
+            {# --- SAP EGRESS POLICIES --- #}
+            {% for policy in qos_policies.sap_egress | default([]) %}
+            <sap-egress>
+                <sap-egress-policy-name>{{ policy.name }}</sap-egress-policy-name>
+
+                {% if policy.policy_id is defined %}
+                <policy-id>{{ policy.policy_id }}</policy-id>
+                {% endif %}
+
+                {% if policy.description is defined %}
+                <description>{{ policy.description }}</description>
+                {% endif %}
+
+                {% for q in policy.queues | default([]) %}
+                <queue>
+                    <queue-id>{{ q.id }}</queue-id>
+                    <rate>
+                        <pir>{{ q.rate_pir | default('max') }}</pir>
+                    </rate>
+                </queue>
+                {% endfor %}
+
+                {% for fc in policy.fc_mappings | default([]) %}
+                <fc>
+                    <fc-name>{{ fc.name }}</fc-name>
+                    {% if fc.queue is defined %}
+                        <queue>{{ fc.queue }}</queue>
+                    {% endif %}
+                    {% if fc.policer is defined %}
+                        <policer>{{ fc.policer }}</policer>
+                    {% endif %}
+                    {% if fc.dot1p_in_profile is defined %}
+                        <dot1p>
+                            <in-profile>{{ fc.dot1p_in_profile }}</in-profile>
+                        </dot1p>
+                    {% endif %}
+                </fc>
+                {% endfor %}
+            </sap-egress>
+            {% endfor %}
+        </qos>
+    </configure>
+</config>

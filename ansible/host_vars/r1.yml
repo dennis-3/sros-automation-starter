@@ -335,13 +335,15 @@ epipe_services:
     vc_switching: false
     saps:
       - id: "1/1/c1/1:0"
+        ingress_qos: "INGRESS_POLICY_TEAM_1"
     spokes:
       - sdp_id: 123
         vc_id: 11
   - id: 12
     vc_switching: false
     saps:
-      - id: "1/1/c1/1:0"
+      - id: "1/1/c4/1:0"
+        egress_qos: "EGRESS_POLICY_TEAM_1"
     spokes:
       - sdp_id: 13
         vc_id: 12
@@ -418,3 +420,78 @@ mirror_sources:
     monitor_port: "1/1/c2/1"   # The physical port connected to P1
     ingress: true
     egress: true
+
+# =============================================================================
+# QUALITY OF SERVICE (QoS) POLICIES
+# =============================================================================
+
+qos_policies:
+  sap_ingress:
+    - name: "INGRESS_POLICY_TEAM_1"
+      policy_id: 11
+      description: "Ingress QoS for Team1-1 Epipe"
+      default_fc: "be"
+      queues:
+        - id: 2 # Best Effort (L2)
+          rate_pir: "100000" # 100 Mbps
+          rate_cir: "50000" # 50 Mbps
+        - id: 3 # Standard (AF)
+          rate_pir: "100000" # 100 Mbps
+          rate_cir: "50000" # 50 Mbps
+        - id: 4 # Enhanced (H2)
+          rate_pir: "100000" # 100 Mbps
+          rate_cir: "50000" # 50 Mbps
+        - id: 5 # Premium (EF)
+          rate_pir: "100000" # 100 Mbps
+          rate_cir: "50000" # 50 Mbps
+      fc_mappings:
+        - name: "ef"
+          queue: 5
+        - name: "h2"
+          queue: 4
+        - name: "af"
+          queue: 3
+        - name: "l2"
+          queue: 2
+      ip_criteria:
+        - entry_id: 10 # Stream 1: Premium
+          match_protocol: "udp"
+          match_dst_port: 1234
+          action_type: "accept"
+          action_fc: "ef"
+        - entry_id: 20 # Stream 2: Enhanced
+          match_protocol: "icmp"
+          action_type: "accept"
+          action_fc: "h2"
+        - entry_id: 30 # Stream 3: Standard
+          match_protocol: "tcp"
+          action_type: "accept"
+          action_fc: "af"
+        - entry_id: 40 # Stream 4: Best Effort
+          match_protocol: "udp"
+          # match_dst_port: 4321
+          action_type: "accept"
+          action_fc: "l2"
+
+  sap_egress:
+    - name: "EGRESS_POLICY_TEAM_1"
+      policy_id: 11
+      description: "Egress Queuing"
+      queues:
+        - id: 2 # Best Effort (L2)
+          # rate_pir: "400000" # 400 Mbps
+        - id: 3 # Standard (AF)
+          # rate_pir: "200000" # 200 Mbps
+        - id: 4 # Enhanced (H2)
+          # rate_pir: "100000" # 100 Mbps
+        - id: 5 # Premium (EF)
+          # rate_pir: "50000"  # 50 Mbps
+      fc_mappings:
+        - name: "ef"
+          queue: 5
+        - name: "h2"
+          queue: 4
+        - name: "af"
+          queue: 3
+        - name: "l2"
+          queue: 2

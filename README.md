@@ -69,11 +69,16 @@ The project follows a logical Nokia SR OS configuration sequence that mirrors ho
 - VPRN (L3 VPN with VRFs)
 - IES (Internet Enhanced Service)
 
-### 12. Mirroring and Analysis Services
+### 12. QoS
+- SAP and interface QoS: ingress/egress policies, queues, policing, and dot1p mappings
+- Apply QoS profiles to SAPs/interfaces and service attachments after core services are provisioned
+
+### 13. Mirroring and Analysis Services
 - Mirror destinations for traffic analysis
 - Mirror sources for traffic capture
 
-This order ensures that foundational configurations (hardware, interfaces, routing) are completed before dependent services (MPLS, VPNs) are configured, and monitoring/analysis tools are deployed after core services are operational.
+This order ensures that foundational configurations (hardware, interfaces, routing) are completed before dependent services (MPLS, VPNs) are configured, and that QoS policies are applied before final monitoring/analysis tooling is deployed.
+
 
 ## Templates Included
 
@@ -98,4 +103,3 @@ This order ensures that foundational configurations (hardware, interfaces, routi
 ## Updating the Starter
 
 As you work on projects and add new templates or variables, update this starter project to keep it current.
- 

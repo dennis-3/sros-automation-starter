@@ -18,6 +18,28 @@
                 <sap>
                     <sap-id>{{ sap.id }}</sap-id>
                     <admin-state>enable</admin-state>
+
+                    {# Ingress QoS Logic #}
+                    {% if sap.ingress_qos is defined %}
+                    <ingress>
+                        <qos>
+                            <sap-ingress>
+                                <policy-name>{{ sap.ingress_qos }}</policy-name>
+                            </sap-ingress>
+                        </qos>
+                    </ingress>
+                    {% endif %}
+
+                    {# Egress QoS Logic #}
+                    {% if sap.egress_qos is defined %}
+                    <egress>
+                        <qos>
+                            <sap-egress>
+                                <policy-name>{{ sap.egress_qos }}</policy-name>
+                            </sap-egress>
+                        </qos>
+                    </egress>
+                    {% endif %}
                 </sap>
                 {% endfor %}
                 {% endif %}

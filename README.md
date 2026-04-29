@@ -96,6 +96,7 @@ This order ensures that foundational configurations (hardware, interfaces, routi
 - ospf_template.j2
 - policy_options_template.j2
 - pw_template.j2
+- qos_template.j2
 - sdp_template.j2
 - vpls_deploy.j2
 - vprn_deploy.j2

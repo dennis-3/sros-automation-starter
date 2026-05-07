@@ -8,282 +8,246 @@
     # SYSTEM AND HARDWARE CONFIGURATION
     # ============================================================================
 
-    - block:
-      # Configure basic system identity and hardware provisioning
-      - name: Configure hardware and system names on all routers
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/hardware_and_system_name_template.j2') }}"
-      tags: ['never','hardware-and-system-name-config']
+    # Configure basic system identity and hardware provisioning
+    - name: Configure hardware and system names on all routers
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/hardware_and_system_name_template.j2') }}"
 
     # ============================================================================
     # TRAFFIC FILTERS
     # ============================================================================
 
-    - block:
-      # Configure traffic filters and ACLs (before interfaces since they are applied to interfaces)
-      - name: Configure Filters
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/filter_template.j2') }}"
-        when: filters is defined
-      tags: ['never','filter-config']
+    # Configure traffic filters and ACLs (before interfaces since they are applied to interfaces)
+    - name: Configure Filters
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/filter_template.j2') }}"
+      when: filters is defined
 
     # ============================================================================
     # PHYSICAL INTERFACES
     # ============================================================================
 
-    - block:
-      # Configure IP interfaces and addressing
-      - name: Configure interfaces
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/interface_template.j2') }}"
-        when: interfaces is defined
-      tags: ['never','interface-config']
+    # Configure IP interfaces and addressing
+    - name: Configure interfaces
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/interface_template.j2') }}"
+      when: interfaces is defined
 
     # ============================================================================
     # INTERIOR GATEWAY PROTOCOLS (IGP)
     # ============================================================================
 
-    - block:
-      # Configure ISIS for underlay routing
-      - name: Configure IS-IS as Core IGP
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/isis_template.j2') }}"
-        when: isis is defined
-      tags: ['never','isis-config']
+    # Configure ISIS for underlay routing
+    - name: Configure IS-IS as Core IGP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/isis_template.j2') }}"
+      when: isis is defined
 
-    - block:
-      # Configure OSPF as alternative IGP
-      - name: Configure OSPF
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/ospf_template.j2') }}"
-        when: ospf is defined
-      tags: ['never','ospf-config']
+    # Configure OSPF as alternative IGP
+    - name: Configure OSPF
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/ospf_template.j2') }}"
+      when: ospf is defined
 
     # ============================================================================
     # ROUTING POLICIES
     # ============================================================================
 
-    - block:
-      # Configure route policies, prefix lists, and community handling
-      - name: Configure policy options
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/policy_options_template.j2') }}"
-        when: policy_options is defined
-      tags: ['never','policy-config']
+    # Configure route policies, prefix lists, and community handling
+    - name: Configure policy options
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/policy_options_template.j2') }}"
+      when: policy_options is defined
 
     # ============================================================================
     # BORDER GATEWAY PROTOCOL (BGP)
     # ============================================================================
 
-    - block:
-      # Configure BGP routing with all peer groups and policies
-      - name: Configure BGP
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/bgp_template.j2') }}"
-        when: bgp is defined
-      tags: ['never','bgp-config']
+    # Configure BGP routing with all peer groups and policies
+    - name: Configure BGP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/bgp_template.j2') }}"
+      when: bgp is defined
 
     # ============================================================================
     # MPLS INFRASTRUCTURE
     # ============================================================================
 
-    - block:
-      # Configure MPLS LSPs and path definitions
-      - name: Configure MPLS and RSVP
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/mpls_template.j2') }}"
-        when: mpls is defined
-      tags: ['never','mpls-config']
+    # Configure MPLS LSPs and path definitions
+    - name: Configure MPLS and RSVP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/mpls_template.j2') }}"
+      when: mpls is defined
 
-    - block:
-      # Configure LDP for label distribution
-      - name: Configure LDP
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/ldp_template.j2') }}"
-        when: ldp is defined
-      tags: ['never','ldp-config']
+    # Configure LDP for label distribution
+    - name: Configure LDP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/ldp_template.j2') }}"
+      when: ldp is defined
 
     # ============================================================================
     # SERVICE DISTRIBUTION POINTS (SDP)
     # ============================================================================
 
-    - block:
-      # Configure SDPs for service transport tunnels
-      - name: Configure SDP
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/sdp_template.j2') }}"
-        when: sdp_configs is defined
-      tags: ['never','sdp-config']
+    # Configure SDPs for service transport tunnels
+    - name: Configure SDP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/sdp_template.j2') }}"
+      when: sdp_configs is defined
 
     # ============================================================================
     # PSEUDOWIRE TEMPLATES
     # ============================================================================
 
-    - block:
-      # Configure pseudowire templates for L2 service construction (used in VPLS)
-      - name: Configure PW-TEMPLATES
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/pw_template.j2') }}"
-        when: pw_templates is defined
-      tags: ['never','pw-temp-config']
+    # Configure pseudowire templates for L2 service construction (used in VPLS)
+    - name: Configure PW-TEMPLATES
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/pw_template.j2') }}"
+      when: pw_templates is defined
 
     # ============================================================================
     # LAYER 2 SERVICES
     # ============================================================================
 
-    - block:
-      # Configure Point-to-Point L2 VPN services
-      - name: Configure EPIPE services
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/epipe_deploy.j2') }}"
-        when: epipe_services is defined
-      tags: ['never','epipe-config']
+    # Configure Point-to-Point L2 VPN services
+    - name: Configure EPIPE services
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/epipe_deploy.j2') }}"
+      when: epipe_services is defined
 
-    - block:
-      # Configure Multipoint L2 VPN services
-      - name: Configure VPLS services
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/vpls_deploy.j2') }}"
-        when: vpls_services is defined
-      tags: ['never','vpls-config']
+    # Configure Multipoint L2 VPN services
+    - name: Configure VPLS services
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/vpls_deploy.j2') }}"
+      when: vpls_services is defined
 
     # ============================================================================
     # LAYER 3 SERVICES
     # ============================================================================
 
-    - block:
-      # Configure L3 VPN services with VRFs
-      - name: Configure VPRN services
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/vprn_deploy.j2') }}"
-        when: vprn_services is defined
-      tags: ['never','vprn-config']
+    # Configure L3 VPN services with VRFs
+    - name: Configure VPRN services
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/vprn_deploy.j2') }}"
+      when: vprn_services is defined
 
-    - block:
-      # Configure Internet Enhanced Services
-      - name: Configure IES services
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/ies_deploy.j2') }}"
-        when: ies_services is defined
-      tags: ['never','ies-config']
+    # Configure Internet Enhanced Services
+    - name: Configure IES services
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/ies_deploy.j2') }}"
+      when: ies_services is defined
 
     # ============================================================================
     # QOS CONFIGURATION 
     # ============================================================================
 
-    - block:
-      - name: Configure QoS
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/qos_template.j2') }}"
-        when: qos_policies is defined
-      tags: ['never','qos-config']
+    - name: Configure QoS
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/qos_template.j2') }}"
+      when: qos_policies is defined
 
     # ============================================================================
     # MIRRORING AND ANALYSIS SERVICES
     # ============================================================================
 
-    - block:
-      # Configure traffic mirroring destinations
-      - name: Configure Mirror Destination
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/mirror_destination_deploy.j2') }}"
-        when: mirror_destinations is defined
-      tags: ['never','mirror-dest-config']
+    # Configure traffic mirroring destinations
+    - name: Configure Mirror Destination
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/mirror_destination_deploy.j2') }}"
+      when: mirror_destinations is defined
 
-    - block:
-      # Configure traffic mirroring sources
-      - name: Configure Mirror Source
-        ansible.netcommon.netconf_config:
-          target: candidate
-          validate: true
-          commit: true
-          lock: always
-          default_operation: merge
-          content: "{{ lookup('template', 'templates/mirror_source_deploy.j2') }}"
-        when: mirror_sources is defined
-      tags: ['never','mirror-source-config']
+    # Configure traffic mirroring sources
+    - name: Configure Mirror Source
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', 'templates/mirror_source_deploy.j2') }}"
+      when: mirror_sources is defined

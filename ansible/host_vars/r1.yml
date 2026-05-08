@@ -245,7 +245,7 @@
 #     - "toR2"
 #     - "toR3"
 #   paths:
-#     - name: "via-R2"
+#     - name: "viaR2"
 #       hops:
 #         - address: "10.1.2.2"
 #           type: "strict"
@@ -260,7 +260,7 @@
 #       to: "10.10.10.3"
 #       lsp_type: "p2p-rsvp"
 #       path_computation_method: "local-cspf"
-#       primary_path_name: "via-R2"
+#       primary_path_name: "viaR2"
 #     - lsp_name: "R1-R3"
 #       to: "10.10.10.3"
 #       lsp_type: "p2p-rsvp"

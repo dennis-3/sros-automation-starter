@@ -36,11 +36,11 @@
 #   - name: "system"
 #     address: "10.10.10.1"
 #     mask: 32
-#   - name: "to-R2" # Core Link to P2
+#   - name: "toR2" # Core Link to P2
 #     address: "10.1.2.1"
 #     mask: 27
 #     port: "1/1/c2/1:0"
-#   - name: "to-R3" # Direct Core Link to P3
+#   - name: "toR3" # Direct Core Link to P3
 #     address: "10.1.3.1"
 #     mask: 27
 #     loopback: true
@@ -60,20 +60,20 @@
 #   area_address: "49.0001"
 #   level_capability: 1/2
 #   active_interfaces:
-#     - "to-R2"
-#     - "to-R3"
+#     - "toR2"
+#     - "toR3"
 #   passive_interfaces:
 #     - "system"
 #   core_links:
-#     - "to-R2"
+#     - "toR2"
 
 # OSPF configuration (alternative to ISIS)
 # ospf:
 #   instance: 0
 #   area: 0
 #   active_interfaces:
-#     - "to-R2"
-#     - "to-R3"
+#     - "toR2"
+#     - "toR3"
 #   passive_interfaces:
 #     - "system"
 #   metric: 100
@@ -242,8 +242,8 @@
 # mpls:
 #   interfaces:
 #     - "system"
-#     - "to-R2"
-#     - "to-R3"
+#     - "toR2"
+#     - "toR3"
 #   paths:
 #     - name: "via-R2"
 #       hops:
@@ -271,14 +271,14 @@
 # rsvp:
 #   interfaces:
 #     - "system"
-#     - "to-R2"
-#     - "to-R3"
+#     - "toR2"
+#     - "toR3"
 
 # LDP for label distribution
 # ldp:
 #   interfaces:
-#     - "to-R2"
-#     - "to-R3"
+#     - "toR2"
+#     - "toR3"
 
 # =============================================================================
 # SERVICE DISTRIBUTION POINTS (SDP)

@@ -16,7 +16,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/hardware_and_system_name_template.j2') }}"
+        content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2') }}"
 
     # ============================================================================
     # TRAFFIC FILTERS
@@ -30,7 +30,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/filter_template.j2') }}"
+        content: "{{ lookup('template', '../templates/filter_template.j2') }}"
       when: filters is defined
 
     # ============================================================================
@@ -45,7 +45,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/interface_template.j2') }}"
+        content: "{{ lookup('template', '../templates/interface_template.j2') }}"
       when: interfaces is defined
 
     # ============================================================================
@@ -60,7 +60,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/isis_template.j2') }}"
+        content: "{{ lookup('template', '../templates/isis_template.j2') }}"
       when: isis is defined
 
     # Configure OSPF as alternative IGP
@@ -71,7 +71,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/ospf_template.j2') }}"
+        content: "{{ lookup('template', '../templates/ospf_template.j2') }}"
       when: ospf is defined
 
     # ============================================================================
@@ -86,7 +86,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/policy_options_template.j2') }}"
+        content: "{{ lookup('template', '../templates/policy_options_template.j2') }}"
       when: policy_options is defined
 
     # ============================================================================
@@ -101,7 +101,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/bgp_template.j2') }}"
+        content: "{{ lookup('template', '../templates/bgp_template.j2') }}"
       when: bgp is defined
 
     # ============================================================================
@@ -116,7 +116,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/mpls_template.j2') }}"
+        content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
       when: mpls is defined
 
     # Configure LDP for label distribution
@@ -127,7 +127,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/ldp_template.j2') }}"
+        content: "{{ lookup('template', '../templates/ldp_template.j2') }}"
       when: ldp is defined
 
     # ============================================================================
@@ -142,7 +142,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/sdp_template.j2') }}"
+        content: "{{ lookup('template', '../templates/sdp_template.j2') }}"
       when: sdp_configs is defined
 
     # ============================================================================
@@ -157,7 +157,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/pw_template.j2') }}"
+        content: "{{ lookup('template', '../templates/pw_template.j2') }}"
       when: pw_templates is defined
 
     # ============================================================================
@@ -172,7 +172,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/epipe_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/epipe_deploy.j2') }}"
       when: epipe_services is defined
 
     # Configure Multipoint L2 VPN services
@@ -183,7 +183,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/vpls_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/vpls_deploy.j2') }}"
       when: vpls_services is defined
 
     # ============================================================================
@@ -198,7 +198,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/vprn_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/vprn_deploy.j2') }}"
       when: vprn_services is defined
 
     # Configure Internet Enhanced Services
@@ -209,11 +209,11 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/ies_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/ies_deploy.j2') }}"
       when: ies_services is defined
 
     # ============================================================================
-    # QOS CONFIGURATION 
+    # QOS CONFIGURATION
     # ============================================================================
 
     - name: Configure QoS
@@ -223,7 +223,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/qos_template.j2') }}"
+        content: "{{ lookup('template', '../templates/qos_template.j2') }}"
       when: qos_policies is defined
 
     # ============================================================================
@@ -238,7 +238,7 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/mirror_destination_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
       when: mirror_destinations is defined
 
     # Configure traffic mirroring sources
@@ -249,5 +249,5 @@
         commit: true
         lock: always
         default_operation: merge
-        content: "{{ lookup('template', 'templates/mirror_source_deploy.j2') }}"
+        content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
       when: mirror_sources is defined

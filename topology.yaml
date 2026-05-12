@@ -1,69 +1,89 @@
-name: <lab-name>
+# name: <lab-name>
 
-topology:
-  nodes:
-    # --- Router Nodes ---
-    r1:
-      kind: nokia_srsim
-      image: localhost/nokia/srsim:25.7.R1
-      type: sr-1
-      license: license/license.txt
-      mgmt-ipv4: 172.20.20.9
+# topology:
+#   nodes:
+#     # --- Router Nodes ---
+#     r1:
+#       kind: nokia_srsim
+#       image: localhost/nokia/srsim:25.7.R1
+#       type: sr-1
+#       license: license/license.txt
+#       mgmt-ipv4: 172.20.20.9
 
-    # add other routers 
-
-
-    # AAA server
-    aaa-server:
-      kind: linux
-      # image: ghcr.io/hellt/tac_plus:latest
-      image: lfkeitel/tacacs_plus:ubuntu-202104181633
-      mgmt-ipv4: 172.20.20.100
-      binds:
-        - tac_plus.conf:/etc/tac_plus/tac_plus.conf    
+#     # add other routers 
 
 
-    # --- Traffic Nodes (if needed) ---
-    source:
-      kind: linux
-      image: nicolaka/netshoot
-      exec:
-        - ip addr add 10.10.10.2/24 dev eth1
-
-    receiver:
-      kind: linux
-      image: nicolaka/netshoot
-      exec:
-        - ip addr add 10.10.20.2/24 dev eth1
+#     # AAA server
+#     aaa-server:
+#       kind: linux
+#       # image: ghcr.io/hellt/tac_plus:latest
+#       image: lfkeitel/tacacs_plus:ubuntu-202104181633
+#       mgmt-ipv4: 172.20.20.100
+#       binds:
+#         - tac_plus.conf:/etc/tac_plus/tac_plus.conf    
 
 
-    # --- Telemetry Nodes (if needed) ---
-    # The Telemetry Collector (Telegraf)
-    telegraf:
-      kind: linux
-      image: telegraf:latest
-      binds:
-        - telegraf.conf:/etc/telegraf/telegraf.conf:ro
+#     # --- Traffic Nodes (if needed) ---
+#     source:
+#       kind: linux
+#       image: nicolaka/netshoot
+#       exec:
+#         - ip addr add 10.10.10.2/24 dev eth1
 
-    # The Database (Prometheus)
-    prometheus:
-      kind: linux
-      image: prom/prometheus:latest
-      ports:
-        - 9090:9090
-      binds:
-        - prometheus.yml:/etc/prometheus/prometheus.yml:ro
-
-    # The Visualizer (Grafana)
-    grafana:
-      kind: linux
-      image: grafana/grafana:latest
-      ports:
-        - 3000:3000
-      env:
-        GF_AUTH_ANONYMOUS_ENABLED: "true"
-        GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+#     receiver:
+#       kind: linux
+#       image: nicolaka/netshoot
+#       exec:
+#         - ip addr add 10.10.20.2/24 dev eth1
 
 
-  # add relevant endpoints
-  links:
+#     # --- Multicast Nodes (if needed) ---
+#     mna:
+#       kind: linux
+#       image: nicolaka/netshoot
+#       exec:
+#         - ip addr add 172.28.1.2/27 dev eth1
+#         # Use 'replace' instead of 'add' to overwrite the eth0 default route
+#         - ip route replace default via 172.28.1.1
+#         - ip route add 224.0.0.0/4 dev eth1
+
+#     mnb:
+#       kind: linux
+#       image: nicolaka/netshoot
+#       exec:
+#         - ip addr add 172.28.2.2/27 dev eth1
+#         # Use 'replace' instead of 'add' to overwrite the eth0 default route
+#         - ip route replace default via 172.28.2.1
+#         - ip route add 224.0.0.0/4 dev eth1
+
+
+#     # --- Telemetry Nodes (if needed) ---
+#     # The Telemetry Collector (Telegraf)
+#     telegraf:
+#       kind: linux
+#       image: telegraf:latest
+#       binds:
+#         - telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+#     # The Database (Prometheus)
+#     prometheus:
+#       kind: linux
+#       image: prom/prometheus:latest
+#       ports:
+#         - 9090:9090
+#       binds:
+#         - prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+#     # The Visualizer (Grafana)
+#     grafana:
+#       kind: linux
+#       image: grafana/grafana:latest
+#       ports:
+#         - 3000:3000
+#       env:
+#         GF_AUTH_ANONYMOUS_ENABLED: "true"
+#         GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+
+
+#   # add relevant endpoints
+#   links:

@@ -20,7 +20,10 @@
 
             <bgp>
                 <admin-state>enable</admin-state>
+                
+                {% if bgp.router_id is defined %}
                 <router-id>{{ bgp.router_id }}</router-id>
+                {% endif %}
 
                 {# 1. The Inter-AS Model B Essence #}
                 {% if bgp.inter_as_vpn | default(false) %}
@@ -38,7 +41,10 @@
                 <group>
                     <group-name>{{ group.name }}</group-name>
                     <admin-state>enable</admin-state>
+
+                    {% if group.description is defined %}
                     <description>{{ group.description }}</description>
+                    {% endif %}
 
                     {% if group.local_address is defined %}
                     <local-address>{{ group.local_address }}</local-address>

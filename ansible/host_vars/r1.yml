@@ -73,7 +73,7 @@
 # isis:
 #   instance: 0
 #   area_address: "49.0001"
-#   level_capability: 1/2
+#   level_capability: 1    # for level 1/2, update bier level config in template
 #   bier:
 #     admin_state: "enable"
 #     template_name: "BIER-SD0"
@@ -148,8 +148,14 @@
 #           description: "Match and accept bgp-label protocol"
 #           from_protocol: "bgp-label"
 #           to_protocol: "bgp-label"
-#           action: "accept"
-#     - name: "ACCEPT-ALL"
+    # - name: "mpbgp-to-bgp"
+    #   default_action: "reject"
+    #   entries:
+    #     - id: 10
+    #       from_protocol: "bgp-vpn"
+    #       action: "accept"
+    #     action: "accept"
+    # - name: "ACCEPT-ALL"
 #       description: "Permit all routes without filtering"
 #       default_action: "accept"
 #     - name: "VPRN-import"
@@ -373,16 +379,22 @@
 #     vc_id: 1
 #     description: "VPLS_Instance_1_Mesh"
 #     igmp_snooping: true
-#     saps:
-#       - port: "1/1/c1/1:30"
-#         description: "Facing CE1"
-#         is_mrouter: false
-#         static_groups:
-#           - address: "239.2.2.2"
-#             starg: true
-#       - port: "1/1/c2/1:30"
-#         description: "Uplink to P1"
-#         is_mrouter: true
+    # saps:
+    #   - port: "1/1/c6/1:0"
+    #     description: "Facing Multicast Node (Receiver/Source)"
+    #     is_mrouter: false
+    #     static_groups:
+    #       - address: "239.2.2.2"
+    #         starg: true        # This generates (*, 239.2.2.2)
+    #       - address: "233.2.2.2"
+    #         sources:
+    #           - "172.28.2.2"   # This generates (172.28.2.2, 233.2.2.2)
+    #   - port: "1/1/c2/1:0"
+    #     description: "Uplink to PE1"
+    #     is_mrouter: true  # <--- Marks this as the path to the Multicast Router
+    #   - port: "1/1/c4/1:0"
+    #     description: "Uplink to PE2"
+    #     is_mrouter: true  # <--- Marks this as the path to the Multicast Router
 #     mesh_sdps: [12]
 #   - id: 11
 #     description: "BGP_VPLS_Instance_11_Mesh"
@@ -455,12 +467,16 @@
 #         neighbors:
 #         - { ip: "10.10.1.2", description: "toCE" }
 
-#     interfaces:
-#       - name: "lan-loopback" # Represents the Customer LAN 10.10.1.0/24
-#         address: "10.10.1.1"
-#         mask: 24
-#         description: "Customer Site 1 LAN"
-#         loopback: true
+    # interfaces:
+      # - name: "lan-loopback" # Represents the Customer LAN 10.10.1.0/24
+      #   address: "10.10.1.1"
+      #   mask: 24
+      #   description: "Customer Site 1 LAN"
+      #   loopback: true
+      # - name: "toCE"
+      #   address: "172.28.11.5"
+      #   mask: 24
+      #   sap: "1/1/c2/1:1"
 
 # IES services (Internet Enhanced Service)
 # ies_services:
@@ -502,6 +518,12 @@
 
 #   # Static RP Configuration
 #   static_rp:
+  #   - address: "10.10.10.5"
+  #     group_prefixes:
+  #       - "239.2.2.2/32"
+  #   - address: "10.10.10.6"
+  #     group_prefixes:
+  #       - "239.1.1.1/32"
 #     - address: "10.10.100.12"  # Anycast RP address example
 #       group_prefixes:
 #         - "239.1.1.1/32"

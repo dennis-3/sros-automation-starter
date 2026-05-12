@@ -51,6 +51,21 @@
 #     ingress_ip_filter: "sniffer"
 
 # =============================================================================
+# BIER
+# =============================================================================
+
+# bier:
+#   admin_state: "enable"
+#   # fast_reroute: true
+#   templates:
+#     - name: "BIER-SD0"
+#       sub_domains:
+#         - start: 0
+#           end: 0
+#           # bfr_id: 1
+#           prefix: "10.10.10.1"
+
+# =============================================================================
 # INTERIOR GATEWAY PROTOCOLS (IGP)
 # =============================================================================
 
@@ -59,6 +74,9 @@
 #   instance: 0
 #   area_address: "49.0001"
 #   level_capability: 1/2
+#   bier:
+#     admin_state: "enable"
+#     template_name: "BIER-SD0"
 #   active_interfaces:
 #     - "toR2"
 #     - "toR3"
@@ -184,6 +202,7 @@
 #     - name: "iBGP-Pod1"
 #       description: "Internal MP-BGP to PE1"
 #       family_vpn_ipv4: true
+#       family_mvpn_ipv4: true
 #       family_label_ipv4: true
 #       next_hop_self: true
 #       export_policy: ["accept-all-label-ipv4"]
@@ -353,7 +372,17 @@
 #   - id: 1
 #     vc_id: 1
 #     description: "VPLS_Instance_1_Mesh"
-#     sap: "1/1/c1/1:30"
+#     igmp_snooping: true
+#     saps:
+#       - port: "1/1/c1/1:30"
+#         description: "Facing CE1"
+#         is_mrouter: false
+#         static_groups:
+#           - address: "239.2.2.2"
+#             starg: true
+#       - port: "1/1/c2/1:30"
+#         description: "Uplink to P1"
+#         is_mrouter: true
 #     mesh_sdps: [12]
 #   - id: 11
 #     description: "BGP_VPLS_Instance_11_Mesh"
@@ -362,14 +391,17 @@
 #     rt: "target:65400:11"
 #     ve_id: 1
 #     ve_name: "PE-1"
-#     sap: "1/1/c2/1:11" # Towards CE5
+#     saps:
+#       - port: "1/1/c2/1:11"
+#         description: "Towards CE5"
 #   - id: "21"
 #     description: "BGP_AD_Instance_21_Mesh"
 #     pw_template: "2"
 #     rd: "65400:21"
 #     rt: "target:65400:21"
 #     vpls_id: "65400:21"
-#     sap: "1/1/c2/1:21" # Towards CE5
+#     saps:
+#       - port: "1/1/c2/1:21" # Towards CE5
 
 # =============================================================================
 # LAYER 3 SERVICES
@@ -382,11 +414,47 @@
 #     customer_id: 1
 #     as_number: 64496
 #     router_id: "10.10.10.5"
-#     route_distinguisher: "64496:10"
-#     vrf_target: "64496:10"
-#     auto_bind_tunnel: "bgp"
-#     export_policy: "LAN-export"
-#     import_policy: "VPRN-import"
+
+#     pim:
+#       admin_state: "enable"
+#       interfaces:
+#         - name: "lan-loopback"
+
+#     mvpn:
+#       auto_discovery: "bgp"
+#       c_mcast_signaling: "bgp"
+#       vrf_target_unicast: true
+#       provider_tunnel:
+#         inclusive:
+#           type: "bier"
+#           sub_domain_id: 0
+#         selective:
+#           type: "bier"
+#           sub_domain_id: 0
+#           auto_discovery: "true"
+#           data_threshold:
+#             - prefix: "239.0.0.0/8"
+#               threshold_kbps: 1
+
+#     bgp_ipvpn:
+#       route_distinguisher: "64496:10"
+#       vrf_target: "64496:10"
+#       auto_bind_tunnel: "bgp"
+#       export_policy: "LAN-export"
+#       import_policy: "VPRN-import"
+
+#     bgp:
+#       router_id: "10.10.1.1"
+#       groups:
+#       - name: "CE-group"
+#         as_override: true
+#         peer_as: 65001
+#         # export_policy: ["mpbgp-to-bgp"]
+#         # import_policy: ["accept-all"]
+#         family_ipv4: true
+#         neighbors:
+#         - { ip: "10.10.1.2", description: "toCE" }
+
 #     interfaces:
 #       - name: "lan-loopback" # Represents the Customer LAN 10.10.1.0/24
 #         address: "10.10.1.1"
@@ -403,6 +471,48 @@
 #     prefix: 27
 #     mac: "00-00-00-00-01-05"
 #     sap: "1/1/c2/1:1"
+
+# =============================================================================
+# MULTICAST SERVICES
+# =============================================================================
+
+# igmp:
+#   query_interval: 15
+#   interfaces:
+#     - name: "toR2"
+#       # version: 2
+#       # query_interval: 60
+
+#   # Translate legacy V2 joins into SSM (S,G) joins
+#   ssm_translate:
+#     - start: "233.1.1.1"
+#       end: "233.1.1.1"
+#       source: "10.10.10.2"
+
+# pim:
+#   # SSM Groups
+#   ssm_groups:
+#     - "233.0.0.0/8"
+
+#   # List of interfaces that should run PIM
+#   interfaces:
+#     - "system"
+#     - "toR2"
+#     - "toR3"
+
+#   # Static RP Configuration
+#   static_rp:
+#     - address: "10.10.100.12"  # Anycast RP address example
+#       group_prefixes:
+#         - "239.1.1.1/32"
+#         - "239.2.2.2/32"
+
+#   # Anycast RP Configuration
+#   anycast_rp:
+#     - anycast_address: "10.10.100.12"
+#       peers:
+#         - "10.10.10.1"
+#         - "10.10.10.2"
 
 # =============================================================================
 # MIRRORING AND ANALYSIS SERVICES

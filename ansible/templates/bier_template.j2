@@ -1,0 +1,46 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+            <bier>
+                <admin-state>{{ bier.admin_state | default('enable') }}</admin-state>
+
+                {% if bier.templates is defined %}
+                {% for tmpl in bier.templates %}
+                <template>
+                    <template-name>{{ tmpl.name }}</template-name>
+                    <admin-state>enable</admin-state>
+
+                    {% if tmpl.sub_domains is defined %}
+                    {% for sub in tmpl.sub_domains %}
+                    <sub-domain>
+                        {# Keyed by start and end #}
+                        <start>{{ sub.start }}</start>
+                        <end>{{ sub.end }}</end>
+
+                        {% if sub.bfr_id is defined %}
+                        <bfr-id>{{ sub.bfr_id }}</bfr-id>
+                        {% endif %}
+
+                        {% if sub.prefix is defined %}
+                        <prefix>{{ sub.prefix }}</prefix>
+                        {% endif %}
+
+                        {% if sub.multi_topology is defined %}
+                        <multi-topology>{{ sub.multi_topology }}</multi-topology>
+                        {% endif %}
+                    </sub-domain>
+                    {% endfor %}
+                    {% endif %}
+                </template>
+                {% endfor %}
+                {% endif %}
+
+                {# Global BIER features #}
+                {% if bier.fast_reroute is defined %}
+                <fast-reroute>{{ bier.fast_reroute | lower }}</fast-reroute>
+                {% endif %}
+            </bier>
+        </router>
+    </configure>
+</config>

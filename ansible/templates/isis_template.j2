@@ -8,6 +8,18 @@
                 <area-address>{{ isis.area_address }}</area-address>
                 <traffic-engineering>true</traffic-engineering>
 
+                <level>
+                    <level-number>{{ isis.level_capability }}</level-number>
+
+                    {# --- BIER ADVERTISEMENT IN ISIS --- #}
+                    {% if isis.bier is defined %}
+                    <bier>
+                        <admin-state>{{ isis.bier.admin_state | default('enable') }}</admin-state>
+                        <template>{{ isis.bier.template_name }}</template>
+                    </bier>
+                    {% endif %}
+                </level>
+
                 {% for intf in isis.active_interfaces %}
                 <interface>
                     <interface-name>{{ intf }}</interface-name>

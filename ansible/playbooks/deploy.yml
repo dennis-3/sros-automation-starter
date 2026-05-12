@@ -49,6 +49,20 @@
       when: interfaces is defined
 
     # ============================================================================
+    # BIER CONFIGURATION
+    # ============================================================================
+
+    - name: Configure BIER
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', '../templates/bier_template.j2') }}"
+      when: bier is defined
+
+    # ============================================================================
     # INTERIOR GATEWAY PROTOCOLS (IGP)
     # ============================================================================
 
@@ -225,6 +239,34 @@
         default_operation: merge
         content: "{{ lookup('template', '../templates/qos_template.j2') }}"
       when: qos_policies is defined
+
+    # ============================================================================
+    # IGMP CONFIGURATION
+    # ============================================================================
+
+    - name: Configure IGMP
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', '../templates/igmp_template.j2') }}"
+      when: igmp is defined
+
+    # ============================================================================
+    # PIM CONFIGURATION
+    # ============================================================================
+
+    - name: Configure PIM
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', '../templates/pim_template.j2') }}"
+      when: pim is defined
 
     # ============================================================================
     # MIRRORING AND ANALYSIS SERVICES

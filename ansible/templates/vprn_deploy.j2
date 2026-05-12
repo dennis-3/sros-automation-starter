@@ -4,49 +4,257 @@
             {% for vprn in vprn_services %}
             <vprn>
                 <service-name>{{ vprn.name }}</service-name>
-                <service-id>{{ vprn.id }}</service-id>
                 <admin-state>enable</admin-state>
+
+                {% if vprn.id is defined %}
+                <service-id>{{ vprn.id }}</service-id>
+                {% endif %}
+
                 <customer>{{ vprn.customer_id | default('1') }}</customer>
 
-                {# Service-specific BGP settings #}
+                {% if vprn.as_number is defined %}
                 <autonomous-system>{{ vprn.as_number }}</autonomous-system>
-                <router-id>{{ vprn.router_id }}</router-id>
+                {% endif %}
 
+                {% if vprn.router_id is defined %}
+                <router-id>{{ vprn.router_id }}</router-id>
+                {% endif %}
+
+                {# --- IGMP SECTION --- #}
+                {% if vprn.igmp is defined %}
+                <igmp>
+                    <admin-state>{{ vprn.igmp.admin_state | default('enable') }}</admin-state>
+
+                    {% if vprn.igmp.interfaces is defined %}
+                        {% for igmp_intf in vprn.igmp.interfaces %}
+                        <interface>
+                            <ip-interface-name>{{ igmp_intf.name }}</ip-interface-name>
+                            <admin-state>enable</admin-state>
+
+                            {# Static Group Joins for Lab Testing #}
+                            {% if igmp_intf.static_groups is defined %}
+                            <static>
+                                {% for group in igmp_intf.static_groups %}
+                                <group>
+                                    <group-address>{{ group.ip }}</group-address>
+                                    <source>
+                                        <source-address>{{ group.source }}</source-address>
+                                    </source>
+                                </group>
+                                {% endfor %}
+                            </static>
+                            {% endif %}
+                        </interface>
+                        {% endfor %}
+                    {% endif %}
+                </igmp>
+                {% endif %}
+
+                {# --- PIM MULTICAST SECTION --- #}
+                {% if vprn.pim is defined %}
+                <pim>
+                    <admin-state>{{ vprn.pim.admin_state | default('enable') }}</admin-state>
+
+                    {# Interface-specific PIM configuration #}
+                    {% if vprn.pim.interfaces is defined %}
+                        {% for pim_intf in vprn.pim.interfaces %}
+                        <interface>
+                            <interface-name>{{ pim_intf.name }}</interface-name>
+                            <admin-state>enable</admin-state>
+                        </interface>
+                        {% endfor %}
+                    {% endif %}
+                </pim>
+                {% endif %}
+
+                {# --- NG-MVPN SECTION --- #}
+                {% if vprn.mvpn is defined %}
+                <mvpn>
+                    {# Auto-discovery and C-Multicast Signaling #}
+                    <auto-discovery>
+                        <type>{{ vprn.mvpn.auto_discovery | default('bgp') }}</type>
+                    </auto-discovery>
+
+                    <c-mcast-signaling>{{ vprn.mvpn.c_mcast_signaling | default('bgp') }}</c-mcast-signaling>
+
+                    <vrf-target>
+                        <unicast>{{ vprn.mvpn.vrf_target_unicast | lower }}</unicast>
+                    </vrf-target>
+
+                    {# Provider Tunnel #}
+                    {% if vprn.mvpn.provider_tunnel is defined %}
+                    <provider-tunnel>
+                        {% if vprn.mvpn.provider_tunnel.inclusive is defined %}
+                        <inclusive>
+                            {% if vprn.mvpn.provider_tunnel.inclusive.type == 'mldp' %}
+                            <mldp>
+                                <admin-state>enable</admin-state>
+                            </mldp>
+                            {% elif vprn.mvpn.provider_tunnel.inclusive.type == 'rsvp' %}
+                            <rsvp>
+                                <admin-state>enable</admin-state>
+                            </rsvp>
+                            {% elif vprn.mvpn.provider_tunnel.inclusive.type == 'bier' %}
+                            <bier>
+                                <admin-state>enable</admin-state>
+                                <sub-domain>{{ vprn.mvpn.provider_tunnel.inclusive.sub_domain_id | default('0') }}</sub-domain>
+                            </bier>
+                            {% endif %}
+                        </inclusive>
+                        {% endif %}
+
+                        {% if vprn.mvpn.provider_tunnel.selective is defined %}
+                        <selective>
+                            {% if vprn.mvpn.provider_tunnel.selective.type == 'mldp' %}
+                            <mldp>
+                                <admin-state>enable</admin-state>
+                            </mldp>
+                            {% elif vprn.mvpn.provider_tunnel.selective.type == 'rsvp' %}
+                            <rsvp>
+                                <admin-state>enable</admin-state>
+                            </rsvp>
+                            {% elif vprn.mvpn.provider_tunnel.selective.type == 'bier' %}
+                            <bier>
+                                <admin-state>enable</admin-state>
+                                <sub-domain>{{ vprn.mvpn.provider_tunnel.selective.sub_domain_id | default('0') }}</sub-domain>
+                            </bier>
+                            {% endif %}
+
+                            <auto-discovery>{{ vprn.mvpn.provider_tunnel.selective.auto_discovery | lower }}</auto-discovery>
+
+                            {% if vprn.mvpn.provider_tunnel.selective.data_threshold is defined %}
+                            <data-threshold>
+                                {% for entry in vprn.mvpn.provider_tunnel.selective.data_threshold %}
+                                <group-prefix>
+                                    <ip-group-prefix>{{ entry.prefix }}</ip-group-prefix>
+                                    <threshold>{{ entry.threshold_kbps }}</threshold>
+                                </group-prefix>
+                                {% endfor %}
+                            </data-threshold>
+                            {% endif %}
+                        </selective>
+                        {% endif %}
+                    </provider-tunnel>
+                    {% endif %}
+                </mvpn>
+                {% endif %}
+
+                {# --- BGP-IPVPN SECTION --- #}
+                {% if vprn.bgp_ipvpn is defined %}
                 <bgp-ipvpn>
                     <mpls>
                         <admin-state>enable</admin-state>
-                        <route-distinguisher>{{ vprn.route_distinguisher }}</route-distinguisher>
-                        <vrf-target>
-                            <community>target:{{ vprn.vrf_target }}</community>
-                        </vrf-target>
 
-                        {% if vprn.export_policy is defined %}
+                        {% if vprn.bgp_ipvpn.route_distinguisher is defined %}
+                        <route-distinguisher>{{ vprn.bgp_ipvpn.route_distinguisher }}</route-distinguisher>
+                        {% endif %}
+
+                        {% if vprn.bgp_ipvpn.vrf_target is defined %}
+                        <vrf-target>
+                            <community>target:{{ vprn.bgp_ipvpn.vrf_target }}</community>
+                        </vrf-target>
+                        {% endif %}
+
+                        {% if vprn.bgp_ipvpn.export_policy is defined %}
                         <vrf-export>
-                            <policy>{{ vprn.export_policy }}</policy>
+                            <policy>{{ vprn.bgp_ipvpn.export_policy }}</policy>
                         </vrf-export>
                         {% endif %}
 
-                        {% if vprn.import_policy is defined %}
+                        {% if vprn.bgp_ipvpn.import_policy is defined %}
                         <vrf-import>
-                            <policy>{{ vprn.import_policy }}</policy>
+                            <policy>{{ vprn.bgp_ipvpn.import_policy }}</policy>
                         </vrf-import>
                         {% endif %}
 
-                        {# Resolves the BGP next-hop via the Provider Core #}
+                        {% if vprn.bgp_ipvpn.auto_bind_tunnel is defined %}
                         <auto-bind-tunnel>
                             <resolution>filter</resolution>
                             <resolution-filter>
+                                {% if vprn.bgp_ipvpn.auto_bind_tunnel == 'bgp' %}
                                 <bgp>true</bgp>
+                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'ldp' %}
+                                <ldp>true</ldp>
+                                {% endif %}
                             </resolution-filter>
                         </auto-bind-tunnel>
+                        {% endif %}
                     </mpls>
                 </bgp-ipvpn>
+                {% endif %}
 
+                {# --- BGP PEERING SECTION --- #}
+                {% if vprn.bgp is defined %}
+                <bgp>
+                    {% if vprn.bgp.router_id is defined %}
+                    <router-id>{{ vprn.bgp.router_id }}</router-id>
+                    {% endif %}
+
+                    {# Loop through BGP groups #}
+                    {% for group in vprn.bgp.groups %}
+                    <group>
+                        <group-name>{{ group.name }}</group-name>
+                        <peer-as>{{ group.peer_as }}</peer-as>
+
+                        {% if group.as_override | default(false) %}
+                        <as-override>true</as-override>
+                        {% endif %}
+
+                        <family>
+                            {# Label-IPv4 Family Toggle #}
+                            {% if group.family_label_ipv4 | default(false) %}
+                            <label-ipv4>true</label-ipv4>
+                            {% else %}
+                            <label-ipv4>false</label-ipv4>
+                            {% endif %}
+
+                            {# VPN-IPv4 Family Toggle #}
+                            {% if group.family_ipv4 | default(false) %}
+                            <ipv4>true</ipv4>
+                            {% else %}
+                            <ipv4>false</ipv4>
+                            {% endif %}
+                        </family>
+
+                        {# Policy Handling #}
+                        {% if group.export_policy is defined %}
+                        {% for policy in group.export_policy %}
+                        <export>
+                            <policy>{{ policy }}</policy>
+                        </export>
+                        {% endfor %}
+                        {% endif %}
+
+                        {% if group.import_policy is defined %}
+                        {% for policy in group.import_policy %}
+                        <import>
+                            <policy>{{ policy }}</policy>
+                        </import>
+                        {% endfor %}
+                        {% endif %}
+                    </group>
+
+                    {# Loop through neighbors belonging to this specific group #}
+                    {% for neighbor in group.neighbors %}
+                    <neighbor>
+                        <ip-address>{{ neighbor.ip }}</ip-address>
+                        <admin-state>enable</admin-state>
+                        {% if neighbor.description is defined %}
+                        <description>{{ neighbor.description }}</description>
+                        {% endif %}
+                        <group>{{ group.name }}</group>
+                    </neighbor>
+                    {% endfor %}
+                    {% endfor %}
+                </bgp>
+                {% endif %}
+
+                {# --- INTERFACES SECTION --- #}
                 {% for interface in vprn.interfaces %}
                 <interface>
                     <interface-name>{{ interface.name }}</interface-name>
                     <admin-state>enable</admin-state>
-                    {% if interface.loopback %}
+                    {% if interface.loopback | default (false) %}
                     <loopback>true</loopback>
                     {% endif %}
                     <ipv4>
@@ -55,6 +263,11 @@
                             <prefix-length>{{ interface.mask }}</prefix-length>
                         </primary>
                     </ipv4>
+                    {% if interface.sap is defined %}
+                    <sap>
+                        <sap-id>{{ interface.sap }}</sap-id>
+                    </sap>
+                    {% endif %}
                 </interface>
                 {% endfor %}
             </vprn>

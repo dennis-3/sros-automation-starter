@@ -94,6 +94,13 @@
                         <vpn-ipv4>false</vpn-ipv4>
                         {% endif %}
 
+                        {# MVPN-IPv4 Family Toggle #}
+                        {% if group.family_mvpn_ipv4 | default(false) %}
+                        <mvpn-ipv4>true</mvpn-ipv4>
+                        {% else %}
+                        <mvpn-ipv4>false</mvpn-ipv4>
+                        {% endif %}
+
                         {# Label-IPv4 Family Toggle #}
                         {% if group.family_label_ipv4 | default(false) %}
                         <label-ipv4>true</label-ipv4>

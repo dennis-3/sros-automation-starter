@@ -1,0 +1,63 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>Base</router-name>
+            <pim>
+                <admin-state>enable</admin-state>
+
+                {# SSM Groups Configuration #}
+                {% if pim is defined and 'ssm_groups' in pim %}
+                <ssm-groups>
+                    {% for range in pim.ssm_groups %}
+                    <group-range>
+                        <ip-prefix>{{ range }}</ip-prefix>
+                    </group-range>
+                    {% endfor %}
+                </ssm-groups>
+                {% endif %}
+
+                {# Configure PIM Interfaces #}
+                {% if pim is defined and 'interfaces' in pim %}
+                    {% for intf in pim.interfaces %}
+                    <interface>
+                        <interface-name>{{ intf }}</interface-name>
+                        <admin-state>enable</admin-state>
+                    </interface>
+                    {% endfor %}
+                {% endif %}
+
+                <rp>
+                    <ipv4>
+                        {# Configure Static RP for IPv4 #}
+                        <static>
+                            {% if pim is defined and 'static_rp' in pim %}
+                                {% for rp in pim.static_rp %}
+                                    <address>
+                                        <ipv4-address>{{ rp.address }}</ipv4-address>
+                                        {% for prefix in rp.group_prefixes %}
+                                        <group-prefix>
+                                            <ipv4-prefix>{{ prefix }}</ipv4-prefix>
+                                        </group-prefix>
+                                        {% endfor %}
+                                    </address>
+                                {% endfor %}
+                            {% endif %}
+                        </static>
+
+                        {# Anycast-RP Section #}
+                        {% if pim is defined and 'anycast_rp' in pim %}
+                            {% for anycast in pim.anycast_rp %}
+                                {% for peer in anycast.peers %}
+                                <anycast>
+                                    <ipv4-address>{{ anycast.anycast_address }}</ipv4-address>
+                                    <rp-set-peer>{{ peer }}</rp-set-peer>
+                                </anycast>
+                                {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+                    </ipv4>
+                </rp>
+            </pim>
+        </router>
+    </configure>
+</config>

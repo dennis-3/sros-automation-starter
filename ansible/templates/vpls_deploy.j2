@@ -47,11 +47,51 @@
                 </bgp-ad>
                 {% endif %}
 
-                {% if vpls.sap is defined %}
-                <sap>
-                    <sap-id>{{ vpls.sap }}</sap-id>
+                {# IGMP Snooping #}
+                {% if vpls.igmp_snooping | default(false) %}
+                <igmp-snooping>
                     <admin-state>enable</admin-state>
+                </igmp-snooping>
+                {% endif %}
+
+                {% if vpls.saps is defined %}
+                {% for sap in vpls.saps %}
+                <sap>
+                    <sap-id>{{ sap.port }}</sap-id>
+                    <admin-state>enable</admin-state>
+
+                    <igmp-snooping>
+                        {% if sap.is_mrouter | default (false) %}
+                        <mrouter-port>true</mrouter-port>
+                        {% endif %}
+
+                        {# Logic for Static (*,G) Multicast Groups #}
+                        {% if sap.static_groups is defined %}
+                        <static>
+                            {% for group in sap.static_groups %}
+                            <group>
+                                <group-address>{{ group.address }}</group-address>
+
+                                {# Handle (*,G) #}
+                                {% if group.starg | default(false) %}
+                                <starg/>
+                                {% endif %}
+
+                                {# Handle (S,G) #}
+                                {% if group.sources is defined %}
+                                    {% for src in group.sources %}
+                                    <source>
+                                        <source-address>{{ src }}</source-address>
+                                    </source>
+                                    {% endfor %}
+                                {% endif %}
+                            </group>
+                            {% endfor %}
+                        </static>
+                        {% endif %}
+                    </igmp-snooping>
                 </sap>
+                {% endfor %}
                 {% endif %}
 
                 {# Forwarding Plane: ONLY for manual LDP services (Instance 1) #}

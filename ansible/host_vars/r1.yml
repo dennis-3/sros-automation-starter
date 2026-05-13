@@ -51,6 +51,16 @@
 #     ingress_ip_filter: "sniffer"
 
 # =============================================================================
+# MPLS-LABELS
+# =============================================================================
+
+# Reserve MPLS Label values for SR
+# mpls_labels:
+#   sr_labels:
+#     start: 100000
+#     end: 100999
+
+# =============================================================================
 # BIER
 # =============================================================================
 
@@ -74,16 +84,23 @@
 #   instance: 0
 #   area_address: "49.0001"
 #   level_capability: 1    # for level 1/2, update bier level config in template
+#   # advertise_capability: "as"
+#   # segment_routing:
+#   #   admin_state: "enable"
+#   #   prefix_sid_range:
+#   #     start_label: 100000 # Matches the start of your sr-labels range
+#   #     max_index: 499
 #   bier:
 #     admin_state: "enable"
 #     template_name: "BIER-SD0"
 #   active_interfaces:
-#     - "toR2"
-#     - "toR3"
+#     - name: "toR2"
+#     - name: "toR3"
 #   passive_interfaces:
-#     - "system"
+#     - name: "system"
+#       # ipv4_node_sid_index: 1 # Example for SR
 #   core_links:
-#     - "toR2"
+#     - name: "toR2"
 
 # OSPF configuration (alternative to ISIS)
 # ospf:

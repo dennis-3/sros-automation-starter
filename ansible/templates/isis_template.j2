@@ -6,7 +6,25 @@
                 <isis-instance>{{ isis.instance }}</isis-instance>
                 <admin-state>enable</admin-state>
                 <area-address>{{ isis.area_address }}</area-address>
+
+                {% if isis.traffic_engineering | default(false) %}
                 <traffic-engineering>true</traffic-engineering>
+                {% endif %}
+
+                {% if isis.advertise_capability is defined%}
+                <advertise-router-capability>{{ isis.advertise_capability | default('as') }}</advertise-router-capability>
+                {% endif %}
+
+                {# --- SEGMENT ROUTING GLOBAL CONFIG --- #}
+                {% if isis.segment_routing is defined %}
+                <segment-routing>
+                    <admin-state>{{ isis.segment_routing.admin_state | default('enable') }}</admin-state>
+                    <prefix-sid-range>
+                        <start-label>{{ isis.segment_routing.prefix_sid_range.start_label }}</start-label>
+                        <max-index>{{ isis.segment_routing.prefix_sid_range.max_index }}</max-index>
+                    </prefix-sid-range>
+                </segment-routing>
+                {% endif %}
 
                 <level>
                     <level-number>{{ isis.level_capability }}</level-number>
@@ -22,7 +40,7 @@
 
                 {% for intf in isis.active_interfaces %}
                 <interface>
-                    <interface-name>{{ intf }}</interface-name>
+                    <interface-name>{{ intf.name }}</interface-name>
                     <admin-state>enable</admin-state>
                     <interface-type>point-to-point</interface-type>
                 </interface>
@@ -30,7 +48,12 @@
 
                 {% for intf in isis.passive_interfaces %}
                 <interface>
-                    <interface-name>{{ intf }}</interface-name>
+                    <interface-name>{{ intf.name }}</interface-name>
+                    {% if intf.name == "system" and intf.ipv4_node_sid_index is defined %}
+                    <ipv4-node-sid>
+                        <index>{{ intf.ipv4_node_sid_index }}</index>
+                    </ipv4-node-sid>
+                    {% endif %}
                     <admin-state>enable</admin-state>
                     <interface-type>point-to-point</interface-type>
                     <passive>true</passive>
@@ -40,7 +63,7 @@
                 {% if isis is defined and 'core_links' in isis %}
                     {% for intf in isis.core_links %}
                     <interface>
-                        <interface-name>{{ intf }}</interface-name>
+                        <interface-name>{{ intf.name }}</interface-name>
                         <level>
                             <level-number>1</level-number>
                             <metric>5</metric>

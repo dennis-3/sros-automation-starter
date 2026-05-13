@@ -175,6 +175,14 @@
                                 <bgp>true</bgp>
                                 {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'ldp' %}
                                 <ldp>true</ldp>
+                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'rsvp' %}
+                                <rsvp>true</rsvp>
+                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-ospf' %}
+                                <sr-ospf>true</sr-ospf>
+                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-isis' %}
+                                <sr-isis>true</sr-isis>
+                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-te' %}
+                                <sr-te>true</sr-te>
                                 {% endif %}
                             </resolution-filter>
                         </auto-bind-tunnel>
@@ -201,19 +209,19 @@
                         {% endif %}
 
                         <family>
-                            {# Label-IPv4 Family Toggle #}
-                            {% if group.family_label_ipv4 | default(false) %}
-                            <label-ipv4>true</label-ipv4>
-                            {% else %}
-                            <label-ipv4>false</label-ipv4>
-                            {% endif %}
-
-                            {# VPN-IPv4 Family Toggle #}
+                            {# IPv4 Family Toggle #}
                             {% if group.family_ipv4 | default(false) %}
                             <ipv4>true</ipv4>
                             {% else %}
                             <ipv4>false</ipv4>
                             {% endif %}
+
+                            {# Label-IPv4 Family Toggle #}
+                            {# {% if group.family_label_ipv4 | default(false) %}
+                            <label-ipv4>true</label-ipv4>
+                            {% else %}
+                            <label-ipv4>false</label-ipv4>
+                            {% endif %} #}
                         </family>
 
                         {# Policy Handling #}
@@ -255,7 +263,7 @@
                     <interface-name>{{ interface.name }}</interface-name>
                     <admin-state>enable</admin-state>
                     {% if interface.loopback | default (false) %}
-                    <loopback>true</loopback>
+                    <loopback/>
                     {% endif %}
                     <ipv4>
                         <primary>

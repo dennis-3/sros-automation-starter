@@ -48,9 +48,23 @@
         content: "{{ lookup('template', '../templates/interface_template.j2') }}"
       when: interfaces is defined
 
-    # ============================================================================
+    # =============================================================================
+    # MPLS LABELS CONFIGURATION
+    # =============================================================================
+
+    - name: Configure MPLS Labels
+      ansible.netcommon.netconf_config:
+        target: candidate
+        validate: true
+        commit: true
+        lock: always
+        default_operation: merge
+        content: "{{ lookup('template', '../templates/mpls_labels_template.j2') }}"
+      when: mpls_labels is defined
+
+    # =============================================================================
     # BIER CONFIGURATION
-    # ============================================================================
+    # =============================================================================
 
     - name: Configure BIER
       ansible.netcommon.netconf_config:

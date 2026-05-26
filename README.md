@@ -20,7 +20,7 @@ This is a universal starter project for building Nokia SR OS (SROS) network auto
 2. Customize the inventory.yml, host_vars, and group_vars for your topology.
 3. Modify the templates as needed.
 4. Run the playbook: `ansible-navigator run ansible/playbooks/deploy.yml -i ansible/inventory.yml`
-5. Use the testing framework to validate configurations. This can be found in the srsim-labs repository on GitHub.
+5. Use the pyATS testing framework to validate configurations. 
 
 ## Configuration Order
 

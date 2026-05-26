@@ -12,6 +12,7 @@ This is a universal starter project for building Nokia SR OS (SROS) network auto
   - `inventory.yml` - Sample Ansible inventory
   - `execution-environment.yml` - Ansible Execution Environment config
   - `ansible-navigator.yml` - Ansible Navigator configuration
+  - `netbox_inv.yml` - Netbox integration for ansible 
 
 ## Usage
 

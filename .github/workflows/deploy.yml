@@ -1,0 +1,21 @@
+name: Deploy to Lab
+on:
+  push:
+    branches: [main]  # Only deploy when we merge to main
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # <--- This is the magic line!
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Nokia Config
+        run: |
+          # Use your existing ansible-navigator or ansible-playbook command
+          # this is a dummy command to test the CD workflow, replace with the actual playbook command
+          ansible-navigator run sros5-mpls-vpn/ansible/deploy_lab.yml \
+          -i sros5-mpls-vpn/ansible/netbox_inv.yml \
+          --host ce1 \
+          --mode stdout \
+          --check

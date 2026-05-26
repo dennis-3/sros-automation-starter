@@ -1,9 +1,33 @@
-# Ignore Python virtual environments
-**/venv
+# Ignore all containerlab runtime directories
+**/clab-*/
 
-# Ignore environment variable files
+*.log
+*.json
+
 *.env
 
-# Ignore Python bytecode and cache directories
+# don't track netbox and instead clone it locally when it is needed, 
+# **/netbox # uncomment this in the actual lab to ignore netbox
+
+# --- GITHUB ACTIONS RUNNER --- 
+# actions-runner/ # uncomment this in the actual lab to ignore the github actions runner
+
+# ignore Python virtual environments
+venv/
+**/.venv-galaxy/
+
+
+# ignore text files
+*.txt
+
+# ignore python pycache
 __pycache__/
 *.pyc
+
+# ignore ansible collections
+**/collections
+
+# ignore ansble build context
+**/context/
+
+# **/zabbix_mysql_data/ # uncomment this in the actual lab to ignore mysql data for zabbix

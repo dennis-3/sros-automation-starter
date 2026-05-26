@@ -1,0 +1,17 @@
+---
+exclude_paths:
+  - sros5-mpls-vpn/netbox/netbox-docker/ # Ignore the NetBox project files
+  - .cache/
+
+  # Direct the linter to ignore auto-generated or third-party paths
+  - "**/clab-*/**" # Ignore everything inside Containerlab lab folders
+  - "**/netbox-docker/**" # Ignore the NetBox deployment files
+  - "**/context/_build/**" # Ignore temporary execution environment build files
+
+# Rules to ignore entirely if you find them too annoying
+skip_list:
+  - yaml[truthy] # Optional: skip if you prefer 'yes/no' over 'true/false'
+
+# ignore netconf_config error, since it is installed in the EE
+mock_modules:
+  - ansible.netcommon.netconf_config

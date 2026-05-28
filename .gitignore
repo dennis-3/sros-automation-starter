@@ -31,3 +31,6 @@ __pycache__/
 **/context/
 
 # **/zabbix_mysql_data/ # uncomment this in the actual lab to ignore mysql data for zabbix
+
+# ignore snapshots 
+**/snapshots/

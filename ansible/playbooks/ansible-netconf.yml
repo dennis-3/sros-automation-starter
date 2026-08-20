@@ -1,0 +1,95 @@
+---
+- hosts: r1
+  gather_facts: false  ### Do not gather facts from the devices
+  
+  tasks:
+    ### XML EDIT BOF CONFIGURATION
+    - block:
+      - name: lock
+        connection: netconf
+        ansible.netcommon.netconf_rpc:
+          rpc: lock
+          xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          content: |
+             <target>
+             <bof-candidate xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments"/>
+             </target>
+      - name: edit config via rpc
+        connection: netconf
+        ansible.netcommon.netconf_rpc:
+          rpc: edit-config
+          xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          content: |
+             <target>
+             <bof-candidate xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments"/>
+             </target>
+             <config>
+               <bof xmlns="urn:nokia.com:sros:ns:yang:sr:bof-conf" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nokia-attr="urn:nokia.com:sros:ns:yang:sr:attributes">
+                 <dns>
+                    <primary-server>192.168.122.1</primary-server>
+                 </dns>
+               </bof>
+             </config>
+      - name: commit
+        connection: netconf
+        ansible.netcommon.netconf_rpc:
+          rpc: commit
+          xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          content: |
+             <configuration-region xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments">
+             bof
+             </configuration-region>
+      - name: unlock
+        connection: netconf
+        ansible.netcommon.netconf_rpc:
+          rpc: unlock
+          xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          content: |
+             <target>
+             <bof-candidate xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments"/>
+             </target>
+      tags: ['never','xml-bof-config','bof-config-xml']
+
+
+    ### XML LOAD configuration from file and replace the active running config
+    # The XML file to be loaded must have correct namespaces, i.e, <config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"> and <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+    - block:
+      - name: use lookup filter to provide xml configuration
+        ansible.netcommon.netconf_config:
+          target: candidate
+          commit: yes
+          lock: always
+          default_operation: replace
+          content: "{{ lookup('file', './r1_post_conf.xml')}}"
+      tags: ['never','xml-load-config','load-config-xml']
+
+
+    ### XML COMPARE CONFIGURATION
+    # dry-run/pre-check candidate configuration changes before issuing a <commit>
+    - block:
+      - name: Compare
+        connection: netconf
+        ansible.netcommon.netconf_rpc:
+          rpc: action
+          xmlns: "urn:ietf:params:xml:ns:yang:1"
+          content:
+            <global-operations xmlns="urn:nokia.com:sros:ns:yang:sr:oper-global">
+              <md-compare>
+                <format>md-cli</format>
+              </md-compare>
+            </global-operations>
+        register: netconf_facts_compare_config_xml
+      - name: Extract the compare output from the XML response
+        xml:
+          xmlstring: "{{ netconf_facts_compare_config_xml.stdout }}"
+          content: text
+          xpath: /x:rpc-reply/nokiaoper:results/nokiaoper:md-compare-output
+          namespaces:
+            x: urn:ietf:params:xml:ns:netconf:base:1.0
+            nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
+        delegate_to: localhost
+        register: compare_config
+      - name: Display the extracted compare output
+        debug:
+          msg: "Compare results are as followed: {{ compare_config.matches[0]['{urn:nokia.com:sros:ns:yang:sr:oper-global}md-compare-output'] }}"
+      tags: ['never','xml-compare-config','compare-config-xml']

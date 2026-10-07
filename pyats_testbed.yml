@@ -16,19 +16,19 @@ devices:
         username: "%ENV{SROS_USER:-admin}"
         password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"
 
-  # r2:
-  #   os: sros
-  #   type: router
-  #   connections:
-  #     defaults:
-  #       class: unicon.Unicon
-  #     cli:
-  #       protocol: ssh
-  #       ip: 172.20.20.10
-  #   credentials:
-  #     default:
-  #       username: "%ENV{SROS_USER:-admin}"
-  #       password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"
+  r2:
+    os: sros
+    type: router
+    connections:
+      defaults:
+        class: unicon.Unicon
+      cli:
+        protocol: ssh
+        ip: 172.20.20.10
+    credentials:
+      default:
+        username: "%ENV{SROS_USER:-admin}"
+        password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"
 
   # r3:
   #   os: sros

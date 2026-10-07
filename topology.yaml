@@ -10,6 +10,13 @@ topology:
       license: license/license.txt
       mgmt-ipv4: 172.20.20.9
 
+    r2:
+      kind: nokia_srsim
+      image: localhost/nokia/srsim:25.7.R1
+      type: sr-1
+      license: license/license.txt
+      mgmt-ipv4: 172.20.20.10
+
     # --- AAA Server ---
     aaa-server:
       kind: linux
@@ -46,4 +53,5 @@ topology:
         GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
 
   links:
-    # Management connections are auto-provisioned on docker bridge
+    # Inter-router data plane link between r1 and r2 (port 1/1/c2/1:0)
+    - endpoints: ["r1:eth1", "r2:eth1"]

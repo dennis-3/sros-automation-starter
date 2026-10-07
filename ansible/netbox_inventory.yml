@@ -1,19 +1,41 @@
 ---
 plugin: netbox.netbox.nb_inventory
 
-# Replace with your actual NetBox IP and Port
-api_endpoint: http://172.17.0.1:8000    # point to the docker bridge IP since ansible EE is running in a container as well
-
-# Your API token from NetBox (set via NETBOX_TOKEN env var, or provide in local secrets)
+# NetBox API endpoint and authentication
+api_endpoint: "{{ lookup('env', 'NETBOX_URL') | default('http://172.17.0.1:8000', true) }}"
 token: "{{ lookup('env', 'NETBOX_TOKEN') | default('YOUR_NETBOX_API_TOKEN', true) }}"
 validate_certs: false
 
-# This tells Ansible how to group your routers automatically
+# Include NetBox configuration context (device-specific vars, services, and interfaces)
+config_context: true
+flatten_config_context: true
+
+# Filter devices to only active devices with primary IPs
+query_filters:
+  - status: 'active'
+  - has_primary_ip: 'true'
+
+# Compose connection and host variables from NetBox data
+compose:
+  ansible_host: primary_ip4.address.split('/')[0]
+
+# Dynamic grouping by role, site, and platform
+keyed_groups:
+  # Map NetBox device role slug directly to Ansible inventory groups (e.g., edge_pe, core_p)
+  - prefix: ''
+    separator: ''
+    key: role.slug
+  # Group by site (e.g., site_iad01, site_fra01)
+  - prefix: 'site'
+    separator: '_'
+    key: site.slug
+  # Group by platform (e.g., platform_nokia_sros)
+  - prefix: 'platform'
+    separator: '_'
+    key: platform.slug
+
+# Standard attribute groupings
 group_by:
   - device_roles
   - sites
   - platforms
-
-# This maps NetBox data to Ansible variables
-compose:
-  ansible_network_os: platform.slug

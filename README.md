@@ -40,9 +40,10 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ```
 
-If using NetBox inventory:
+If using NetBox dynamic inventory:
 ```bash
-export NETBOX_TOKEN="your_token"
+export NETBOX_URL="http://172.17.0.1:8000"  # NetBox API endpoint
+export NETBOX_TOKEN="your_token"           # NetBox REST API token
 ```
 
 ## Running Ansible

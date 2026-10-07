@@ -3,6 +3,7 @@ import json
 import logging
 import argparse
 import os
+import re
 import shutil
 import concurrent.futures
 from pyats import aetest
@@ -12,7 +13,35 @@ from deepdiff import DeepDiff
 
 log = logging.getLogger(__name__)
 
-# --- DATA CONVERSION HELPER ---
+# --- DATA CONVERSION & PATH HELPERS ---
+def extract_path_value(obj, path_str):
+    """
+    Safely navigates a nested dict/list using DeepDiff path strings
+    (e.g., "root['configure']['router']['interface'][0]['admin-state']")
+    without using eval(), avoiding syntax errors on hyphenated YANG keys
+    and eliminating arbitrary code evaluation risks (CWE-95).
+    """
+    tokens = re.findall(r"\[(?:'([^']*)'|\"([^\"]*)\"|(\d+))\]", str(path_str))
+    curr = obj
+    for token in tokens:
+        if token[2]:
+            key = int(token[2])
+        else:
+            key = token[0] if token[0] != '' else token[1]
+
+        if curr is None:
+            return None
+        if isinstance(curr, list) and isinstance(key, int):
+            if 0 <= key < len(curr):
+                curr = curr[key]
+            else:
+                return None
+        elif isinstance(curr, dict) and key in curr:
+            curr = curr[key]
+        else:
+            return None
+    return curr
+
 def nokia_to_dict(data):
     """
     Recursively unwraps Nokia YANG container and leaf structural metadata objects 
@@ -120,15 +149,16 @@ class SnapshotState(aetest.Testcase):
         mode = self.parent.parameters.get('mode', 'pre')
         yang_paths = self.parent.parameters.get('yang_paths', ['/nokia-state:state'])
         max_workers = self.parent.parameters.get('max_workers', 10)
+        timeout = self.parent.parameters.get('timeout', 180)
         os.makedirs("snapshots", exist_ok=True)
 
         worker_count = min(max_workers, max(1, len(testbed.devices)))
-        log.info(f"Starting parallel snapshot capture across {len(testbed.devices)} device(s) with {worker_count} workers...")
+        log.info(f"Starting parallel snapshot capture across {len(testbed.devices)} device(s) with {worker_count} workers (timeout={timeout}s)...")
 
         failures = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
             future_to_dev = {
-                executor.submit(_capture_single_device, dev_name, dev, mode, yang_paths): dev_name
+                executor.submit(_capture_single_device, dev_name, dev, mode, yang_paths, timeout): dev_name
                 for dev_name, dev in testbed.devices.items()
             }
             for future in concurrent.futures.as_completed(future_to_dev):
@@ -270,17 +300,13 @@ class VerifyChanges(aetest.Testcase):
                                     new_val = details.get('new_value', '')
                                     html_content += f'<td><pre class="removed">{old_val}</pre></td><td><pre class="added">{new_val}</pre></td></tr>'
                                 elif diff_key == 'dictionary_item_added':
-                                    try:
-                                        content = eval(str(path).replace("root", "post_json"))
-                                        html_content += f'<td><pre class="added">{json.dumps(content, indent=2)}</pre></td></tr>'
-                                    except Exception:
-                                        html_content += f'<td><pre class="added">{json.dumps(details, indent=2)}</pre></td></tr>'
+                                    content = extract_path_value(post_json, path)
+                                    val_to_dump = content if content is not None else details
+                                    html_content += f'<td><pre class="added">{json.dumps(val_to_dump, indent=2)}</pre></td></tr>'
                                 elif diff_key == 'dictionary_item_removed':
-                                    try:
-                                        content = eval(str(path).replace("root", "pre_json"))
-                                        html_content += f'<td><pre class="removed">{json.dumps(content, indent=2)}</pre></td></tr>'
-                                    except Exception:
-                                        html_content += f'<td><pre class="removed">{json.dumps(details, indent=2)}</pre></td></tr>'
+                                    content = extract_path_value(pre_json, path)
+                                    val_to_dump = content if content is not None else details
+                                    html_content += f'<td><pre class="removed">{json.dumps(val_to_dump, indent=2)}</pre></td></tr>'
                                 else:
                                     html_content += f'<td><pre>{json.dumps(details, indent=2)}</pre></td></tr>'
                         else:
@@ -289,10 +315,10 @@ class VerifyChanges(aetest.Testcase):
                                 html_content += f'<tr><td><strong>{readable_path}</strong></td>'
                                 target_json = post_json if 'added' in diff_key else pre_json
                                 css_render = 'added' if 'added' in diff_key else 'removed'
-                                try:
-                                    content = eval(str(path).replace("root", "target_json"))
+                                content = extract_path_value(target_json, path)
+                                if content is not None:
                                     html_content += f'<td><pre class="{css_render}">{json.dumps(content, indent=2)}</pre></td></tr>'
-                                except Exception:
+                                else:
                                     html_content += f'<td><pre class="{css_render}">Element structure updated at this layer path.</pre></td></tr>'
                         
                         html_content += '</table>'
@@ -324,6 +350,8 @@ if __name__ == '__main__':
                         help="Comma-separated YANG state paths to query (default: '/nokia-state:state').")
     parser.add_argument('--max-workers', type=int, default=10,
                         help="Maximum concurrent worker threads for state collection (default: 10).")
+    parser.add_argument('--timeout', type=int, default=180,
+                        help="Device connection and command execution timeout in seconds (default: 180).")
 
     args, unknown = parser.parse_known_args()
 
@@ -350,5 +378,6 @@ if __name__ == '__main__':
         mode=args.mode,
         yang_paths=yang_paths,
         max_workers=args.max_workers,
+        timeout=args.timeout,
         argv=unknown
     )

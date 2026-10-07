@@ -23,11 +23,24 @@ sros-automation-starter/
 │   ├── templates/                # 22 Jinja2 NETCONF XML templates
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
-├── topology.yaml                 # Containerlab topology
+├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
+├── Makefile                      # Standardized workflow task runner
 ├── requirements.txt              # Python dependencies
 └── README.md
+```
+
+## Quick Start (Make)
+
+```bash
+make install     # Install Python dependencies and Ansible collections
+make lab-up      # Spin up Containerlab topology (r1, r2, AAA, telemetry)
+make check       # Dry-run Ansible deployment with candidate diff preview
+make deploy      # Deploy configuration to all routers
+make test-pre    # Capture pre-change network state via pyATS
+make test-post   # Verify post-change state and generate HTML drift report
+make lab-down    # Destroy Containerlab topology
 ```
 
 ## Setup

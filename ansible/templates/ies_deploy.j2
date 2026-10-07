@@ -1,38 +1,61 @@
 <config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
-
         <service>
-
             {% for ies in ies_services %}
+            {% if ies.state | default('present') == 'absent' %}
+            <ies operation="remove">
+                <service-name>{{ ies.name }}</service-name>
+            </ies>
+            {% else %}
             <ies>
                 <service-name>{{ ies.name }}</service-name>
                 <service-id>{{ ies.id }}</service-id>
-                <customer>1</customer>
+                <customer>{{ ies.customer_id | default('1') }}</customer>
+                {% if ies.description is defined %}
+                <description>{{ ies.description }}</description>
+                {% endif %}
 
+                {% set ifaces = ies.interfaces if ies.interfaces is defined else ([ies] if (ies.interface_name is defined or ies.address is defined) else []) %}
+                {% for iface in ifaces %}
+                {% if iface.state | default('present') == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ iface.name | default(iface.interface_name) }}</interface-name>
+                </interface>
+                {% else %}
                 <interface>
-                    <interface-name>{{ ies.interface_name }}</interface-name>
+                    <interface-name>{{ iface.name | default(iface.interface_name) }}</interface-name>
+                    {% if iface.description is defined %}
+                    <description>{{ iface.description }}</description>
+                    {% endif %}
 
+                    {% if iface.address is defined %}
                     <ipv4>
                         <primary>
-                            <address>{{ ies.address }}</address>
-                            <prefix-length>{{ ies.prefix }}</prefix-length>
+                            <address>{{ iface.address }}</address>
+                            <prefix-length>{{ iface.prefix | default(iface.prefix_length | default(24)) }}</prefix-length>
                         </primary>
                     </ipv4>
+                    {% endif %}
 
-                    <mac>{{ ies.mac }}</mac>
+                    {% if iface.mac is defined %}
+                    <mac>{{ iface.mac }}</mac>
+                    {% endif %}
 
+                    {% if iface.sap is defined or iface.sap_id is defined %}
                     <sap>
-                        <sap-id>{{ ies.sap }}</sap-id>
-                        <admin-state>enable</admin-state>
+                        <sap-id>{{ iface.sap | default(iface.sap_id) }}</sap-id>
+                        <admin-state>{{ iface.sap_admin_state | default('enable') }}</admin-state>
                     </sap>
+                    {% endif %}
 
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ iface.admin_state | default('enable') }}</admin-state>
                 </interface>
-                <admin-state>enable</admin-state>
+                {% endif %}
+                {% endfor %}
+                <admin-state>{{ ies.admin_state | default('enable') }}</admin-state>
             </ies>
+            {% endif %}
             {% endfor %}
-
         </service>
-
     </configure>
 </config>

@@ -25,9 +25,14 @@
 
                 {% if mpls.paths is defined %}
                 {% for path in mpls.paths %}
+                {% if path.state | default('present') == 'absent' %}
+                <path operation="remove">
+                    <path-name>{{ path.name }}</path-name>
+                </path>
+                {% else %}
                 <path>
                     <path-name>{{ path.name }}</path-name>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ path.admin_state | default('enable') }}</admin-state>
                     {% if path.hops %}
                     {% for hop in path.hops %}
                     <hop>
@@ -38,22 +43,29 @@
                     {% endfor %}
                     {% endif %}
                 </path>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
                 {% if mpls.lsps is defined %}
                 {% for lsp in mpls.lsps %}
+                {% if lsp.state | default('present') == 'absent' %}
+                <lsp operation="remove">
+                    <lsp-name>{{ lsp.lsp_name }}</lsp-name>
+                </lsp>
+                {% else %}
                 <lsp>
                     <lsp-name>{{ lsp.lsp_name }}</lsp-name>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ lsp.admin_state | default('enable') }}</admin-state>
                     <type>{{ lsp.lsp_type }}</type>
                     <path-computation-method>{{ lsp.path_computation_method }}</path-computation-method>
                     <to>{{ lsp.to }}</to>
                     <primary>
                         <path-name>{{ lsp.primary_path_name }}</path-name>
-                        <admin-state>enable</admin-state>
+                        <admin-state>{{ lsp.primary_admin_state | default('enable') }}</admin-state>
                     </primary>
                 </lsp>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
             </mpls>

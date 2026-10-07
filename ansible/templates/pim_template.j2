@@ -19,10 +19,18 @@
                 {# Configure PIM Interfaces #}
                 {% if pim is defined and 'interfaces' in pim %}
                     {% for intf in pim.interfaces %}
-                    <interface>
-                        <interface-name>{{ intf }}</interface-name>
-                        <admin-state>enable</admin-state>
+                    {% set iface_name = intf.name if intf is mapping else intf %}
+                    {% set iface_state = intf.state | default('present') if intf is mapping else 'present' %}
+                    {% if iface_state == 'absent' %}
+                    <interface operation="remove">
+                        <interface-name>{{ iface_name }}</interface-name>
                     </interface>
+                    {% else %}
+                    <interface>
+                        <interface-name>{{ iface_name }}</interface-name>
+                        <admin-state>{{ intf.admin_state | default('enable') if intf is mapping else 'enable' }}</admin-state>
+                    </interface>
+                    {% endif %}
                     {% endfor %}
                 {% endif %}
 

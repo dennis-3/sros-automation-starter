@@ -4,6 +4,11 @@
             {# Prefix Lists Configuration #}
             {% if policy_options.prefix_lists is defined %}
             {% for pl in policy_options.prefix_lists %}
+            {% if pl.state | default('present') == 'absent' %}
+            <prefix-list operation="remove">
+                <name>{{ pl.name }}</name>
+            </prefix-list>
+            {% else %}
             <prefix-list>
                 <name>{{ pl.name }}</name>
                 {% for entry in pl.prefixes %}
@@ -13,13 +18,36 @@
                 </prefix>
                 {% endfor %}
             </prefix-list>
+            {% endif %}
             {% endfor %}
             {% endif %}
 
+            {# --- Generic BGP Community Definitions --- #}
+            {% if policy_options.communities is defined %}
+            {% for comm in policy_options.communities %}
+            {% if comm.state | default('present') == 'absent' %}
+            <community operation="remove">
+                <name>{{ comm.name }}</name>
+            </community>
+            {% else %}
+            <community>
+                <name>{{ comm.name }}</name>
+                {% if comm.description is defined %}
+                <description>{{ comm.description }}</description>
+                {% endif %}
+                {% for m in comm.members | default([]) %}
+                <member>
+                    <member>{{ m }}</member>
+                </member>
+                {% endfor %}
+            </community>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
 
-            {# --- Community Definitions: Only for Edge Routers (r5-r8) --- #}
-            {% if region is defined %}
-                {% set as_prefix = "40" if asn == 65540 else "50" %}
+            {# --- Legacy Community Definitions for backward compatibility --- #}
+            {% if region is defined and policy_options.communities is not defined %}
+                {% set as_prefix = "40" if (asn | default(65000)) == 65540 else "50" %}
                 {% set geo_tag = "2020" if region == "West" else "2010" %}
 
                 <community>
@@ -43,18 +71,26 @@
                 </community>
             {% endif %}
 
-
             {# Policy Statements Configuration #}
             {% for policy in policy_options.policy_statements %}
+            {% if policy.state | default('present') == 'absent' %}
+            <policy-statement operation="remove">
+                <name>{{ policy.name }}</name>
+            </policy-statement>
+            {% else %}
             <policy-statement>
                 <name>{{ policy.name }}</name>
-                {# <description>{{ policy.description }}</description> #}
+                {% if policy.description is defined %}
+                <description>{{ policy.description }}</description>
+                {% endif %}
 
-                {% if  policy.entries is defined %}
+                {% if policy.entries is defined %}
                 {% for entry in policy.entries %}
                 <entry>
                     <entry-id>{{ entry.id }}</entry-id>
-                    {# <description>{{ entry.description | default('Entry ' ~ entry.id) }}</description> #}
+                    {% if entry.description is defined %}
+                    <description>{{ entry.description }}</description>
+                    {% endif %}
                     <from>
                         {# Loop through prefix lists if provided as a list #}
                         {% if entry.from_prefix_list is defined %}
@@ -95,6 +131,7 @@
                     <action-type>{{ policy.default_action }}</action-type>
                 </default-action>
             </policy-statement>
+            {% endif %}
             {% endfor %}
         </policy-options>
     </configure>

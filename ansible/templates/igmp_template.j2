@@ -26,9 +26,14 @@
 
                 {% if igmp is defined and 'interfaces' in igmp %}
                     {% for intf in igmp.interfaces %}
+                    {% if intf.state | default('present') == 'absent' %}
+                    <interface operation="remove">
+                        <ip-interface-name>{{ intf.name }}</ip-interface-name>
+                    </interface>
+                    {% else %}
                     <interface>
                         <ip-interface-name>{{ intf.name }}</ip-interface-name>
-                        <admin-state>enable</admin-state>
+                        <admin-state>{{ intf.admin_state | default('enable') }}</admin-state>
                         {% if intf.query_interval is defined %}
                         <query-interval>{{ intf.query_interval }}</query-interval>
                         {% endif %}
@@ -36,6 +41,7 @@
                         <version>{{ intf.version }}</version>
                         {% endif %}
                     </interface>
+                    {% endif %}
                     {% endfor %}
                 {% endif %}
             </igmp>

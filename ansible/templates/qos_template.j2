@@ -3,6 +3,11 @@
         <qos>
             {# --- SAP INGRESS POLICIES --- #}
             {% for policy in qos_policies.sap_ingress | default([]) %}
+            {% if policy.state | default('present') == 'absent' %}
+            <sap-ingress operation="remove">
+                <sap-ingress-policy-name>{{ policy.name }}</sap-ingress-policy-name>
+            </sap-ingress>
+            {% else %}
             <sap-ingress>
                 <sap-ingress-policy-name>{{ policy.name }}</sap-ingress-policy-name>
 
@@ -80,10 +85,16 @@
                 </ip-criteria>
                 {% endif %}
             </sap-ingress>
+            {% endif %}
             {% endfor %}
 
             {# --- SAP EGRESS POLICIES --- #}
             {% for policy in qos_policies.sap_egress | default([]) %}
+            {% if policy.state | default('present') == 'absent' %}
+            <sap-egress operation="remove">
+                <sap-egress-policy-name>{{ policy.name }}</sap-egress-policy-name>
+            </sap-egress>
+            {% else %}
             <sap-egress>
                 <sap-egress-policy-name>{{ policy.name }}</sap-egress-policy-name>
 
@@ -121,6 +132,7 @@
                 </fc>
                 {% endfor %}
             </sap-egress>
+            {% endif %}
             {% endfor %}
         </qos>
     </configure>

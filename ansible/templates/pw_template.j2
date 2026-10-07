@@ -2,20 +2,28 @@
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <service>
             {% for pw in pw_templates %}
+            {% if pw.state | default('present') == 'absent' %}
+            <pw-template operation="remove">
+                <pw-template-name>{{ pw.name }}</pw-template-name>
+            </pw-template>
+            {% else %}
             <pw-template>
                 <pw-template-name>{{ pw.name }}</pw-template-name>
                 <pw-template-id>{{ pw.id }}</pw-template-id>
 
-                {# Step 3: Provisioned SDP Logic #}
+                {# Provisioned SDP Logic #}
                 {% if pw.provisioned_sdp is defined %}
                 <provisioned-sdp>{{ pw.provisioned_sdp }}</provisioned-sdp>
                 {% endif %}
 
-                {# Step 3b/4b: Split Horizon Group #}
+                {# Split Horizon Group (Optional) #}
+                {% if pw.shg_name is defined %}
                 <split-horizon-group>
                     <name>{{ pw.shg_name }}</name>
                 </split-horizon-group>
+                {% endif %}
             </pw-template>
+            {% endif %}
             {% endfor %}
         </service>
     </configure>

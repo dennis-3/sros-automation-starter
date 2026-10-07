@@ -7,9 +7,14 @@
 
                 {% if bier.templates is defined %}
                 {% for tmpl in bier.templates %}
+                {% if tmpl.state | default('present') == 'absent' %}
+                <template operation="remove">
+                    <template-name>{{ tmpl.name }}</template-name>
+                </template>
+                {% else %}
                 <template>
                     <template-name>{{ tmpl.name }}</template-name>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ tmpl.admin_state | default('enable') }}</admin-state>
 
                     {% if tmpl.sub_domains is defined %}
                     {% for sub in tmpl.sub_domains %}
@@ -33,6 +38,7 @@
                     {% endfor %}
                     {% endif %}
                 </template>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 

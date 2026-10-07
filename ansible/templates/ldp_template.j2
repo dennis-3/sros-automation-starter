@@ -15,10 +15,18 @@
                     <ipv4></ipv4>
 
                     {% for iface in ldp.interfaces %}
+                    {% set iface_name = iface.name if iface is mapping else iface %}
+                    {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
+                    {% if iface_state == 'absent' %}
+                    <interface operation="remove">
+                        <ip-int-name>{{ iface_name }}</ip-int-name>
+                    </interface>
+                    {% else %}
                     <interface>
-                        <ip-int-name>{{ iface }}</ip-int-name>
+                        <ip-int-name>{{ iface_name }}</ip-int-name>
                         <ipv4></ipv4>
                     </interface>
+                    {% endif %}
                     {% endfor %}
                 </interface-parameters>
                 {% endif %}

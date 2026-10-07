@@ -10,16 +10,22 @@
             {% if bgp.aggregates is defined %}
             {% for agg in bgp.aggregates %}
             <aggregates>
+                {% if agg.state | default('present') == 'absent' %}
+                <aggregate operation="remove">
+                    <ip-prefix>{{ agg.prefix }}</ip-prefix>
+                </aggregate>
+                {% else %}
                 <aggregate>
                     <ip-prefix>{{ agg.prefix }}</ip-prefix>
                     {# <summary-only>true</summary-only> #}
                 </aggregate>
+                {% endif %}
             </aggregates>
             {% endfor %}
             {% endif %}
 
             <bgp>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ bgp.admin_state | default('enable') }}</admin-state>
                 
                 {% if bgp.router_id is defined %}
                 <router-id>{{ bgp.router_id }}</router-id>
@@ -38,9 +44,14 @@
 
                 {# Loop through every BGP group (iBGP and eBGP) #}
                 {% for group in bgp.groups %}
+                {% if group.state | default('present') == 'absent' %}
+                <group operation="remove">
+                    <group-name>{{ group.name }}</group-name>
+                </group>
+                {% else %}
                 <group>
                     <group-name>{{ group.name }}</group-name>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ group.admin_state | default('enable') }}</admin-state>
 
                     {% if group.description is defined %}
                     <description>{{ group.description }}</description>
@@ -133,17 +144,26 @@
                     {% endfor %}
                     {% endif %}
                 </group>
+                {% endif %}
                 {% endfor %}
 
                 {# Neighbor Configuration #}
                 {% for group in bgp.groups %}
                 {% for neighbor in group.neighbors %}
+                {% if neighbor.state | default('present') == 'absent' %}
+                <neighbor operation="remove">
+                    <ip-address>{{ neighbor.ip }}</ip-address>
+                </neighbor>
+                {% else %}
                 <neighbor>
                     <ip-address>{{ neighbor.ip }}</ip-address>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ neighbor.admin_state | default('enable') }}</admin-state>
+                    {% if neighbor.description is defined %}
                     <description>{{ neighbor.description }}</description>
+                    {% endif %}
                     <group>{{ group.name }}</group>
                 </neighbor>
+                {% endif %}
                 {% endfor %}
                 {% endfor %}
             </bgp>

@@ -76,7 +76,13 @@ ansible-playbook ansible/playbooks/deploy.yml --limit edge_pe
 ansible-playbook ansible/playbooks/deploy.yml --limit core_p
 ```
 
-### Running with ansible-navigator
+### Running with Containerized Execution Environment (EE)
+To build the execution environment image locally using `ansible-builder`:
+```bash
+ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest
+```
+
+Run playbooks via `ansible-navigator` (auto-detects Podman or Docker):
 ```bash
 ansible-navigator run ansible/playbooks/deploy.yml --mode stdout
 ```

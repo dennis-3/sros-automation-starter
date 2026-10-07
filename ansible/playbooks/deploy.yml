@@ -4,395 +4,414 @@
   gather_facts: false
 
   tasks:
-    # ============================================================================
-    # SYSTEM AND HARDWARE CONFIGURATION
-    # ============================================================================
+    - name: Execute deployment transaction with automated candidate rollback
+      block:
+        # ============================================================================
+        # SYSTEM AND HARDWARE CONFIGURATION
+        # ============================================================================
 
-    # Configure basic system identity and hardware provisioning
-    - name: Configure hardware and system names on all routers
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2') }}"
-      tags:
-        - system
-        - hardware
+        # Configure basic system identity and hardware provisioning
+        - name: Configure hardware and system names on all routers
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2') }}"
+          tags:
+            - system
+            - hardware
 
-    # ============================================================================
-    # TRAFFIC FILTERS
-    # ============================================================================
+        # ============================================================================
+        # TRAFFIC FILTERS
+        # ============================================================================
 
-    # Configure traffic filters and ACLs (before interfaces since they are applied to interfaces)
-    - name: Configure Filters
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/filter_template.j2') }}"
-      when: filters is defined
-      tags:
-        - filters
-        - acl
-        - security
+        # Configure traffic filters and ACLs (before interfaces since they are applied to interfaces)
+        - name: Configure Filters
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/filter_template.j2') }}"
+          when: filters is defined
+          tags:
+            - filters
+            - acl
+            - security
 
-    # ============================================================================
-    # PHYSICAL INTERFACES
-    # ============================================================================
+        # ============================================================================
+        # PHYSICAL INTERFACES
+        # ============================================================================
 
-    # Configure IP interfaces and addressing
-    - name: Configure interfaces
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/interface_template.j2') }}"
-      when: interfaces is defined
-      tags:
-        - interfaces
-        - ip
+        # Configure IP interfaces and addressing
+        - name: Configure interfaces
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/interface_template.j2') }}"
+          when: interfaces is defined
+          tags:
+            - interfaces
+            - ip
 
-    # =============================================================================
-    # MPLS LABELS CONFIGURATION
-    # =============================================================================
+        # =============================================================================
+        # MPLS LABELS CONFIGURATION
+        # =============================================================================
 
-    - name: Configure MPLS Labels
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/mpls_labels_template.j2') }}"
-      when: mpls_labels is defined
-      tags:
-        - mpls_labels
-        - mpls
+        - name: Configure MPLS Labels
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/mpls_labels_template.j2') }}"
+          when: mpls_labels is defined
+          tags:
+            - mpls_labels
+            - mpls
 
-    # =============================================================================
-    # BIER CONFIGURATION
-    # =============================================================================
+        # =============================================================================
+        # BIER CONFIGURATION
+        # =============================================================================
 
-    - name: Configure BIER
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/bier_template.j2') }}"
-      when: bier is defined
-      tags:
-        - bier
-        - multicast
+        - name: Configure BIER
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/bier_template.j2') }}"
+          when: bier is defined
+          tags:
+            - bier
+            - multicast
 
-    # ============================================================================
-    # INTERIOR GATEWAY PROTOCOLS (IGP)
-    # ============================================================================
+        # ============================================================================
+        # INTERIOR GATEWAY PROTOCOLS (IGP)
+        # ============================================================================
 
-    # Configure ISIS for underlay routing
-    - name: Configure IS-IS as Core IGP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/isis_template.j2') }}"
-      when: isis is defined
-      tags:
-        - isis
-        - igp
-        - routing
+        # Configure ISIS for underlay routing
+        - name: Configure IS-IS as Core IGP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/isis_template.j2') }}"
+          when: isis is defined
+          tags:
+            - isis
+            - igp
+            - routing
 
-    # Configure OSPF as alternative IGP
-    - name: Configure OSPF
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/ospf_template.j2') }}"
-      when: ospf is defined
-      tags:
-        - ospf
-        - igp
-        - routing
+        # Configure OSPF as alternative IGP
+        - name: Configure OSPF
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/ospf_template.j2') }}"
+          when: ospf is defined
+          tags:
+            - ospf
+            - igp
+            - routing
 
-    # ============================================================================
-    # ROUTING POLICIES
-    # ============================================================================
+        # ============================================================================
+        # ROUTING POLICIES
+        # ============================================================================
 
-    # Configure route policies, prefix lists, and community handling
-    - name: Configure policy options
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/policy_options_template.j2') }}"
-      when: policy_options is defined
-      tags:
-        - policy_options
-        - policy
-        - routing
+        # Configure route policies, prefix lists, and community handling
+        - name: Configure policy options
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/policy_options_template.j2') }}"
+          when: policy_options is defined
+          tags:
+            - policy_options
+            - policy
+            - routing
 
-    # ============================================================================
-    # BORDER GATEWAY PROTOCOL (BGP)
-    # ============================================================================
+        # ============================================================================
+        # BORDER GATEWAY PROTOCOL (BGP)
+        # ============================================================================
 
-    # Configure BGP routing with all peer groups and policies
-    - name: Configure BGP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/bgp_template.j2') }}"
-      when: bgp is defined
-      tags:
-        - bgp
-        - routing
+        # Configure BGP routing with all peer groups and policies
+        - name: Configure BGP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/bgp_template.j2') }}"
+          when: bgp is defined
+          tags:
+            - bgp
+            - routing
 
-    # ============================================================================
-    # MPLS INFRASTRUCTURE
-    # ============================================================================
+        # ============================================================================
+        # MPLS INFRASTRUCTURE
+        # ============================================================================
 
-    # Configure MPLS LSPs and path definitions
-    - name: Configure MPLS and RSVP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
-      when: mpls is defined
-      tags:
-        - mpls
-        - rsvp
+        # Configure MPLS LSPs and path definitions
+        - name: Configure MPLS and RSVP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
+          when: mpls is defined
+          tags:
+            - mpls
+            - rsvp
 
-    # Configure LDP for label distribution
-    - name: Configure LDP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/ldp_template.j2') }}"
-      when: ldp is defined
-      tags:
-        - ldp
-        - mpls
+        # Configure LDP for label distribution
+        - name: Configure LDP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/ldp_template.j2') }}"
+          when: ldp is defined
+          tags:
+            - ldp
+            - mpls
 
-    # ============================================================================
-    # SERVICE DISTRIBUTION POINTS (SDP)
-    # ============================================================================
+        # ============================================================================
+        # SERVICE DISTRIBUTION POINTS (SDP)
+        # ============================================================================
 
-    # Configure SDPs for service transport tunnels
-    - name: Configure SDP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/sdp_template.j2') }}"
-      when: sdp_configs is defined
-      tags:
-        - sdp
-        - transport
+        # Configure SDPs for service transport tunnels
+        - name: Configure SDP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/sdp_template.j2') }}"
+          when: sdp_configs is defined
+          tags:
+            - sdp
+            - transport
 
-    # ============================================================================
-    # PSEUDOWIRE TEMPLATES
-    # ============================================================================
+        # ============================================================================
+        # PSEUDOWIRE TEMPLATES
+        # ============================================================================
 
-    # Configure pseudowire templates for L2 service construction (used in VPLS)
-    - name: Configure PW-TEMPLATES
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/pw_template.j2') }}"
-      when: pw_templates is defined
-      tags:
-        - pw_templates
-        - services
+        # Configure pseudowire templates for L2 service construction (used in VPLS)
+        - name: Configure PW-TEMPLATES
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/pw_template.j2') }}"
+          when: pw_templates is defined
+          tags:
+            - pw_templates
+            - services
 
-    # ============================================================================
-    # LAYER 2 SERVICES
-    # ============================================================================
+        # ============================================================================
+        # LAYER 2 SERVICES
+        # ============================================================================
 
-    # Configure Point-to-Point L2 VPN services
-    - name: Configure EPIPE services
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/epipe_deploy.j2') }}"
-      when: epipe_services is defined
-      tags:
-        - epipe
-        - services
-        - l2vpn
+        # Configure Point-to-Point L2 VPN services
+        - name: Configure EPIPE services
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/epipe_deploy.j2') }}"
+          when: epipe_services is defined
+          tags:
+            - epipe
+            - services
+            - l2vpn
 
-    # Configure Multipoint L2 VPN services
-    - name: Configure VPLS services
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/vpls_deploy.j2') }}"
-      when: vpls_services is defined
-      tags:
-        - vpls
-        - services
-        - l2vpn
+        # Configure Multipoint L2 VPN services
+        - name: Configure VPLS services
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/vpls_deploy.j2') }}"
+          when: vpls_services is defined
+          tags:
+            - vpls
+            - services
+            - l2vpn
 
-    # ============================================================================
-    # LAYER 3 SERVICES
-    # ============================================================================
+        # ============================================================================
+        # LAYER 3 SERVICES
+        # ============================================================================
 
-    # Configure L3 VPN services with VRFs
-    - name: Configure VPRN services
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/vprn_deploy.j2') }}"
-      when: vprn_services is defined
-      tags:
-        - vprn
-        - services
-        - l3vpn
+        # Configure L3 VPN services with VRFs
+        - name: Configure VPRN services
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/vprn_deploy.j2') }}"
+          when: vprn_services is defined
+          tags:
+            - vprn
+            - services
+            - l3vpn
 
-    # Configure Internet Enhanced Services
-    - name: Configure IES services
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/ies_deploy.j2') }}"
-      when: ies_services is defined
-      tags:
-        - ies
-        - services
+        # Configure Internet Enhanced Services
+        - name: Configure IES services
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/ies_deploy.j2') }}"
+          when: ies_services is defined
+          tags:
+            - ies
+            - services
 
-    # ============================================================================
-    # QOS CONFIGURATION
-    # ============================================================================
+        # ============================================================================
+        # QOS CONFIGURATION
+        # ============================================================================
 
-    - name: Configure QoS
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/qos_template.j2') }}"
-      when: qos_policies is defined
-      tags:
-        - qos
+        - name: Configure QoS
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/qos_template.j2') }}"
+          when: qos_policies is defined
+          tags:
+            - qos
 
-    # ============================================================================
-    # IGMP CONFIGURATION
-    # ============================================================================
+        # ============================================================================
+        # IGMP CONFIGURATION
+        # ============================================================================
 
-    - name: Configure IGMP
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/igmp_template.j2') }}"
-      when: igmp is defined
-      tags:
-        - igmp
-        - multicast
+        - name: Configure IGMP
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/igmp_template.j2') }}"
+          when: igmp is defined
+          tags:
+            - igmp
+            - multicast
 
-    # ============================================================================
-    # PIM CONFIGURATION
-    # ============================================================================
+        # ============================================================================
+        # PIM CONFIGURATION
+        # ============================================================================
 
-    - name: Configure PIM
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/pim_template.j2') }}"
-      when: pim is defined
-      tags:
-        - pim
-        - multicast
+        - name: Configure PIM
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/pim_template.j2') }}"
+          when: pim is defined
+          tags:
+            - pim
+            - multicast
 
-    # ============================================================================
-    # MIRRORING AND ANALYSIS SERVICES
-    # ============================================================================
+        # ============================================================================
+        # MIRRORING AND ANALYSIS SERVICES
+        # ============================================================================
 
-    # Configure traffic mirroring destinations
-    - name: Configure Mirror Destination
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
-      when: mirror_destinations is defined
-      tags:
-        - mirror_destination
-        - mirror
-        - telemetry
+        # Configure traffic mirroring destinations
+        - name: Configure Mirror Destination
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
+          when: mirror_destinations is defined
+          tags:
+            - mirror_destination
+            - mirror
+            - telemetry
 
-    # Configure traffic mirroring sources
-    - name: Configure Mirror Source
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: "{{ sros_commit_per_task | default(false) }}"
-        commit: "{{ sros_commit_per_task | default(false) }}"
-        lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-        default_operation: merge
-        content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
-      when: mirror_sources is defined
-      tags:
-        - mirror_source
-        - mirror
-        - telemetry
+        # Configure traffic mirroring sources
+        - name: Configure Mirror Source
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
+          when: mirror_sources is defined
+          tags:
+            - mirror_source
+            - mirror
+            - telemetry
 
-    # ============================================================================
-    # ATOMIC TRANSACTION COMMIT & VALIDATION
-    # ============================================================================
+        # ============================================================================
+        # ATOMIC TRANSACTION COMMIT & VALIDATION
+        # ============================================================================
 
-    # Validates and commits all staged candidate edits in one atomic transaction.
-    - name: Validate and Commit All Staged Candidate Changes
-      ansible.netcommon.netconf_config:
-        target: candidate
-        validate: true
-        commit: true
-        lock: always
-      when: not (sros_commit_per_task | default(false))
-      tags:
-        - always
+        # Validates and commits all staged candidate edits in one atomic transaction.
+        - name: Validate and Commit All Staged Candidate Changes
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: true
+            commit: true
+            lock: always
+          when: not (sros_commit_per_task | default(false))
+          tags:
+            - always
+      rescue:
+        - name: Discard uncommitted candidate changes on failure
+          ansible.netcommon.netconf_rpc:
+            rpc: discard-changes
+            xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          when: not (sros_commit_per_task | default(false))
+          ignore_errors: true
+          tags:
+            - always
+
+        - name: Fail execution and report candidate discard
+          ansible.builtin.fail:
+            msg: >
+              Deployment failed on {{ inventory_hostname }}.
+              All uncommitted staged candidate changes have been discarded to prevent configuration drift.
+          tags:
+            - always

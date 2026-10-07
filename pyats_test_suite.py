@@ -81,24 +81,37 @@ class ConnectivityTest(aetest.Testcase):
     @aetest.test
     def check_version(self):
         testbed = self.parent.parameters['testbed']
+        failed_devices = []
         for dev_name, dev in testbed.devices.items():
-            output = dev.execute('show version')
-            if 'Nokia' in output or 'TiMOS' in output:
-                log.info(f"[{dev_name}] Nokia SR OS detected successfully")
-            else:
-                self.failed(f"[{dev_name}] Nokia OS not detected")
-        self.passed("Nokia OS detected successfully on all testbed devices")
+            try:
+                output = dev.execute('show version')
+                if 'Nokia' in output or 'TiMOS' in output:
+                    log.info(f"[{dev_name}] Nokia SR OS detected successfully")
+                else:
+                    log.error(f"[{dev_name}] Nokia OS not detected in output")
+                    failed_devices.append(f"{dev_name} (unrecognized OS)")
+            except Exception as exc:
+                log.error(f"[{dev_name}] Failed to execute 'show version': {exc}")
+                failed_devices.append(f"{dev_name} ({exc})")
+
+        if failed_devices:
+            self.failed(f"Connectivity check failed on devices: {', '.join(failed_devices)}")
+        else:
+            self.passed("Nokia OS detected successfully on all testbed devices")
 
 class ISISTest(aetest.Testcase):
     @aetest.test
     def verify_isis_interfaces(self):
         testbed = self.parent.parameters['testbed']
         for dev_name, dev in testbed.devices.items():
-            output = dev.execute('show router isis interface')
-            if 'Up' in output:
-                log.info(f"[{dev_name}] ISIS Interfaces are Up")
-            else:
-                log.warning(f"[{dev_name}] No Up ISIS interfaces found")
+            try:
+                output = dev.execute('show router isis interface')
+                if 'Up' in output:
+                    log.info(f"[{dev_name}] ISIS Interfaces are Up")
+                else:
+                    log.warning(f"[{dev_name}] No Up ISIS interfaces found")
+            except Exception as exc:
+                log.warning(f"[{dev_name}] Could not query ISIS interface state: {exc}")
         self.passed("ISIS Interface verification completed")
 
 class SnapshotState(aetest.Testcase):

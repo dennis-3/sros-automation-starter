@@ -13,5 +13,5 @@ devices:
         ip: 172.20.20.9
     credentials:
       default:
-        username: admin
-        password: NokiaSros1!  # Set to your lab credentials or vault
+        username: "%ENV{SROS_USER:-admin}"
+        password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"

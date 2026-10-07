@@ -40,6 +40,15 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ```
 
+### Environment Variables & Credentials
+
+Credentials can be injected dynamically via environment variables for Ansible and pyATS (falling back to lab defaults if unset):
+
+```bash
+export SROS_USER="admin"
+export SROS_PASSWORD="your_secure_password"
+```
+
 If using NetBox dynamic inventory:
 ```bash
 export NETBOX_URL="http://172.17.0.1:8000"  # NetBox API endpoint

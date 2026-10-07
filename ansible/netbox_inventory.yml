@@ -10,6 +10,13 @@ validate_certs: false
 config_context: true
 flatten_config_context: true
 
+# Client-side cache for high-scale inventories (prevents REST API rate-limiting)
+cache: "{{ lookup('env', 'NETBOX_INVENTORY_CACHE') | default(false, true) | bool }}"
+cache_plugin: ansible.builtin.jsonfile
+cache_timeout: 3600
+cache_connection: .cache/netbox_inventory
+cache_prefix: netbox
+
 # Filter devices to only active devices with primary IPs
 query_filters:
   - status: 'active'

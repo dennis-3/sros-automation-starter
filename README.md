@@ -13,7 +13,8 @@ sros-automation-starter/
 │   │   ├── edge_pe.yml           # Edge PE role settings
 │   │   └── core_p.yml            # Core P role settings
 │   ├── host_vars/
-│   │   └── r1.yml                # Host-specific variables (hardware, dual-stack IPs, services)
+│   │   ├── r1.yml                # Host-specific variables (hardware, dual-stack IPs, services)
+│   │   └── r2.yml                # R2 peer node variables (hardware, interconnect, iBGP)
 │   ├── inventory.yml             # Role-based inventory (edge_pe, core_p, access_ce)
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
@@ -78,9 +79,16 @@ The repository includes a root `ansible.cfg` configured with `forks = 20`, persi
 ansible-playbook ansible/playbooks/deploy.yml
 ```
 
-### Dry Run (Check Mode)
+### Dry Run with Candidate Delta Preview (Check Mode)
+Run check mode to stage configuration, preview the rendered candidate changes via Nokia MD-CLI `md-compare`, and automatically discard changes to leave the candidate datastore pristine:
 ```bash
-ansible-playbook ansible/playbooks/deploy.yml --check
+ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
+```
+
+### Confirmed Commit with Auto-Rollback
+Deploy core changes with a confirmed commit window (in seconds). If connectivity fails or confirming commit is not received, SR OS automatically rolls back:
+```bash
+ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
 ```
 
 ### Target Specific Device Roles

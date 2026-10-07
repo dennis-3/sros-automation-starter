@@ -17,10 +17,11 @@ zabbix_mysql_data/
 venv/
 **/.venv-galaxy/
 
-# Ignore python pycache
+# Ignore python pycache & caches
 __pycache__/
 *.pyc
 *.pyo
+.cache/
 
 # Ignore ansible collections & build contexts
 **/collections/

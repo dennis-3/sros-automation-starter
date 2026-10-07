@@ -21,6 +21,9 @@ on:
 jobs:
   validate-and-deploy:
     runs-on: self-hosted
+    env:
+      SROS_USER: ${{ secrets.SROS_USER || 'admin' }}
+      SROS_PASSWORD: ${{ secrets.SROS_PASSWORD || 'NokiaSros1!' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -35,7 +38,7 @@ jobs:
       - name: Dry Run Deployment (Check Mode)
         if: github.event_name == 'pull_request' || inputs.dry_run == true
         run: |
-          ansible-playbook ansible/playbooks/deploy.yml --check
+          ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
 
       # Production pipeline step 1: Pre-change baseline snapshot
       - name: Capture Pre-Change Baseline State (pyATS)

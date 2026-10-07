@@ -1,132 +1,178 @@
 ---
-- hosts: r1
-  gather_facts: false  ### Do not gather facts from the devices
-  
+- name: Retrieve Nokia SR OS Operational State and Configuration
+  hosts: all
+  gather_facts: false
+
+  pre_tasks:
+    - name: Ensure snapshots directory exists
+      ansible.builtin.file:
+        path: snapshots
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+      tags:
+        - always
+
   tasks:
-    ### JSON STATE
-    - block:
-      - name: Get state in JSON format
-        connection: netconf
-        netconf_get:
-          display: json
-          filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
-        register: netconf_facts_state_json
-      - name: Output state info to file
-        copy:
-          content: "{{ netconf_facts_state_json.output.data | to_nice_json }}"
-          dest: "{{ inventory_hostname}}.json"
-        delegate_to: localhost
-        when: netconf_facts_state_json is defined
-      - debug:
-          msg: "Warning: Ansible JSON processing does not conform to RFC 7951"
-      - debug:
-          msg: "{{ inventory_hostname }}.json created"
-      tags: ['never','json-state','state-json']
+    # =========================================================================
+    # JSON OPERATIONAL STATE
+    # =========================================================================
+    - name: Retrieve and save operational state in JSON format
+      block:
+        - name: Get state in JSON format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: json
+            filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
+          register: netconf_facts_state_json
 
-    ### JSON CONFIG
-    - block:
-      - name: Get config in JSON format
-        connection: netconf
-        netconf_get:
-          display: json
-          filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
-        register: netconf_facts_config_json
-      - name: Output config to file
-        copy:
-          content: "{{ netconf_facts_config_json.output.data | to_nice_json }}"
-          dest: "{{ inventory_hostname}}.json"
-        delegate_to: localhost
-        when: netconf_facts_config_json is defined
-      - debug:
-          msg: "Warning: Ansible JSON processing does not conform to RFC 7951"
-      - debug:
-          msg: "{{ inventory_hostname }}.json created"
-      tags: ['never','json-config','config-json']
+        - name: Output state info to snapshots directory
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_state_json.output.data | to_nice_json }}"
+            dest: "snapshots/{{ inventory_hostname }}_state.json"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_state_json.output.data is defined
 
-    ### YAML STATE
-    - block:
-      - name: Get state in JSON format
-        connection: netconf
-        netconf_get:
-          display: json
-          filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
-        register: netconf_facts_state_json
-      - name: Output state info to file converted to YAML
-        copy:
-          content: "{{ netconf_facts_state_json.output.data | to_nice_yaml }}"
-          dest: "{{ inventory_hostname}}.yaml"
-        delegate_to: localhost
-        when: netconf_facts_state_json is defined
-      - debug:
-          msg: "Warning: Ansible JSON processing does not conform to RFC 7951 which will effect the YAML output"
-      - debug:
-          msg: "{{ inventory_hostname }}.yaml created"
-      tags: ['never','yaml-state','state-yaml','yml-state','state-yml']
+        - name: Log state file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_state.json"
+      tags:
+        - never
+        - json-state
+        - state-json
 
-    ### YAML CONFIG
-    - block:
-      - name: Get config in JSON format
-        connection: netconf
-        netconf_get:
-          display: json
-          filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
-        register: netconf_facts_config_json
-      - name: Output config to file converted to YAML
-        copy:
-          content: "{{ netconf_facts_config_json.output.data | to_nice_yaml }}"
-          dest: "{{ inventory_hostname}}.yaml"
-        delegate_to: localhost
-        when: netconf_facts_config_json is defined
-      - debug:
-          msg: "Warning: Ansible JSON processing does not conform to RFC 7951 which will effect the YAML output"
-      - debug:
-          msg: "{{ inventory_hostname }}.yaml created"
-      tags: ['never','yaml-config','config-yaml','yml-config','config-yml']
+    # =========================================================================
+    # JSON RUNNING CONFIGURATION
+    # =========================================================================
+    - name: Retrieve and save configuration in JSON format
+      block:
+        - name: Get config in JSON format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: json
+            filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
+          register: netconf_facts_config_json
 
-    ### XML STATE
-    - block:
-      - name: Get state in XML format
-        connection: netconf
-        netconf_get:
-          display: xml
-          filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
-        register: netconf_facts_state_xml
-      - name: Pretty format XML
-        shell:
-          cmd: "xmllint --xpath /data/state - | xmllint --format -"
-          stdin: "{{ netconf_facts_state_xml.output }}"
-        register: netconf_facts_state_xml_formatted
-        delegate_to: localhost
-      - name: Output state info to file
-        copy:
-          content: "{{ netconf_facts_state_xml_formatted.stdout }}"
-          dest: "{{ inventory_hostname}}.xml"
-        delegate_to: localhost
-        when: netconf_facts_state_xml_formatted is defined
-      - debug:
-          msg: "{{ inventory_hostname }}.xml created"
-      tags: ['never','xml-state','state-xml']
+        - name: Output config info to snapshots directory
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_config_json.output.data | to_nice_json }}"
+            dest: "snapshots/{{ inventory_hostname }}_config.json"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_config_json.output.data is defined
 
-    ### XML CONFIG
-    - block:
-      - name: Get config in XML format
-        connection: netconf
-        netconf_get:
-          display: xml
-          filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
-        register: netconf_facts_config_xml
-      - name: Pretty format XML
-        shell:
-          cmd: "xmllint --xpath /data/configure - | xmllint --format -"
-          stdin: "{{ netconf_facts_config_xml.output }}"
-        register: netconf_facts_config_xml_formatted
-        delegate_to: localhost
-      - name: Output config info to file
-        copy:
-          content: "{{ netconf_facts_config_xml_formatted.stdout }}"
-          dest: "{{ inventory_hostname}}.xml"
-        delegate_to: localhost
-        when: netconf_facts_config_xml_formatted is defined
-      - debug:
-          msg: "{{ inventory_hostname }}.xml created"
-      tags: ['never','xml-config','config-xml']
+        - name: Log config file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_config.json"
+      tags:
+        - never
+        - json-config
+        - config-json
+
+    # =========================================================================
+    # YAML OPERATIONAL STATE
+    # =========================================================================
+    - name: Retrieve and save operational state in YAML format
+      block:
+        - name: Get state in YAML format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: json
+            filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
+          register: netconf_facts_state_yaml
+
+        - name: Output state info to YAML file
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_state_yaml.output.data | to_nice_yaml }}"
+            dest: "snapshots/{{ inventory_hostname }}_state.yaml"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_state_yaml.output.data is defined
+
+        - name: Log YAML state file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_state.yaml"
+      tags:
+        - never
+        - yaml-state
+        - state-yaml
+
+    # =========================================================================
+    # YAML RUNNING CONFIGURATION
+    # =========================================================================
+    - name: Retrieve and save configuration in YAML format
+      block:
+        - name: Get config in YAML format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: json
+            filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
+          register: netconf_facts_config_yaml
+
+        - name: Output config info to YAML file
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_config_yaml.output.data | to_nice_yaml }}"
+            dest: "snapshots/{{ inventory_hostname }}_config.yaml"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_config_yaml.output.data is defined
+
+        - name: Log YAML config file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_config.yaml"
+      tags:
+        - never
+        - yaml-config
+        - config-yaml
+
+    # =========================================================================
+    # XML OPERATIONAL STATE
+    # =========================================================================
+    - name: Retrieve and save operational state in XML format
+      block:
+        - name: Get state in XML format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: xml
+            filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"/>
+          register: netconf_facts_state_xml
+
+        - name: Output raw state XML to file
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_state_xml.output }}"
+            dest: "snapshots/{{ inventory_hostname }}_state.xml"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_state_xml.output is defined
+
+        - name: Log XML state file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_state.xml"
+      tags:
+        - never
+        - xml-state
+        - state-xml
+
+    # =========================================================================
+    # XML RUNNING CONFIGURATION
+    # =========================================================================
+    - name: Retrieve and save configuration in XML format
+      block:
+        - name: Get config in XML format via NETCONF
+          ansible.netcommon.netconf_get:
+            display: xml
+            filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
+          register: netconf_facts_config_xml
+
+        - name: Output raw config XML to file
+          ansible.builtin.copy:
+            content: "{{ netconf_facts_config_xml.output }}"
+            dest: "snapshots/{{ inventory_hostname }}_config.xml"
+            mode: '0644'
+          delegate_to: localhost
+          when: netconf_facts_config_xml.output is defined
+
+        - name: Log XML config file creation
+          ansible.builtin.debug:
+            msg: "Saved snapshots/{{ inventory_hostname }}_config.xml"
+      tags:
+        - never
+        - xml-config
+        - config-xml

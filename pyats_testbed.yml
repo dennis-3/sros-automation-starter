@@ -7,7 +7,7 @@ devices:
     type: router
     connections:
       defaults:
-        class: unicon.Unicon  # <--- CRITICAL: Tells pyATS how to handle the session
+        class: unicon.Unicon  # Defines Unicon connection handler
       cli:
         protocol: ssh
         ip: 172.20.20.9
@@ -15,3 +15,31 @@ devices:
       default:
         username: "%ENV{SROS_USER:-admin}"
         password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"
+
+  # r2:
+  #   os: sros
+  #   type: router
+  #   connections:
+  #     defaults:
+  #       class: unicon.Unicon
+  #     cli:
+  #       protocol: ssh
+  #       ip: 172.20.20.10
+  #   credentials:
+  #     default:
+  #       username: "%ENV{SROS_USER:-admin}"
+  #       password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"
+
+  # r3:
+  #   os: sros
+  #   type: router
+  #   connections:
+  #     defaults:
+  #       class: unicon.Unicon
+  #     cli:
+  #       protocol: ssh
+  #       ip: 172.20.20.11
+  #   credentials:
+  #     default:
+  #       username: "%ENV{SROS_USER:-admin}"
+  #       password: "%ENV{SROS_PASSWORD:-NokiaSros1!}"

@@ -1,139 +1,49 @@
-# name: <lab-name>
+name: sros-lab
 
-# topology:
-#   nodes:
-#     # --- Router Nodes ---
-#     r1:
-#       kind: nokia_srsim
-#       image: localhost/nokia/srsim:25.7.R1
-#       type: sr-1
-#       license: license/license.txt
-#       mgmt-ipv4: 172.20.20.9
+topology:
+  nodes:
+    # --- SR OS Router Nodes ---
+    r1:
+      kind: nokia_srsim
+      image: localhost/nokia/srsim:25.7.R1
+      type: sr-1
+      license: license/license.txt
+      mgmt-ipv4: 172.20.20.9
 
-#     # add other routers 
+    # --- AAA Server ---
+    aaa-server:
+      kind: linux
+      image: lfkeitel/tacacs_plus:ubuntu-202104181633
+      mgmt-ipv4: 172.20.20.100
+      binds:
+        - tac_plus.conf:/etc/tac_plus/tac_plus.conf
 
+    # --- Telemetry Stack ---
+    telegraf:
+      kind: linux
+      image: telegraf:latest
+      mgmt-ipv4: 172.20.20.101
+      binds:
+        - telegraf.conf:/etc/telegraf/telegraf.conf:ro
 
-#     # AAA server
-#     aaa-server:
-#       kind: linux
-#       # image: ghcr.io/hellt/tac_plus:latest
-#       image: lfkeitel/tacacs_plus:ubuntu-202104181633
-#       mgmt-ipv4: 172.20.20.100
-#       binds:
-#         - tac_plus.conf:/etc/tac_plus/tac_plus.conf    
+    prometheus:
+      kind: linux
+      image: prom/prometheus:latest
+      mgmt-ipv4: 172.20.20.102
+      ports:
+        - 9090:9090
+      binds:
+        - prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
+    grafana:
+      kind: linux
+      image: grafana/grafana:latest
+      mgmt-ipv4: 172.20.20.103
+      ports:
+        - 3000:3000
+      env:
+        GF_AUTH_ANONYMOUS_ENABLED: "true"
+        GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
 
-#     # --- Traffic Nodes (if needed) ---
-#     source:
-#       kind: linux
-#       image: nicolaka/netshoot
-#       exec:
-#         - ip addr add 10.10.10.2/24 dev eth1
-
-#     receiver:
-#       kind: linux
-#       image: nicolaka/netshoot
-#       exec:
-#         - ip addr add 10.10.20.2/24 dev eth1
-
-
-#     # --- Multicast Nodes (if needed) ---
-#     mna:
-#       kind: linux
-#       image: nicolaka/netshoot
-#       exec:
-#         - ip addr add 172.28.1.2/27 dev eth1
-#         # Use 'replace' instead of 'add' to overwrite the eth0 default route
-#         - ip route replace default via 172.28.1.1
-#         - ip route add 224.0.0.0/4 dev eth1
-
-#     mnb:
-#       kind: linux
-#       image: nicolaka/netshoot
-#       exec:
-#         - ip addr add 172.28.2.2/27 dev eth1
-#         # Use 'replace' instead of 'add' to overwrite the eth0 default route
-#         - ip route replace default via 172.28.2.1
-#         - ip route add 224.0.0.0/4 dev eth1
-
-
-      # -------------------------------------------------------------
-      # Telegraf, Prometheus, Grafana stack for Telemetry (if needed)
-      # -------------------------------------------------------------
-#     # The Telemetry Collector (Telegraf)
-#     telegraf:
-#       kind: linux
-#       image: telegraf:latest
-#       binds:
-#         - telegraf.conf:/etc/telegraf/telegraf.conf:ro
-
-#     # The Database (Prometheus)
-#     prometheus:
-#       kind: linux
-#       image: prom/prometheus:latest
-#       ports:
-#         - 9090:9090
-#       binds:
-#         - prometheus.yml:/etc/prometheus/prometheus.yml:ro
-
-#     # The Visualizer (Grafana)
-#     grafana:
-#       kind: linux
-#       image: grafana/grafana:latest
-#       ports:
-#         - 3000:3000
-#       env:
-#         GF_AUTH_ANONYMOUS_ENABLED: "true"
-#         GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
-
-    # -------------------------------------------------------------
-    # Zabbix Monitoring Stack (if needed)
-    # -------------------------------------------------------------
-    # # 1. The Database Engine for Zabbix (MySQL in this case)
-    # zabbix-db:
-    #   kind: linux
-    #   image: mysql:8.0-oracle
-    #   mgmt-ipv4: 172.20.20.100
-    #   env:
-    #     MYSQL_DATABASE: "zabbix"
-    #     MYSQL_USER: "zabbix"
-    #     MYSQL_PASSWORD: "ZabbixPassword123!"
-    #     MYSQL_ROOT_PASSWORD: "RootPassword123!"
-    #   # Ensures data persists on your host if you destroy the lab
-    #   binds:
-    #     - ./zabbix_mysql_data:/var/lib/mysql
-
-    # # 2. The Core Zabbix Server Daemon
-    # zabbix-server:
-    #   kind: linux
-    #   image: zabbix/zabbix-server-mysql:ubuntu-7.0-latest
-    #   mgmt-ipv4: 172.20.20.101
-    #   env:
-    #     DB_SERVER_HOST: "172.20.20.100"
-    #     DB_SERVER_PORT: "3306"
-    #     MYSQL_DATABASE: "zabbix"
-    #     MYSQL_USER: "zabbix"
-    #     MYSQL_PASSWORD: "ZabbixPassword123!"
-    #     MYSQL_ROOT_PASSWORD: "RootPassword123!"
-
-    # # 3. The Web Frontend Dashboard for Zabbix
-    # zabbix-web:
-    #   kind: linux
-    #   image: zabbix/zabbix-web-nginx-mysql:ubuntu-7.0-latest
-    #   mgmt-ipv4: 172.20.20.102
-    #   ports:
-    #     - 8080:8080 # Maps host port 8080 to container port 8080
-    #   env:
-    #     DB_SERVER_HOST: "172.20.20.100"
-    #     MYSQL_DATABASE: "zabbix"
-    #     MYSQL_USER: "zabbix"
-    #     MYSQL_PASSWORD: "ZabbixPassword123!"
-    #     ZBX_SERVER_HOST: "172.20.20.101"
-
-#   # add relevant endpoints
-  # links:
-  #   # --- (example: Router-multicast node Links) ---
-  #   - endpoints: ["r1:eth1", "mna:eth0"]
-  #   - endpoints: ["r1:eth2", "mnb:eth0"]
-
-  #   # add other links as needed
+  links:
+    # Management connections are auto-provisioned on docker bridge

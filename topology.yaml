@@ -28,14 +28,14 @@ topology:
     # --- Telemetry Stack ---
     telegraf:
       kind: linux
-      image: telegraf:latest
+      image: telegraf:1.30.0
       mgmt-ipv4: 172.20.20.101
       binds:
         - telegraf.conf:/etc/telegraf/telegraf.conf:ro
 
     prometheus:
       kind: linux
-      image: prom/prometheus:latest
+      image: prom/prometheus:v2.51.0
       mgmt-ipv4: 172.20.20.102
       ports:
         - 9090:9090
@@ -44,7 +44,7 @@ topology:
 
     grafana:
       kind: linux
-      image: grafana/grafana:latest
+      image: grafana/grafana:10.4.0
       mgmt-ipv4: 172.20.20.103
       ports:
         - 3000:3000

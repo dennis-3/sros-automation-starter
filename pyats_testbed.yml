@@ -2,7 +2,7 @@ testbed:
   name: nokia-lab
 
 devices:
-  CE-1:
+  r1:
     os: sros
     type: router
     connections:
@@ -10,8 +10,8 @@ devices:
         class: unicon.Unicon  # <--- CRITICAL: Tells pyATS how to handle the session
       cli:
         protocol: ssh
-        ip: 172.20.20.2
+        ip: 172.20.20.9
     credentials:
       default:
         username: admin
-        password: NokiaSros1!  # Use Ansible Vault later!
+        password: NokiaSros1!  # Set to your lab credentials or vault

@@ -1,0 +1,9 @@
+# =============================================================================
+# SHARED PROVIDER EDGE (PE) CONFIGURATION DEFAULTS
+# =============================================================================
+# Variables in this file automatically inherit across all hosts in 'edge_pe'.
+# Use this to avoid duplicating common BGP policies, QoS profiles, and service defaults.
+
+# Example shared BGP Autonomous System:
+# bgp:
+#   asn: 65000

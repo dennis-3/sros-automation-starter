@@ -6,12 +6,24 @@
             <interface>
                 <interface-name>{{ intf.name }}</interface-name>
                 <admin-state>enable</admin-state>
+                
+                {% if intf.address is defined %}
                 <ipv4>
                     <primary>
                         <address>{{ intf.address }}</address>
                         <prefix-length>{{ intf.mask }}</prefix-length>
                     </primary>
                 </ipv4>
+                {% endif %}
+
+                {% if intf.ipv6 is defined %}
+                <ipv6>
+                    <address>
+                        <ipv6-address>{{ intf.ipv6.address }}</ipv6-address>
+                        <prefix-length>{{ intf.ipv6.prefix_length | default(intf.ipv6.mask | default(128)) }}</prefix-length>
+                    </address>
+                </ipv6>
+                {% endif %}
 
                 {% if intf.port is defined %}
                 <port>{{ intf.port }}</port>

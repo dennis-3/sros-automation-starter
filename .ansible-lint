@@ -1,7 +1,7 @@
 ---
 exclude_paths:
-  - sros5-mpls-vpn/netbox/netbox-docker/ # Ignore the NetBox project files
   - .cache/
+  - netbox/
 
   # Direct the linter to ignore auto-generated or third-party paths
   - "**/clab-*/**" # Ignore everything inside Containerlab lab folders

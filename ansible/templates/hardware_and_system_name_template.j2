@@ -2,29 +2,52 @@
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
 
         {# --- System Identity --- #}
+        {% if system_name is defined %}
         <system>
             <name>{{ system_name }}</name>
         </system>
+        {% endif %}
 
-        {# --- Card and MDA Provisioning --- #}
+        {# --- Multi-Card & Multi-MDA Provisioning (List Format) --- #}
+        {% if cards is defined %}
+        {% for card in cards %}
         <card>
-            <slot-number>{{ card_slot }}</slot-number>
+            <slot-number>{{ card.slot }}</slot-number>
+            <card-type>{{ card.type }}</card-type>
+            <admin-state>enable</admin-state>
+            {% for mda in card.mdas | default([]) %}
+            <mda>
+                <mda-slot>{{ mda.slot }}</mda-slot>
+                <mda-type>{{ mda.type }}</mda-type>
+                <admin-state>enable</admin-state>
+            </mda>
+            {% endfor %}
+        </card>
+        {% endfor %}
+        {% elif card_type is defined %}
+        {# --- Single-Card Provisioning (Flat Format for vSIM/Labs) --- #}
+        <card>
+            <slot-number>{{ card_slot | default(1) }}</slot-number>
             <card-type>{{ card_type }}</card-type>
             <admin-state>enable</admin-state>
+            {% if mda_type is defined %}
             <mda>
-                <mda-slot>{{ mda_slot }}</mda-slot>
+                <mda-slot>{{ mda_slot | default(1) }}</mda-slot>
                 <mda-type>{{ mda_type }}</mda-type>
                 <admin-state>enable</admin-state>
             </mda>
+            {% endif %}
         </card>
+        {% endif %}
 
         {# --- Port and Connector Breakout --- #}
+        {% if provisioned_ports is defined %}
         {% for port in provisioned_ports %}
         <port>
             <port-id>{{ port.id }}</port-id>
             <admin-state>enable</admin-state>
             <connector>
-                <breakout>{{ breakout_type }}</breakout>
+                <breakout>{{ port.breakout | default(breakout_type | default('c1-100g')) }}</breakout>
             </connector>
         </port>
 
@@ -33,11 +56,12 @@
             <port-id>{{ port.id }}/1</port-id>
             <admin-state>enable</admin-state>
             <ethernet>
-                <mode>{{ port_mode }}</mode>
+                <mode>{{ port.mode | default(port_mode | default('hybrid')) }}</mode>
                 <encap-type>dot1q</encap-type>
             </ethernet>
         </port>
         {% endfor %}
+        {% endif %}
 
     </configure>
 </config>

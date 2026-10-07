@@ -4,8 +4,8 @@ plugin: netbox.netbox.nb_inventory
 # Replace with your actual NetBox IP and Port
 api_endpoint: http://172.17.0.1:8000    # point to the docker bridge IP since ansible EE is running in a container as well
 
-# Your API token from NetBox (User Profile > API Tokens)
-token: nbt_Lymp2YrMfprj.4HTYmfqbzUycPRb14zDEGIBqNtmY0a1hddS9GJKw
+# Your API token from NetBox (set via NETBOX_TOKEN env var, or provide in local secrets)
+token: "{{ lookup('env', 'NETBOX_TOKEN') | default('YOUR_NETBOX_API_TOKEN', true) }}"
 validate_certs: false
 
 # This tells Ansible how to group your routers automatically

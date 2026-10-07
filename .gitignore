@@ -4,33 +4,32 @@
 *.log
 *.json
 
+.env
 *.env
 
-# don't track netbox and instead clone it locally when it is needed, 
-# **/netbox # uncomment this in the actual lab to ignore netbox
+# Local service mounts & runner environments
+netbox/
+actions-runner/
+zabbix_mysql_data/
 
-# --- GITHUB ACTIONS RUNNER --- 
-# actions-runner/ # uncomment this in the actual lab to ignore the github actions runner
-
-# ignore Python virtual environments
+# Ignore Python virtual environments
+.venv/
 venv/
 **/.venv-galaxy/
 
-
-# ignore text files
-*.txt
-
-# ignore python pycache
+# Ignore python pycache
 __pycache__/
 *.pyc
+*.pyo
 
-# ignore ansible collections
-**/collections
-
-# ignore ansble build context
+# Ignore ansible collections & build contexts
+**/collections/
 **/context/
 
-# **/zabbix_mysql_data/ # uncomment this in the actual lab to ignore mysql data for zabbix
+# Ignore pyATS test snapshots & reports
+snapshots/
+*.html
 
-# ignore snapshots 
-**/snapshots/
+# Ignore OS files
+.DS_Store
+Thumbs.db

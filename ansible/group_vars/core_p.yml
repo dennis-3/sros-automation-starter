@@ -1,0 +1,10 @@
+# =============================================================================
+# SHARED CORE PROVIDER (P) CONFIGURATION DEFAULTS
+# =============================================================================
+# Variables in this file automatically inherit across all hosts in 'core_p'.
+# Use this for common IGP underlay, MPLS label ranges, and traffic engineering settings.
+
+# Example shared ISIS / MPLS underlay defaults:
+# isis:
+#   traffic_engineering: true
+#   level_capability: 2

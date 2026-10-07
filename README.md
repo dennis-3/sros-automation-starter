@@ -6,15 +6,18 @@ Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS.
 
 ```text
 sros-automation-starter/
+├── ansible.cfg                   # Tuned Ansible settings (forks, timeouts, default inventory)
 ├── ansible/
 │   ├── group_vars/
-│   │   └── all.yml               # Management credentials & connection parameters
+│   │   ├── all.yml               # Global credentials, connection parameters, commit toggles
+│   │   ├── edge_pe.yml           # Edge PE role settings
+│   │   └── core_p.yml            # Core P role settings
 │   ├── host_vars/
-│   │   └── r1.yml                # Host-specific variables (hardware, interfaces, services)
-│   ├── inventory.yml             # Static inventory
+│   │   └── r1.yml                # Host-specific variables (hardware, dual-stack IPs, services)
+│   ├── inventory.yml             # Role-based inventory (edge_pe, core_p, access_ce)
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
-│   │   ├── deploy.yml            # Main deployment playbook
+│   │   ├── deploy.yml            # Main deployment playbook (atomic candidate staging)
 │   │   ├── ansible-netconf.yml   # Raw NETCONF execution
 │   │   └── sros-ansible-get.yml  # Operational state retrieval
 │   ├── templates/                # 22 Jinja2 NETCONF XML templates
@@ -22,7 +25,7 @@ sros-automation-starter/
 │   └── ansible-navigator.yml     # Containerized execution settings
 ├── topology.yaml                 # Containerlab topology
 ├── pyats_testbed.yml             # pyATS testbed definition
-├── pyats_test_suite.py           # State snapshot & diff comparison script
+├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
 ├── requirements.txt              # Python dependencies
 └── README.md
 ```
@@ -44,19 +47,28 @@ export NETBOX_TOKEN="your_token"
 
 ## Running Ansible
 
+The repository includes a root `ansible.cfg` configured with `forks = 20`, persistent connection timeouts (`connect_timeout = 60s`, `command_timeout = 180s`), and default inventory pointing to `ansible/inventory.yml`.
+
 ### Full Deployment
 ```bash
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml
+ansible-playbook ansible/playbooks/deploy.yml
 ```
 
 ### Dry Run (Check Mode)
 ```bash
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --check
+ansible-playbook ansible/playbooks/deploy.yml --check
+```
+
+### Target Specific Device Roles
+The inventory defines role groups (`edge_pe`, `core_p`, `access_ce`). Use `--limit` to target specific tiers:
+```bash
+ansible-playbook ansible/playbooks/deploy.yml --limit edge_pe
+ansible-playbook ansible/playbooks/deploy.yml --limit core_p
 ```
 
 ### Running with ansible-navigator
 ```bash
-ansible-navigator run ansible/playbooks/deploy.yml -i ansible/inventory.yml --mode stdout
+ansible-navigator run ansible/playbooks/deploy.yml --mode stdout
 ```
 
 ### Running Specific Tasks by Tag
@@ -64,22 +76,58 @@ You do not need to supply all tags. Provide any single tag to run matching tasks
 
 ```bash
 # Run only interface tasks:
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags interfaces
+ansible-playbook ansible/playbooks/deploy.yml --tags interfaces
 
 # Run all routing tasks (ISIS, OSPF, BGP, policy):
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags routing
+ansible-playbook ansible/playbooks/deploy.yml --tags routing
 
 # Run a specific protocol:
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags isis
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags bgp
+ansible-playbook ansible/playbooks/deploy.yml --tags isis
+ansible-playbook ansible/playbooks/deploy.yml --tags bgp
 
 # Run services:
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags services
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags vprn
+ansible-playbook ansible/playbooks/deploy.yml --tags services
+ansible-playbook ansible/playbooks/deploy.yml --tags vprn
 ```
 
 Available tags:
 `system`, `hardware`, `filters`, `acl`, `interfaces`, `ip`, `mpls_labels`, `bier`, `isis`, `ospf`, `routing`, `policy_options`, `bgp`, `mpls`, `rsvp`, `ldp`, `sdp`, `pw_templates`, `epipe`, `vpls`, `vprn`, `ies`, `services`, `qos`, `igmp`, `pim`, `multicast`, `mirror_destination`, `mirror_source`, `telemetry`.
+
+### Candidate Datastore & Atomic Commits
+By default, `deploy.yml` operates in atomic mode:
+- All configuration tasks stage changes to the Nokia SR OS candidate datastore without committing (`commit: false`).
+- A final commit task tagged `always` locks the candidate store, verifies, and executes a single atomic commit.
+- If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
+```bash
+ansible-playbook ansible/playbooks/deploy.yml --tags interfaces -e sros_commit_per_task=true
+```
+
+## Hardware Provisioning
+
+Hardware definitions in `host_vars/<hostname>.yml` support both modular multi-card chassis and flat single-card syntax.
+
+Modular multi-card format:
+```yaml
+hardware:
+  chassis_class: router
+  chassis_type: 7750 SR-1
+  cards:
+    - slot: 1
+      type: iom-1
+      mdas:
+        - slot: 1
+          type: me6-100gb-qsfp28
+```
+
+Flat legacy format (also supported):
+```yaml
+chassis_class: router
+chassis_type: 7750 SR-1
+card_slot: 1
+card_type: iom-1
+mda_slot: 1
+mda_type: me6-100gb-qsfp28
+```
 
 ## Testing & Verification (pyATS)
 
@@ -90,17 +138,18 @@ Capture pre-change and post-change router state, then generate an HTML diff:
 python pyats_test_suite.py --testbed pyats_testbed.yml --mode pre
 
 # 2. Deploy changes via Ansible:
-ansible-playbook -i ansible/inventory.yml ansible/playbooks/deploy.yml --tags interfaces
+ansible-playbook ansible/playbooks/deploy.yml --tags interfaces
 
 # 3. Capture post-change state and compare:
 python pyats_test_suite.py --testbed pyats_testbed.yml --mode post
 ```
 
 Optional flags:
-- `--paths`: Comma-separated YANG state paths for targeted capture (defaults to `/nokia-state:state`).
-- `--max-workers`: Concurrent thread count for multi-router testbeds (defaults to `10`).
+- `--paths`: Comma-separated YANG state paths for targeted operational state capture (defaults to `/nokia-state:state`). Example: `--paths "/nokia-state:state/router[router-name='Base']/interface,/nokia-state:state/service"`.
+- `--max-workers`: Number of concurrent worker threads for parallel multi-router state collection (defaults to `10`).
+- `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml` or `testbed.yml`).
 
-The report is saved to `snapshots/network_drift_report.html`.
+The drift report is saved to `snapshots/network_drift_report.html`.
 
 ## Configuration Order
 
@@ -123,6 +172,7 @@ Tasks in `deploy.yml` run in this sequence:
 15. QoS policies
 16. Multicast (IGMP, PIM)
 17. Port mirroring (destinations & sources)
+18. Atomic candidate commit (`tags: [always]`)
 
 ## Templates Included
 

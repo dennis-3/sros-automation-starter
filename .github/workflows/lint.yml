@@ -1,12 +1,15 @@
----
-# add an .ansible-lint file to specify files to run the linter on??
-
 name: Ansible Lint
+
 on: [push, pull_request]
+
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Run Ansible-lint
-        uses: ansible/ansible-lint@main
+        uses: ansible/ansible-lint@v24
+        with:
+          requirements_file: ansible/requirements.yml

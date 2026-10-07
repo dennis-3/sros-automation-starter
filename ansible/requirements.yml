@@ -1,0 +1,10 @@
+---
+collections:
+  - name: ansible.netcommon
+    version: ">=6.1.0"
+  - name: community.general
+    version: ">=9.5.0"
+  - name: nokia.sros
+    version: ">=2.1.0"
+  - name: netbox.netbox
+    version: ">=3.19.0"

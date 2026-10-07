@@ -1,19 +1,68 @@
-name: Deploy to Lab
+name: Deploy and Verify
+
 on:
   push:
-    branches: [main]  # Only deploy when we merge to main
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in check mode (dry run)'
+        required: false
+        default: false
+        type: boolean
+      tags:
+        description: 'Specific Ansible tags to execute (leave blank for all)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
-  deploy:
-    runs-on: self-hosted # action-runners are self-hosted runners that can access your lab network
+  validate-and-deploy:
+    runs-on: self-hosted
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy Nokia Config
+      - name: Install Python Dependencies
         run: |
-          # Run deployment via ansible-navigator using current repo inventory and playbooks
-          ansible-navigator run ansible/playbooks/deploy.yml \
-            -i ansible/inventory.yml \
-            --mode stdout \
-            --check
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # PR validation: Dry-run check mode only
+      - name: Dry Run Deployment (Check Mode)
+        if: github.event_name == 'pull_request' || inputs.dry_run == true
+        run: |
+          ansible-playbook ansible/playbooks/deploy.yml --check
+
+      # Production pipeline step 1: Pre-change baseline snapshot
+      - name: Capture Pre-Change Baseline State (pyATS)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        run: |
+          python pyats_test_suite.py --mode pre
+
+      # Production pipeline step 2: Execute configuration deployment
+      - name: Deploy Nokia Configuration
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        run: |
+          if [ -n "${{ inputs.tags }}" ]; then
+            ansible-playbook ansible/playbooks/deploy.yml --tags "${{ inputs.tags }}"
+          else
+            ansible-playbook ansible/playbooks/deploy.yml
+          fi
+
+      # Production pipeline step 3: Post-change state verification and drift detection
+      - name: Verify Network State & Drift Detection (pyATS)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        run: |
+          python pyats_test_suite.py --mode post
+
+      # Production pipeline step 4: Upload HTML visual drift report artifact
+      - name: Upload Network Drift Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: network-drift-report
+          path: snapshots/network_drift_report.html
+          if-no-files-found: ignore

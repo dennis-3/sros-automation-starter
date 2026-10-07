@@ -1,16 +1,18 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0 # find the latest version??
+    rev: v4.6.0
     hooks:
-      - id: trailing-whitespace # Removes extra spaces at the end of lines
-      - id: end-of-file-fixer # Ensures files end with a newline
-      - id: check-yaml # Validates YAML syntax
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
 
-  # commenting out ansible-lint for now since it is not yet installed in the EE, and it is giving errors on the netconf_config module which is used in the playbooks
-  # once we have ansible-lint installed in the EE, we can uncomment this and it should work without errors
-  # - repo: https://github.com/ansible/ansible-lint
-  #   rev: v26.3.0 # must match the local version
-  #   hooks:
-  #     - id: ansible-lint
-  #       language_version: python3.12
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v24.12.2
+    hooks:
+      - id: ansible-lint
+        files: \.(yaml|yml)$
+        additional_dependencies:
+          - ansible-core>=2.15.0

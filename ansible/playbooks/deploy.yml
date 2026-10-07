@@ -417,6 +417,48 @@
             - telemetry
 
         # ============================================================================
+        # CANDIDATE DELTA PREVIEW (MD-COMPARE)
+        # ============================================================================
+
+        # Preview staged candidate changes before commit when running in check mode or when sros_show_diff=true
+        - name: Preview staged candidate delta via md-compare
+          block:
+            - name: Query Nokia md-compare RPC
+              ansible.netcommon.netconf_rpc:
+                rpc: action
+                xmlns: "urn:ietf:params:xml:ns:yang:1"
+                content: |
+                  <global-operations xmlns="urn:nokia.com:sros:ns:yang:sr:oper-global">
+                    <md-compare>
+                      <format>md-cli</format>
+                    </md-compare>
+                  </global-operations>
+              register: netconf_candidate_diff
+              ignore_errors: true
+
+            - name: Extract and display candidate diff output
+              community.general.xml:
+                xmlstring: "{{ netconf_candidate_diff.stdout }}"
+                content: text
+                xpath: /x:rpc-reply/nokiaoper:results/nokiaoper:md-compare-output
+                namespaces:
+                  x: urn:ietf:params:xml:ns:netconf:base:1.0
+                  nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
+              delegate_to: localhost
+              register: candidate_diff_parsed
+              when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
+              ignore_errors: true
+
+            - name: Display candidate configuration changes
+              ansible.builtin.debug:
+                msg: "{{ candidate_diff_parsed.matches[0]['{urn:nokia.com:sros:ns:yang:sr:oper-global}md-compare-output'] | default('No staged candidate changes.') }}"
+              when: candidate_diff_parsed is not skipped and candidate_diff_parsed.matches is defined and (candidate_diff_parsed.matches | length > 0)
+          when: (sros_show_diff | default(false)) or ansible_check_mode
+          tags:
+            - always
+            - diff
+
+        # ============================================================================
         # ATOMIC TRANSACTION COMMIT & VALIDATION
         # ============================================================================
 

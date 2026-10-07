@@ -112,6 +112,7 @@ Available tags:
 ### Candidate Datastore & Atomic Commits
 By default, `deploy.yml` operates in atomic mode:
 - All configuration tasks stage changes to the Nokia SR OS candidate datastore without committing (`commit: false`).
+- In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the exact CLI changes before committing.
 - A final commit task tagged `always` locks the candidate store, verifies, and executes a single atomic commit.
 - If any staging task or validation fails, an automated `rescue` block triggers `<discard-changes/>` via NETCONF RPC, rolling back the candidate buffer to prevent dirty state accumulation.
 - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:

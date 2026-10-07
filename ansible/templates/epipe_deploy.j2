@@ -3,6 +3,11 @@
 
         <service>
             {% for epipe in epipe_services %}
+            {% if epipe.state | default('present') == 'absent' %}
+            <epipe operation="remove">
+                <service-name>{{ epipe.id }}</service-name>
+            </epipe>
+            {% else %}
             <epipe>
                 <service-name>{{ epipe.id }}</service-name>
                 <customer>1</customer>
@@ -56,6 +61,7 @@
 
                 <admin-state>enable</admin-state>
             </epipe>
+            {% endif %}
             {% endfor %}
         </service>
 

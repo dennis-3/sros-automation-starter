@@ -131,6 +131,22 @@ mda_slot: 1
 mda_type: me6-100gb-qsfp28
 ```
 
+### Resource Decommissioning (Preventing Config Drift)
+
+To remove interfaces, filters, or services without leaving orphaned configurations on the router, set `state: absent`:
+
+```yaml
+interfaces:
+  - name: "toR2"
+    state: absent
+
+epipe_services:
+  - id: "epipe-100"
+    state: absent
+```
+
+Templates render NETCONF `operation="remove"` to delete the target element from the Nokia SR OS datastore during the atomic transaction.
+
 ## Testing & Verification (pyATS)
 
 Capture pre-change and post-change router state, then generate an HTML diff:

@@ -2,6 +2,11 @@
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <service>
             {% for vprn in vprn_services %}
+            {% if vprn.state | default('present') == 'absent' %}
+            <vprn operation="remove">
+                <service-name>{{ vprn.name }}</service-name>
+            </vprn>
+            {% else %}
             <vprn>
                 <service-name>{{ vprn.name }}</service-name>
                 <admin-state>enable</admin-state>
@@ -279,6 +284,7 @@
                 </interface>
                 {% endfor %}
             </vprn>
+            {% endif %}
             {% endfor %}
         </service>
     </configure>

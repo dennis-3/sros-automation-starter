@@ -3,6 +3,12 @@
 
         {% for filter in filters %}
         <filter>
+          {% if filter.state | default('present') == 'absent' %}
+          <ip-filter operation="remove">
+            <filter-name>{{ filter.name }}</filter-name>
+            <filter-id>{{ filter.id }}</filter-id>
+          </ip-filter>
+          {% else %}
           <log>
             <log-id>{{ filter.log_id }}</log-id>
 
@@ -28,6 +34,7 @@
               <action><{{ filter.action }} /></action>
             </entry>
           </ip-filter>
+          {% endif %}
         </filter>
         {% endfor %}
 

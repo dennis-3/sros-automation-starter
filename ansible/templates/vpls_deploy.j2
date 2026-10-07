@@ -3,6 +3,11 @@
 
         <service>
             {% for vpls in vpls_services %}
+            {% if vpls.state | default('present') == 'absent' %}
+            <vpls operation="remove">
+                <service-name>{{ vpls.id }}</service-name>
+            </vpls>
+            {% else %}
             <vpls>
                 <service-name>{{ vpls.id }}</service-name>
                 <customer>1</customer>
@@ -107,6 +112,7 @@
 
                 <admin-state>enable</admin-state>
             </vpls>
+            {% endif %}
             {% endfor %}
         </service>
 

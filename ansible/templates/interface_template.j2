@@ -3,9 +3,14 @@
         <router>
             <router-name>Base</router-name>
             {% for intf in interfaces %}
+            {% if intf.state | default('present') == 'absent' %}
+            <interface operation="remove">
+                <interface-name>{{ intf.name }}</interface-name>
+            </interface>
+            {% else %}
             <interface>
                 <interface-name>{{ intf.name }}</interface-name>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ intf.admin_state | default('enable') }}</admin-state>
                 
                 {% if intf.address is defined %}
                 <ipv4>
@@ -42,6 +47,7 @@
                 {% endif %}
 
             </interface>
+            {% endif %}
             {% endfor %}
         </router>
     </configure>

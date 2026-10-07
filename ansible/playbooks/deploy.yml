@@ -459,17 +459,63 @@
             - diff
 
         # ============================================================================
+        # CHECK-MODE CANDIDATE CLEANUP (DRY-RUN SAFETY)
+        # ============================================================================
+
+        # In check mode (dry run), discard staged candidate changes so the router's
+        # candidate datastore is left clean with zero residual configuration drift.
+        - name: Discard staged candidate changes in check mode (dry run)
+          ansible.netcommon.netconf_rpc:
+            rpc: discard-changes
+            xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          when:
+            - ansible_check_mode
+            - not (sros_commit_per_task | default(false))
+          ignore_errors: true
+          tags:
+            - always
+            - check
+
+        # ============================================================================
         # ATOMIC TRANSACTION COMMIT & VALIDATION
         # ============================================================================
 
-        # Validates and commits all staged candidate edits in one atomic transaction.
-        - name: Validate and Commit All Staged Candidate Changes
+        # Validates and commits all staged candidate edits with confirmed commit and auto-rollback
+        - name: Validate and Commit Staged Candidate Changes (Confirmed Commit)
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: true
+            commit: true
+            confirm: "{{ sros_confirm_timeout | int }}"
+            lock: always
+          when:
+            - not (sros_commit_per_task | default(false))
+            - not ansible_check_mode
+            - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+          tags:
+            - always
+
+        - name: Confirm Previous Commit
+          ansible.netcommon.netconf_config:
+            confirm_commit: true
+          when:
+            - not (sros_commit_per_task | default(false))
+            - not ansible_check_mode
+            - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+          tags:
+            - always
+
+        # Validates and commits all staged candidate edits in standard atomic mode
+        - name: Validate and Commit All Staged Candidate Changes (Standard Commit)
           ansible.netcommon.netconf_config:
             target: candidate
             validate: true
             commit: true
             lock: always
-          when: not (sros_commit_per_task | default(false))
+          when:
+            - not (sros_commit_per_task | default(false))
+            - not ansible_check_mode
+            - sros_confirm_timeout is not defined or (sros_confirm_timeout | int == 0)
           tags:
             - always
       rescue:
@@ -478,6 +524,16 @@
             rpc: discard-changes
             xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
           when: not (sros_commit_per_task | default(false))
+          ignore_errors: true
+          tags:
+            - always
+
+        - name: Cancel unconfirmed commit on failure
+          ansible.netcommon.netconf_config:
+            cancel_commit: true
+          when:
+            - not (sros_commit_per_task | default(false))
+            - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
           ignore_errors: true
           tags:
             - always

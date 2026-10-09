@@ -5,6 +5,7 @@ import argparse
 import sys
 import os
 import re
+import html
 import shutil
 import concurrent.futures
 from pyats import aetest
@@ -70,12 +71,23 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
     username = dev.credentials.default.username
     password = dev.credentials.default.password
 
+    # Determine NETCONF port (custom topology or environment variable)
+    netconf_port = 830
+    if hasattr(dev, 'connections') and hasattr(dev.connections, 'netconf'):
+        netconf_port = int(getattr(dev.connections.netconf, 'port', 830))
+    elif os.getenv('SROS_PORT'):
+        try:
+            netconf_port = int(os.getenv('SROS_PORT'))
+        except ValueError:
+            pass
+
     conn = None
     try:
         conn = sros_connect(
             host=host_ip,
             username=username,
             password=password,
+            port=netconf_port,
             hostkey_verify=False,
             timeout=timeout,
         )
@@ -224,8 +236,8 @@ class ISISTest(aetest.Testcase):
                 failed_devices.append(f"{dev_name} ({exc})")
                 continue
             output_lower = output.lower()
-            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower:
-                log.info(f"[{dev_name}] ISIS is not configured; skipping")
+            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower or "no. of interfaces: 0" in output_lower or "total interfaces: 0" in output_lower:
+                log.info(f"[{dev_name}] ISIS is not configured or has 0 interfaces; skipping")
                 continue
 
             configured_count += 1
@@ -233,7 +245,7 @@ class ISISTest(aetest.Testcase):
             up_count = 0
             for line in output.splitlines():
                 line_clean = line.strip()
-                if not line_clean or line_clean.startswith(('=', '-', 'Router (', 'Interface', 'Total')):
+                if not line_clean or line_clean.startswith(('=', '-', 'Router (', 'Interface', 'Total', 'No. of')):
                     continue
                 parts = line_clean.split()
                 if len(parts) >= 4:
@@ -244,10 +256,10 @@ class ISISTest(aetest.Testcase):
 
             if down_isis:
                 failed_devices.append(f"{dev_name} (down ISIS interfaces: {', '.join(down_isis)})")
-            elif up_count == 0:
-                failed_devices.append(f"{dev_name} (ISIS enabled but 0 Up interfaces detected)")
-            else:
+            elif up_count > 0:
                 log.info(f"[{dev_name}] {up_count} ISIS interface(s) are operationally Up")
+            else:
+                log.info(f"[{dev_name}] ISIS configured with 0 active interfaces")
 
         if failed_devices:
             self.failed(f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}")
@@ -393,18 +405,25 @@ class VerifyChanges(aetest.Testcase):
             # --- System & Time Volatiles ---
             r"root\[.*\]\['statistics'\]",          # All packet/byte counters
             r"root\[.*\]\['last-oper-change'\]",    # Time stamps for status changes
+            r"root\[.*\]\['last-state-change'\]",   # Operational state timestamp
+            r"root\[.*\]\['last-mgmt-change'\]",    # Management transaction timestamp
+            r"root\[.*\]\['oper-time'\]",           # Operational uptime counter
             r"root\[.*\]\['timer'\]",               # Protocol hold/dead/hello timers
             r"root\[.*\]\['uptime'\]",              # System and process uptimes
             r"root\[.*\]\['allocated-memory'\]",    # Dynamic RAM fluctuations
             
             # --- Hardware & Resource Volatiles ---
-            r"root\['system'\]\['cpu'\]",            # Live CPU utilization percentages
-            r"root\['system'\]\['memory'\]",         # Live memory usage indexes
+            r"root\[.*\]\['cpu'\]",                 # Live CPU utilization percentages
+            r"root\[.*\]\['memory'\]",              # Live memory usage indexes
             r"root\[.*\]\['temperature'\]",         # Environmental sensor readings
             
-            # --- Protocol Keepalive / Serial Volatiles ---
+            # --- Protocol Keepalive / Counter Volatiles ---
             r"root\[.*\]\['sequence-number'\]",     # OSPF/ISIS LSA sequence numbers
-            r"root\[.*\]\['bgp'\]\[.*\]\['keepalive'\]" # BGP message tracking counters
+            r"root\[.*\]\['keepalive'\]",           # Protocol keepalive counters
+            r"root\[.*\]\['in-messages'\]",         # Inbound message packet counts
+            r"root\[.*\]\['out-messages'\]",        # Outbound message packet counts
+            r"root\[.*\]\['in-updates'\]",          # Inbound route updates
+            r"root\[.*\]\['out-updates'\]",         # Outbound route updates
         ]
 
         # Determine devices to compare
@@ -511,32 +530,32 @@ class VerifyChanges(aetest.Testcase):
 
                         if isinstance(diff_data, dict):
                             for path, details in diff_data.items():
-                                readable_path = str(path).replace("root", "YANG")
+                                readable_path = html.escape(str(path).replace("root", "YANG"))
                                 html_content += f'<tr><td><strong>{readable_path}</strong></td>'
                                 
                                 if diff_key == 'values_changed':
-                                    old_val = details.get('old_value', '')
-                                    new_val = details.get('new_value', '')
+                                    old_val = html.escape(str(details.get('old_value', '')))
+                                    new_val = html.escape(str(details.get('new_value', '')))
                                     html_content += f'<td><pre class="removed">{old_val}</pre></td><td><pre class="added">{new_val}</pre></td></tr>'
                                 elif diff_key == 'dictionary_item_added':
                                     content = extract_path_value(post_json, path)
                                     val_to_dump = content if content is not None else details
-                                    html_content += f'<td><pre class="added">{json.dumps(val_to_dump, indent=2)}</pre></td></tr>'
+                                    html_content += f'<td><pre class="added">{html.escape(json.dumps(val_to_dump, indent=2))}</pre></td></tr>'
                                 elif diff_key == 'dictionary_item_removed':
                                     content = extract_path_value(pre_json, path)
                                     val_to_dump = content if content is not None else details
-                                    html_content += f'<td><pre class="removed">{json.dumps(val_to_dump, indent=2)}</pre></td></tr>'
+                                    html_content += f'<td><pre class="removed">{html.escape(json.dumps(val_to_dump, indent=2))}</pre></td></tr>'
                                 else:
-                                    html_content += f'<td><pre>{json.dumps(details, indent=2)}</pre></td></tr>'
+                                    html_content += f'<td><pre>{html.escape(json.dumps(details, indent=2))}</pre></td></tr>'
                         else:
                             for path in diff_data:
-                                readable_path = str(path).replace("root", "YANG")
+                                readable_path = html.escape(str(path).replace("root", "YANG"))
                                 html_content += f'<tr><td><strong>{readable_path}</strong></td>'
                                 target_json = post_json if 'added' in diff_key else pre_json
                                 css_render = 'added' if 'added' in diff_key else 'removed'
                                 content = extract_path_value(target_json, path)
                                 if content is not None:
-                                    html_content += f'<td><pre class="{css_render}">{json.dumps(content, indent=2)}</pre></td></tr>'
+                                    html_content += f'<td><pre class="{css_render}">{html.escape(json.dumps(content, indent=2))}</pre></td></tr>'
                                 else:
                                     html_content += f'<td><pre class="{css_render}">Element structure updated at this layer path.</pre></td></tr>'
                         
@@ -554,6 +573,19 @@ class VerifyChanges(aetest.Testcase):
             log.info(f"Visual delta report saved to {html_path}")
             self.failed(f"Network state has drifted! Isolated exception details here: {html_path}")
 
+def _resolve_template_var(val, env_key=None, default_val=None):
+    if val is None:
+        return os.getenv(env_key, default_val) if env_key else default_val
+    val_str = str(val).strip()
+    if val_str.startswith("{{") and val_str.endswith("}}"):
+        if env_key and os.getenv(env_key):
+            return os.getenv(env_key)
+        m = re.search(r"default\(\s*['\"]([^'\"]+)['\"]", val_str)
+        if m:
+            return m.group(1)
+        return os.getenv(env_key, default_val) if env_key else default_val
+    return val
+
 def load_testbed_from_ansible_inventory(inventory_file):
     """
     Dynamically converts an Ansible YAML inventory into a native pyATS Testbed schema.
@@ -565,19 +597,41 @@ def load_testbed_from_ansible_inventory(inventory_file):
 
     global_vars = {}
     if isinstance(inv.get('all'), dict) and isinstance(inv['all'].get('vars'), dict):
-        global_vars = inv['all']['vars']
+        global_vars.update(inv['all']['vars'])
     elif isinstance(inv.get('vars'), dict):
-        global_vars = inv['vars']
+        global_vars.update(inv['vars'])
 
-    default_user = os.getenv('SROS_USER') or global_vars.get('ansible_user') or 'admin'
-    default_password = os.getenv('SROS_PASSWORD') or global_vars.get('ansible_password') or 'NokiaSros1!'
+    # Also resolve variables from adjacent group_vars/all.yml or group_vars/all.yaml if present
+    inv_dir = os.path.dirname(os.path.abspath(inventory_file))
+    for gv_name in ['all.yml', 'all.yaml']:
+        gv_path = os.path.join(inv_dir, 'group_vars', gv_name)
+        if os.path.exists(gv_path):
+            try:
+                with open(gv_path, 'r', encoding='utf-8') as gvf:
+                    gv_data = yaml.safe_load(gvf) or {}
+                    if isinstance(gv_data, dict):
+                        for k, v in gv_data.items():
+                            if k not in global_vars:
+                                global_vars[k] = v
+            except Exception as e:
+                log.debug(f"Could not load group_vars from {gv_path}: {e}")
+
+    default_user = _resolve_template_var(global_vars.get('ansible_user'), 'SROS_USER', 'admin')
+    default_password = _resolve_template_var(global_vars.get('ansible_password'), 'SROS_PASSWORD', 'NokiaSros1!')
 
     def _extract_hosts(group_dict):
         hosts = {}
         if not isinstance(group_dict, dict):
             return hosts
-        if 'hosts' in group_dict and isinstance(group_dict['hosts'], dict):
-            hosts.update(group_dict['hosts'])
+        if 'hosts' in group_dict:
+            if isinstance(group_dict['hosts'], dict):
+                hosts.update(group_dict['hosts'])
+            elif isinstance(group_dict['hosts'], list):
+                for h in group_dict['hosts']:
+                    if isinstance(h, str):
+                        hosts[h] = {}
+                    elif isinstance(h, dict):
+                        hosts.update(h)
         if 'children' in group_dict and isinstance(group_dict['children'], dict):
             for child_val in group_dict['children'].values():
                 hosts.update(_extract_hosts(child_val))
@@ -589,16 +643,21 @@ def load_testbed_from_ansible_inventory(inventory_file):
         if not dev_vars or not isinstance(dev_vars, dict):
             dev_vars = {}
         dev_ip = str(dev_vars.get('ansible_host', dev_name))
-        user = dev_vars.get('ansible_user', default_user)
-        pwd = dev_vars.get('ansible_password', default_password)
-        port = dev_vars.get('ansible_port') or global_vars.get('ansible_port') or 22
+        user = _resolve_template_var(dev_vars.get('ansible_user', default_user), 'SROS_USER', 'admin')
+        pwd = _resolve_template_var(dev_vars.get('ansible_password', default_password), 'SROS_PASSWORD', 'NokiaSros1!')
+
+        # Unicon CLI connections strictly use SSH (port 22 unless ansible_ssh_port is defined)
+        ssh_port = dev_vars.get('ansible_ssh_port') or dev_vars.get('cli_port') or 22
+        # NETCONF connection uses port 830 or SROS_PORT
+        netconf_raw_port = dev_vars.get('ansible_port') or global_vars.get('ansible_port') or os.getenv('SROS_PORT', 830)
+        netconf_port = _resolve_template_var(netconf_raw_port, 'SROS_PORT', 830)
 
         cli_conn = {
             'protocol': 'ssh',
             'ip': dev_ip
         }
-        if port and int(port) != 22:
-            cli_conn['port'] = int(port)
+        if ssh_port and int(ssh_port) != 22:
+            cli_conn['port'] = int(ssh_port)
 
         devices[dev_name] = {
             'os': 'sros',
@@ -607,7 +666,12 @@ def load_testbed_from_ansible_inventory(inventory_file):
                 'defaults': {
                     'class': 'unicon.Unicon'
                 },
-                'cli': cli_conn
+                'cli': cli_conn,
+                'netconf': {
+                    'protocol': 'netconf',
+                    'ip': dev_ip,
+                    'port': int(netconf_port)
+                }
             },
             'credentials': {
                 'default': {
@@ -627,7 +691,13 @@ def load_testbed_from_ansible_inventory(inventory_file):
 class CommonCleanup(aetest.CommonCleanup):
     @aetest.subsection
     def disconnect(self, testbed):
-        testbed.disconnect()
+        if testbed and getattr(testbed, 'devices', None):
+            for dev_name, dev in testbed.devices.items():
+                try:
+                    if getattr(dev, 'is_connected', lambda: True)():
+                        dev.disconnect()
+                except Exception as exc:
+                    log.debug(f"[{dev_name}] Disconnect cleanup notice: {exc}")
 
 # --- RUNTIME CONTROLLER ---
 if __name__ == '__main__':

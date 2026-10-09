@@ -113,7 +113,7 @@ def validate_yaml_files(root_dir="."):
     for y_file in sorted(yaml_files):
         try:
             with open(y_file, "r", encoding="utf-8") as f:
-                yaml.safe_load(f)
+                list(yaml.safe_load_all(f))
             print(f"    [OK] {y_file}")
         except Exception as err:
             # Jinja-heavy Ansible playbooks might fail vanilla YAML parsers if unescaped

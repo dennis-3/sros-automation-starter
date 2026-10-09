@@ -105,7 +105,8 @@
 
         - name: Display candidate configuration diff
           ansible.builtin.debug:
-            msg: "{{ compare_config.matches[0]['{urn:nokia.com:sros:ns:yang:sr:oper-global}md-compare-output'] | default('No candidate differences detected.') }}"
+            msg: "{{ (compare_config.matches[0].values() | first) | default('No candidate differences detected.') }}"
+          when: compare_config is not skipped and compare_config.matches is defined and (compare_config.matches | length > 0)
       tags:
         - never
         - xml-compare-config

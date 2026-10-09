@@ -70,6 +70,7 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
     username = dev.credentials.default.username
     password = dev.credentials.default.password
 
+    conn = None
     try:
         conn = sros_connect(
             host=host_ip,
@@ -92,7 +93,7 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
                     log.warning(f"[{dev_name}] Could not retrieve path '{path}': {path_err}")
                     clean_data[path] = None
 
-        with open(target_path, "w") as f:
+        with open(target_path, "w", encoding="utf-8") as f:
             json.dump(clean_data, f, indent=2)
 
         log.info(f"Success! [{dev_name}] Structured JSON state saved to {target_path}")
@@ -100,6 +101,12 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
     except Exception as exc:
         log.error(f"Failed to capture state from [{dev_name}]: {exc}")
         return dev_name, False, str(exc)
+    finally:
+        if conn is not None and hasattr(conn, 'disconnect'):
+            try:
+                conn.disconnect()
+            except Exception as close_exc:
+                log.debug(f"[{dev_name}] NETCONF disconnect cleanup notice: {close_exc}")
 
 def _run_parallel_device_command(testbed, command, max_workers=10):
     """
@@ -556,8 +563,14 @@ def load_testbed_from_ansible_inventory(inventory_file):
     with open(inventory_file, 'r', encoding='utf-8') as f:
         inv = yaml.safe_load(f) or {}
 
-    default_user = os.getenv('SROS_USER', 'admin')
-    default_password = os.getenv('SROS_PASSWORD', 'NokiaSros1!')
+    global_vars = {}
+    if isinstance(inv.get('all'), dict) and isinstance(inv['all'].get('vars'), dict):
+        global_vars = inv['all']['vars']
+    elif isinstance(inv.get('vars'), dict):
+        global_vars = inv['vars']
+
+    default_user = os.getenv('SROS_USER') or global_vars.get('ansible_user') or 'admin'
+    default_password = os.getenv('SROS_PASSWORD') or global_vars.get('ansible_password') or 'NokiaSros1!'
 
     def _extract_hosts(group_dict):
         hosts = {}
@@ -578,6 +591,15 @@ def load_testbed_from_ansible_inventory(inventory_file):
         dev_ip = str(dev_vars.get('ansible_host', dev_name))
         user = dev_vars.get('ansible_user', default_user)
         pwd = dev_vars.get('ansible_password', default_password)
+        port = dev_vars.get('ansible_port') or global_vars.get('ansible_port') or 22
+
+        cli_conn = {
+            'protocol': 'ssh',
+            'ip': dev_ip
+        }
+        if port and int(port) != 22:
+            cli_conn['port'] = int(port)
+
         devices[dev_name] = {
             'os': 'sros',
             'type': 'router',
@@ -585,10 +607,7 @@ def load_testbed_from_ansible_inventory(inventory_file):
                 'defaults': {
                     'class': 'unicon.Unicon'
                 },
-                'cli': {
-                    'protocol': 'ssh',
-                    'ip': dev_ip
-                }
+                'cli': cli_conn
             },
             'credentials': {
                 'default': {

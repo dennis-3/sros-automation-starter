@@ -1,5 +1,5 @@
 # =============================================================================
-# DATA MODEL EXAMPLE: Underlay Routing & Segment Routing
+# DATA MODEL EXAMPLE: Underlay Routing & Segment Routing (Native YANG Schemas)
 # =============================================================================
 # Used with:
 # - templates/isis_template.j2
@@ -14,9 +14,10 @@ mpls_labels:
     start: 100000
     end: 100999
 
-# 2. IS-IS Underlay Routing (with Segment Routing & BIER support)
+# 2. IS-IS Underlay Routing (Native SR OS Interface Model)
 isis:
   instance: 0
+  admin_state: "enable"
   area_address: "49.0001"
   level_capability: 2  # 1, 2, or "1/2"
   advertise_capability: "as"
@@ -34,26 +35,31 @@ isis:
     admin_state: "enable"
     template_name: "BIER-SD0"
 
-  active_interfaces:
+  # Native unified interface list:
+  interfaces:
     - name: "toR2"
+      interface_type: "point-to-point"
       level: 2
       metric: 10
 
-  passive_interfaces:
     - name: "system"
+      passive: true
       ipv4_node_sid_index: 1  # Node SID for Segment Routing
 
-# 3. OSPF Underlay Routing (Alternative IGP)
+# 3. OSPF Underlay Routing (Native SR OS Multi-Area Interface Model)
 ospf:
   instance: 0
+  admin_state: "enable"
   router_id: "10.10.10.1"
-  area: "0.0.0.0"
-  metric: 100
-  active_interfaces:
-    - name: "toR2"
-      interface_type: "point-to-point"
-  passive_interfaces:
-    - name: "system"
+  areas:
+    - id: "0.0.0.0"
+      interfaces:
+        - name: "toR2"
+          interface_type: "point-to-point"
+          metric: 10
+
+        - name: "system"
+          passive: true
 
 # 4. BIER Global Multicast Underlay
 bier:

@@ -10,19 +10,21 @@
                 <router-id>{{ ospf.router_id }}</router-id>
                 {% endif %}
 
-                {# Multi-Area OSPF Architecture #}
-                {% if ospf.areas is defined %}
-                {% for area in ospf.areas %}
-                {% if area.state | default('present') == 'absent' %}
+                {# Native Areas Context: supports either ospf.areas list or single ospf.area #}
+                {% set area_list = ospf.areas if ospf.areas is defined else [{'id': ospf.area | default('0.0.0.0'), 'interfaces': ospf.interfaces | default([])}] %}
+                {% for area in area_list %}
+                {% set area_id = area.id if area.id is defined else (area.area_id if area.area_id is defined else area) %}
+                {% set area_state = area.state | default('present') if area is mapping else 'present' %}
+                {% if area_state == 'absent' %}
                 <area operation="remove">
-                    <area-id>{{ area.id if area.id is defined else area.area_id }}</area-id>
+                    <area-id>{{ area_id }}</area-id>
                 </area>
                 {% else %}
                 <area>
-                    <area-id>{{ area.id if area.id is defined else area.area_id }}</area-id>
+                    <area-id>{{ area_id }}</area-id>
 
-                    {# Passive Interfaces #}
-                    {% for iface in area.passive_interfaces | default([]) %}
+                    {# Native Area Interfaces Loop #}
+                    {% for iface in area.interfaces | default([]) %}
                     {% set iface_name = iface.name if iface is mapping else iface %}
                     {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
                     {% if iface_state == 'absent' %}
@@ -32,32 +34,26 @@
                     {% else %}
                     <interface>
                         <interface-name>{{ iface_name }}</interface-name>
+                        <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
                         <interface-type>{{ iface.interface_type | default('point-to-point') if iface is mapping else 'point-to-point' }}</interface-type>
+                        {% if iface is mapping and iface.passive | default(false) %}
                         <passive>true</passive>
-                        <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
-                    </interface>
-                    {% endif %}
-                    {% endfor %}
-
-                    {# Active Interfaces #}
-                    {% for iface in area.active_interfaces | default([]) %}
-                    {% set iface_name = iface.name if iface is mapping else iface %}
-                    {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
-                    {% if iface_state == 'absent' %}
-                    <interface operation="remove">
-                        <interface-name>{{ iface_name }}</interface-name>
-                    </interface>
-                    {% else %}
-                    <interface>
-                        <interface-name>{{ iface_name }}</interface-name>
-                        <interface-type>{{ iface.interface_type | default('point-to-point') if iface is mapping else 'point-to-point' }}</interface-type>
-                        <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
+                        {% endif %}
                         {% if iface is mapping and iface.metric is defined %}
                         <metric>{{ iface.metric }}</metric>
-                        {% elif area.metric is defined %}
+                        {% elif area is mapping and area.metric is defined %}
                         <metric>{{ area.metric }}</metric>
                         {% elif ospf.metric is defined %}
                         <metric>{{ ospf.metric }}</metric>
+                        {% endif %}
+                        {% if iface is mapping and iface.priority is defined %}
+                        <priority>{{ iface.priority }}</priority>
+                        {% endif %}
+                        {% if iface is mapping and iface.hello_interval is defined %}
+                        <hello-interval>{{ iface.hello_interval }}</hello-interval>
+                        {% endif %}
+                        {% if iface is mapping and iface.dead_interval is defined %}
+                        <dead-interval>{{ iface.dead_interval }}</dead-interval>
                         {% endif %}
                     </interface>
                     {% endif %}
@@ -65,54 +61,6 @@
                 </area>
                 {% endif %}
                 {% endfor %}
-
-                {# Single-Area Architecture (Backward Compatibility) #}
-                {% elif ospf.area is defined %}
-                <area>
-                    <area-id>{{ ospf.area }}</area-id>
-
-                    {# Handle Passive Interfaces (System) #}
-                    {% for iface in ospf.passive_interfaces | default([]) %}
-                    {% set iface_name = iface.name if iface is mapping else iface %}
-                    {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
-                    {% if iface_state == 'absent' %}
-                    <interface operation="remove">
-                        <interface-name>{{ iface_name }}</interface-name>
-                    </interface>
-                    {% else %}
-                    <interface>
-                        <interface-name>{{ iface_name }}</interface-name>
-                        <interface-type>{{ iface.interface_type | default('point-to-point') if iface is mapping else 'point-to-point' }}</interface-type>
-                        <passive>true</passive>
-                        <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
-                    </interface>
-                    {% endif %}
-                    {% endfor %}
-
-                    {# Handle Active Core Interfaces #}
-                    {% for iface in ospf.active_interfaces | default([]) %}
-                    {% set iface_name = iface.name if iface is mapping else iface %}
-                    {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
-                    {% if iface_state == 'absent' %}
-                    <interface operation="remove">
-                        <interface-name>{{ iface_name }}</interface-name>
-                    </interface>
-                    {% else %}
-                    <interface>
-                        <interface-name>{{ iface_name }}</interface-name>
-                        <interface-type>{{ iface.interface_type | default('point-to-point') if iface is mapping else 'point-to-point' }}</interface-type>
-                        <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
-                        {% if iface is mapping and iface.metric is defined %}
-                        <metric>{{ iface.metric }}</metric>
-                        {% elif ospf.metric is defined %}
-                        <metric>{{ ospf.metric }}</metric>
-                        {% endif %}
-                    </interface>
-                    {% endif %}
-                    {% endfor %}
-
-                </area>
-                {% endif %}
             </ospf>
         </router>
     </configure>

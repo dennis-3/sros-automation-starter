@@ -4,32 +4,34 @@
             <router-name>{{ router_instance | default('Base') }}</router-name>
             <isis>
                 <isis-instance>{{ isis.instance }}</isis-instance>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ isis.admin_state | default('enable') }}</admin-state>
                 <area-address>{{ isis.area_address }}</area-address>
 
                 {% if isis.traffic_engineering | default(false) %}
                 <traffic-engineering>true</traffic-engineering>
                 {% endif %}
 
-                {% if isis.advertise_capability is defined%}
+                {% if isis.advertise_capability is defined %}
                 <advertise-router-capability>{{ isis.advertise_capability | default('as') }}</advertise-router-capability>
                 {% endif %}
 
-                {# --- SEGMENT ROUTING GLOBAL CONFIG --- #}
+                {# --- Segment Routing Global Configuration --- #}
                 {% if isis.segment_routing is defined %}
                 <segment-routing>
                     <admin-state>{{ isis.segment_routing.admin_state | default('enable') }}</admin-state>
+                    {% if isis.segment_routing.prefix_sid_range is defined %}
                     <prefix-sid-range>
                         <start-label>{{ isis.segment_routing.prefix_sid_range.start_label }}</start-label>
                         <max-index>{{ isis.segment_routing.prefix_sid_range.max_index }}</max-index>
                     </prefix-sid-range>
+                    {% endif %}
                 </segment-routing>
                 {% endif %}
 
                 <level>
-                    <level-number>{{ isis.level_capability }}</level-number>
+                    <level-number>{{ isis.level_capability | default(2) }}</level-number>
 
-                    {# --- BIER ADVERTISEMENT IN ISIS --- #}
+                    {# --- BIER Advertisement in IS-IS --- #}
                     {% if isis.bier is defined %}
                     <bier>
                         <admin-state>{{ isis.bier.admin_state | default('enable') }}</admin-state>
@@ -38,7 +40,8 @@
                     {% endif %}
                 </level>
 
-                {% for intf in isis.active_interfaces | default([]) %}
+                {# --- Native Interfaces Definition --- #}
+                {% for intf in isis.interfaces | default([]) %}
                 {% set intf_name = intf.name if intf is mapping else intf %}
                 {% set intf_state = intf.state | default('present') if intf is mapping else 'present' %}
                 {% if intf_state == 'absent' %}
@@ -50,26 +53,9 @@
                     <interface-name>{{ intf_name }}</interface-name>
                     <admin-state>{{ intf.admin_state | default('enable') if intf is mapping else 'enable' }}</admin-state>
                     <interface-type>{{ intf.interface_type | default('point-to-point') if intf is mapping else 'point-to-point' }}</interface-type>
-                    {% if intf is mapping and intf.metric is defined %}
-                    <level>
-                        <level-number>{{ isis.level_capability }}</level-number>
-                        <metric>{{ intf.metric }}</metric>
-                    </level>
+                    {% if intf is mapping and intf.passive | default(false) %}
+                    <passive>true</passive>
                     {% endif %}
-                </interface>
-                {% endif %}
-                {% endfor %}
-
-                {% for intf in isis.passive_interfaces | default([]) %}
-                {% set intf_name = intf.name if intf is mapping else intf %}
-                {% set intf_state = intf.state | default('present') if intf is mapping else 'present' %}
-                {% if intf_state == 'absent' %}
-                <interface operation="remove">
-                    <interface-name>{{ intf_name }}</interface-name>
-                </interface>
-                {% else %}
-                <interface>
-                    <interface-name>{{ intf_name }}</interface-name>
                     {% if intf is mapping and intf.ipv4_node_sid_index is defined %}
                     <ipv4-node-sid>
                         <index>{{ intf.ipv4_node_sid_index }}</index>
@@ -80,32 +66,29 @@
                         <index>{{ intf.ipv6_node_sid_index }}</index>
                     </ipv6-node-sid>
                     {% endif %}
-                    <admin-state>{{ intf.admin_state | default('enable') if intf is mapping else 'enable' }}</admin-state>
-                    <interface-type>{{ intf.interface_type | default('point-to-point') if intf is mapping else 'point-to-point' }}</interface-type>
-                    <passive>true</passive>
+                    {% if intf is mapping and intf.levels is defined %}
+                    {% for lvl in intf.levels %}
+                    <level>
+                        <level-number>{{ lvl.level_number | default(lvl.number | default(isis.level_capability | default(2))) }}</level-number>
+                        {% if lvl.metric is defined %}
+                        <metric>{{ lvl.metric }}</metric>
+                        {% endif %}
+                        {% if lvl.passive is defined %}
+                        <passive>{{ lvl.passive }}</passive>
+                        {% endif %}
+                    </level>
+                    {% endfor %}
+                    {% elif intf is mapping and intf.metric is defined %}
+                    <level>
+                        <level-number>{{ intf.level | default(isis.level_capability | default(2)) }}</level-number>
+                        <metric>{{ intf.metric }}</metric>
+                    </level>
+                    {% endif %}
                 </interface>
                 {% endif %}
                 {% endfor %}
 
-                {% if isis is defined and 'core_links' in isis %}
-                    {% for intf in isis.core_links %}
-                    {% set intf_name = intf.name if intf is mapping else intf %}
-                    {% set intf_metric = intf.metric | default(5) if intf is mapping else 5 %}
-                    <interface>
-                        <interface-name>{{ intf_name }}</interface-name>
-                        <level>
-                            <level-number>1</level-number>
-                            <metric>{{ intf_metric }}</metric>
-                        </level>
-                        <level>
-                            <level-number>2</level-number>
-                            <metric>{{ intf_metric }}</metric>
-                        </level>
-                    </interface>
-                    {% endfor %}
-                {% endif %}
-
-                <level-capability>{{ isis.level_capability }}</level-capability>
+                <level-capability>{{ isis.level_capability | default(2) }}</level-capability>
             </isis>
         </router>
     </configure>

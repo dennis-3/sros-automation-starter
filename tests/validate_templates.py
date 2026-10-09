@@ -126,7 +126,7 @@ def main():
     print("=" * 60)
     print("Pre-Flight CI Validation Suite")
     print("=" * 60)
-    
+
     t_ok = validate_jinja2_templates()
     p_ok = validate_python_files()
     y_ok = validate_yaml_files()

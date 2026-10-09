@@ -46,7 +46,7 @@ def extract_path_value(obj, path_str):
 
 def nokia_to_dict(data):
     """
-    Recursively unwraps Nokia YANG container and leaf structural metadata objects 
+    Recursively unwraps Nokia YANG container and leaf structural metadata objects
     into standard Python native dictionary and array data frameworks.
     """
     if hasattr(data, 'keys'):
@@ -411,12 +411,12 @@ class VerifyChanges(aetest.Testcase):
             r"root\[.*\]\['timer'\]",               # Protocol hold/dead/hello timers
             r"root\[.*\]\['uptime'\]",              # System and process uptimes
             r"root\[.*\]\['allocated-memory'\]",    # Dynamic RAM fluctuations
-            
+
             # --- Hardware & Resource Volatiles ---
             r"root\[.*\]\['cpu'\]",                 # Live CPU utilization percentages
             r"root\[.*\]\['memory'\]",              # Live memory usage indexes
             r"root\[.*\]\['temperature'\]",         # Environmental sensor readings
-            
+
             # --- Protocol Keepalive / Counter Volatiles ---
             r"root\[.*\]\['sequence-number'\]",     # OSPF/ISIS LSA sequence numbers
             r"root\[.*\]\['keepalive'\]",           # Protocol keepalive counters
@@ -484,7 +484,7 @@ class VerifyChanges(aetest.Testcase):
             self.passed("✅ No operational changes detected. The network is stable!")
         else:
             log.error("⚠️ Network drift detected! Rendering isolated change exceptions to HTML...")
-            
+
             html_content = """
             <!DOCTYPE html>
             <html>
@@ -520,7 +520,7 @@ class VerifyChanges(aetest.Testcase):
                     if diff_key in diff:
                         html_content += f'<div class="change-type {css_class}">{header_title}</div>'
                         html_content += '<table><tr><th style="width: 35%;">YANG Data Path</th>'
-                        
+
                         if diff_key == 'values_changed':
                             html_content += '<th>Pre-Change Value</th><th>Post-Change Value</th></tr>'
                         else:
@@ -532,7 +532,7 @@ class VerifyChanges(aetest.Testcase):
                             for path, details in diff_data.items():
                                 readable_path = html.escape(str(path).replace("root", "YANG"))
                                 html_content += f'<tr><td><strong>{readable_path}</strong></td>'
-                                
+
                                 if diff_key == 'values_changed':
                                     old_val = html.escape(str(details.get('old_value', '')))
                                     new_val = html.escape(str(details.get('new_value', '')))
@@ -558,7 +558,7 @@ class VerifyChanges(aetest.Testcase):
                                     html_content += f'<td><pre class="{css_render}">{html.escape(json.dumps(content, indent=2))}</pre></td></tr>'
                                 else:
                                     html_content += f'<td><pre class="{css_render}">Element structure updated at this layer path.</pre></td></tr>'
-                        
+
                         html_content += '</table>'
 
             html_content += """

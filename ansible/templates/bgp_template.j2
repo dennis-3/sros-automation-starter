@@ -26,7 +26,7 @@
 
             <bgp>
                 <admin-state>{{ bgp.admin_state | default('enable') }}</admin-state>
-                
+
                 {% if bgp.router_id is defined %}
                 <router-id>{{ bgp.router_id }}</router-id>
                 {% endif %}

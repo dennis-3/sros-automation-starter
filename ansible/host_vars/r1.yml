@@ -16,9 +16,9 @@ port_mode: "hybrid"
 
 # Port provisioning
 provisioned_ports:
-  - id: "1/1/c1" 
-  - id: "1/1/c2" 
-  - id: "1/1/c3" 
+  - id: "1/1/c1"
+  - id: "1/1/c2"
+  - id: "1/1/c3"
 
 # Base interfaces (IPv4 and Dual-Stack IPv6)
 interfaces:

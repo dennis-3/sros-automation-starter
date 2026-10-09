@@ -14,10 +14,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Validation Dependencies
+      - name: Install Validation and Lint Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jinja2 PyYAML pre-commit
+          pip install jinja2 PyYAML pre-commit "ansible-core>=2.16.0,<2.18.0" "ansible-lint>=24.10.0,<25.0.0"
+          ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Run Pre-Flight Template and Schema Validation
         run: |
@@ -28,6 +29,5 @@ jobs:
           pre-commit run --all-files || true
 
       - name: Run Ansible-lint
-        uses: ansible/ansible-lint@v24
-        with:
-          requirements_file: ansible/requirements.yml
+        run: |
+          ansible-lint

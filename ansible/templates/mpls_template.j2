@@ -3,25 +3,45 @@
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
 
+            {% if rsvp is defined and rsvp.interfaces is defined %}
             <rsvp>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ rsvp.admin_state | default('enable') }}</admin-state>
                 {% for iface in rsvp.interfaces %}
-                <interface>
-                    <interface-name>{{ iface }}</interface-name>
-                    <admin-state>enable</admin-state>
+                {% set iface_name = iface.name if iface is mapping else iface %}
+                {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
+                {% if iface_state == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ iface_name }}</interface-name>
                 </interface>
+                {% else %}
+                <interface>
+                    <interface-name>{{ iface_name }}</interface-name>
+                    <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
+                </interface>
+                {% endif %}
                 {% endfor %}
             </rsvp>
+            {% endif %}
 
             <mpls>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ mpls.admin_state | default('enable') }}</admin-state>
 
+                {% if mpls.interfaces is defined %}
                 {% for iface in mpls.interfaces %}
-                <interface>
-                    <interface-name>{{ iface }}</interface-name>
-                    <admin-state>enable</admin-state>
+                {% set iface_name = iface.name if iface is mapping else iface %}
+                {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
+                {% if iface_state == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ iface_name }}</interface-name>
                 </interface>
+                {% else %}
+                <interface>
+                    <interface-name>{{ iface_name }}</interface-name>
+                    <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
+                </interface>
+                {% endif %}
                 {% endfor %}
+                {% endif %}
 
                 {% if mpls.paths is defined %}
                 {% for path in mpls.paths %}

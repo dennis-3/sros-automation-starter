@@ -97,6 +97,11 @@
                         <ipv4>false</ipv4>
                         {% endif %}
 
+                        {# IPv6 Family Toggle #}
+                        {% if group.family_ipv6 | default(false) %}
+                        <ipv6>true</ipv6>
+                        {% endif %}
+
                         {# L2-VPN Family Toggle #}
                         {% if group.family_l2vpn | default(false) %}
                         <l2-vpn>true</l2-vpn>
@@ -111,11 +116,26 @@
                         <vpn-ipv4>false</vpn-ipv4>
                         {% endif %}
 
+                        {# VPN-IPv6 (6VPE) Family Toggle #}
+                        {% if group.family_vpn_ipv6 | default(false) %}
+                        <vpn-ipv6>true</vpn-ipv6>
+                        {% endif %}
+
+                        {# EVPN Family Toggle #}
+                        {% if group.family_evpn | default(false) %}
+                        <evpn>true</evpn>
+                        {% endif %}
+
                         {# MVPN-IPv4 Family Toggle #}
                         {% if group.family_mvpn_ipv4 | default(false) %}
                         <mvpn-ipv4>true</mvpn-ipv4>
                         {% else %}
                         <mvpn-ipv4>false</mvpn-ipv4>
+                        {% endif %}
+
+                        {# MVPN-IPv6 Family Toggle #}
+                        {% if group.family_mvpn_ipv6 | default(false) %}
+                        <mvpn-ipv6>true</mvpn-ipv6>
                         {% endif %}
 
                         {# Label-IPv4 Family Toggle #}
@@ -124,8 +144,30 @@
                         {% else %}
                         <label-ipv4>false</label-ipv4>
                         {% endif %}
+
+                        {# Label-IPv6 Family Toggle #}
+                        {% if group.family_label_ipv6 | default(false) %}
+                        <label-ipv6>true</label-ipv6>
+                        {% endif %}
+
+                        {# Route Target Constraint (RTC) #}
+                        {% if group.family_route_target | default(false) %}
+                        <route-target>true</route-target>
+                        {% endif %}
                     </family>
 
+                    {# Authentication & Timers #}
+                    {% if group.authentication_key is defined %}
+                    <authentication-key>{{ group.authentication_key }}</authentication-key>
+                    {% endif %}
+
+                    {% if group.hold_time is defined %}
+                    <hold-time>{{ group.hold_time }}</hold-time>
+                    {% endif %}
+
+                    {% if group.keepalive is defined %}
+                    <keepalive>{{ group.keepalive }}</keepalive>
+                    {% endif %}
 
                     {# Policy Handling #}
                     {% if group.export_policy is defined %}
@@ -162,6 +204,29 @@
                     <description>{{ neighbor.description }}</description>
                     {% endif %}
                     <group>{{ group.name }}</group>
+                    {% if neighbor.peer_as is defined %}
+                    <peer-as>{{ neighbor.peer_as }}</peer-as>
+                    {% endif %}
+                    {% if neighbor.local_address is defined %}
+                    <local-address>{{ neighbor.local_address }}</local-address>
+                    {% endif %}
+                    {% if neighbor.authentication_key is defined %}
+                    <authentication-key>{{ neighbor.authentication_key }}</authentication-key>
+                    {% endif %}
+                    {% if neighbor.export_policy is defined %}
+                    {% for policy in neighbor.export_policy %}
+                    <export>
+                        <policy>{{ policy }}</policy>
+                    </export>
+                    {% endfor %}
+                    {% endif %}
+                    {% if neighbor.import_policy is defined %}
+                    {% for policy in neighbor.import_policy %}
+                    <import>
+                        <policy>{{ policy }}</policy>
+                    </import>
+                    {% endfor %}
+                    {% endif %}
                 </neighbor>
                 {% endif %}
                 {% endfor %}

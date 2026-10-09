@@ -497,6 +497,31 @@
           tags:
             - always
 
+        # Post-commit reachability probe: verifies management plane and state responsiveness
+        # prior to confirming. If this check fails, the transaction aborts and auto-reverts.
+        - name: Verify Management Session Health after Confirmed Commit
+          ansible.netcommon.netconf_rpc:
+            rpc: get
+            xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+            content: |
+              <filter type="subtree">
+                <state xmlns="urn:nokia.com:sros:ns:yang:sr:state">
+                  <system>
+                    <name/>
+                  </system>
+                </state>
+              </filter>
+          register: sros_post_commit_probe
+          retries: 3
+          delay: 5
+          until: sros_post_commit_probe is not failed
+          when:
+            - not (sros_commit_per_task | default(false))
+            - not ansible_check_mode
+            - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+          tags:
+            - always
+
         - name: Confirm Previous Commit
           ansible.netcommon.netconf_config:
             confirm_commit: true

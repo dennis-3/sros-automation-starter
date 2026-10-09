@@ -22,9 +22,9 @@ query_filters:
   - status: 'active'
   - has_primary_ip: 'true'
 
-# Compose connection and host variables from NetBox data
+# Compose connection and host variables from NetBox data (dual-stack IPv4/IPv6 support)
 compose:
-  ansible_host: primary_ip4.address.split('/')[0]
+  ansible_host: (primary_ip4.address if (primary_ip4 is defined and primary_ip4) else (primary_ip6.address if (primary_ip6 is defined and primary_ip6) else inventory_hostname)).split('/')[0]
 
 # Dynamic grouping by role, site, and platform
 keyed_groups:

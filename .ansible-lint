@@ -2,6 +2,8 @@
 exclude_paths:
   - .cache/
   - netbox/
+  - collections/
+  - "**/collections/**"
 
   # Direct the linter to ignore auto-generated or third-party paths
   - "**/clab-*/**" # Ignore everything inside Containerlab lab folders

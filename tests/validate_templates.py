@@ -78,12 +78,35 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
 
     return not has_errors
 
+EXCLUDED_PATTERNS = (
+    ".git",
+    ".cache",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "collections",
+    "ansible_collections",
+    ".ansible",
+    "netbox",
+    "clab-",
+    "context",
+)
+
+def is_excluded(filepath):
+    normalized = os.path.normpath(filepath).replace("\\", "/")
+    parts = normalized.split("/")
+    for part in parts:
+        for exc in EXCLUDED_PATTERNS:
+            if exc == part or part.startswith(exc):
+                return True
+    return False
+
 def validate_python_files(root_dir="."):
     print(f"[*] Validating Python syntax in {root_dir}...")
     has_errors = False
     py_files = [
         f for f in glob.glob(os.path.join(root_dir, "**", "*.py"), recursive=True)
-        if not any(excluded in f for excluded in [".git", "__pycache__", ".venv", "venv", ".cache"])
+        if not is_excluded(f)
     ]
 
     for py_file in sorted(py_files):
@@ -107,7 +130,7 @@ def validate_yaml_files(root_dir="."):
     has_errors = False
     yaml_files = [
         f for f in glob.glob(os.path.join(root_dir, "**", "*.y*ml"), recursive=True)
-        if not any(excluded in f for excluded in [".git", ".cache", ".venv", "venv"])
+        if not is_excluded(f)
     ]
 
     for y_file in sorted(yaml_files):

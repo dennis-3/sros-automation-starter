@@ -101,28 +101,68 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
         log.error(f"Failed to capture state from [{dev_name}]: {exc}")
         return dev_name, False, str(exc)
 
+def _run_parallel_device_command(testbed, command, max_workers=10):
+    """
+    Executes a CLI command in parallel across all devices in testbed.devices
+    to avoid serial O(N) blocking delays in scaled topologies.
+    Returns a dict mapping dev_name -> (output, exc).
+    """
+    results = {}
+    if not testbed or not getattr(testbed, 'devices', None):
+        return results
+
+    worker_count = min(max_workers, max(1, len(testbed.devices)))
+
+    def _exec(name, d):
+        try:
+            out = d.execute(command)
+            return name, out, None
+        except Exception as exc:
+            return name, None, exc
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [executor.submit(_exec, name, dev) for name, dev in testbed.devices.items()]
+        for f in concurrent.futures.as_completed(futures):
+            name, out, exc = f.result()
+            results[name] = (out, exc)
+
+    return results
+
 # --- AETEST STRUCTURAL BLOCKS ---
 class CommonSetup(aetest.CommonSetup):
     @aetest.subsection
     def connect_to_devices(self, testbed):
-        testbed.connect()
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        worker_count = min(max_workers, max(1, len(testbed.devices)))
+        log.info(f"Connecting to {len(testbed.devices)} device(s) concurrently (max_workers={worker_count})...")
+        try:
+            testbed.connect(max_workers=worker_count)
+        except Exception as exc:
+            log.warning(f"Bulk testbed connect reported: {exc}. Verifying individual connections...")
+            for dev_name, dev in testbed.devices.items():
+                if not getattr(dev, 'is_connected', lambda: False)():
+                    try:
+                        dev.connect()
+                    except Exception as dev_exc:
+                        log.error(f"[{dev_name}] Connection failed: {dev_exc}")
+
 
 class ConnectivityTest(aetest.Testcase):
     @aetest.test
     def check_version(self):
         testbed = self.parent.parameters['testbed']
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        results = _run_parallel_device_command(testbed, 'show version', max_workers=max_workers)
         failed_devices = []
-        for dev_name, dev in testbed.devices.items():
-            try:
-                output = dev.execute('show version')
-                if 'Nokia' in output or 'TiMOS' in output:
-                    log.info(f"[{dev_name}] Nokia SR OS detected successfully")
-                else:
-                    log.error(f"[{dev_name}] Nokia OS not detected in output")
-                    failed_devices.append(f"{dev_name} (unrecognized OS)")
-            except Exception as exc:
+        for dev_name, (output, exc) in results.items():
+            if exc:
                 log.error(f"[{dev_name}] Failed to execute 'show version': {exc}")
                 failed_devices.append(f"{dev_name} ({exc})")
+            elif output and ('Nokia' in output or 'TiMOS' in output):
+                log.info(f"[{dev_name}] Nokia SR OS detected successfully")
+            else:
+                log.error(f"[{dev_name}] Nokia OS not detected in output")
+                failed_devices.append(f"{dev_name} (unrecognized OS)")
 
         if failed_devices:
             self.failed(f"Connectivity check failed on devices: {', '.join(failed_devices)}")
@@ -133,29 +173,30 @@ class InterfaceStateTest(aetest.Testcase):
     @aetest.test
     def verify_interfaces(self):
         testbed = self.parent.parameters['testbed']
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        results = _run_parallel_device_command(testbed, 'show router interface', max_workers=max_workers)
         failed_devices = []
-        for dev_name, dev in testbed.devices.items():
-            try:
-                output = dev.execute('show router interface')
-                down_interfaces = []
-                for line in output.splitlines():
-                    line_clean = line.strip()
-                    if not line_clean or line_clean.startswith(('=', '-', 'Interface Table', 'Interfaces', 'IP-Address', 'Interface-Name')):
-                        continue
-                    parts = line_clean.split()
-                    if len(parts) >= 3:
-                        name, adm, opr = parts[0], parts[1], parts[2]
-                        if adm.lower() == 'up':
-                            opr_parts = opr.split('/')
-                            if opr_parts[0].lower() == 'down':
-                                down_interfaces.append(f"{name} (adm:{adm}, opr:{opr})")
-                if down_interfaces:
-                    failed_devices.append(f"{dev_name}: [down: {', '.join(down_interfaces)}]")
-                else:
-                    log.info(f"[{dev_name}] All admin Up interfaces are operationally Up")
-            except Exception as exc:
+        for dev_name, (output, exc) in results.items():
+            if exc:
                 log.error(f"[{dev_name}] Interface check exception: {exc}")
                 failed_devices.append(f"{dev_name} ({exc})")
+                continue
+            down_interfaces = []
+            for line in output.splitlines():
+                line_clean = line.strip()
+                if not line_clean or line_clean.startswith(('=', '-', 'Interface Table', 'Interfaces', 'IP-Address', 'Interface-Name')):
+                    continue
+                parts = line_clean.split()
+                if len(parts) >= 3:
+                    name, adm, opr = parts[0], parts[1], parts[2]
+                    if adm.lower() == 'up':
+                        opr_parts = opr.split('/')
+                        if opr_parts[0].lower() == 'down':
+                            down_interfaces.append(f"{name} (adm:{adm}, opr:{opr})")
+            if down_interfaces:
+                failed_devices.append(f"{dev_name}: [down: {', '.join(down_interfaces)}]")
+            else:
+                log.info(f"[{dev_name}] All admin Up interfaces are operationally Up")
 
         if failed_devices:
             self.failed(f"Interface operational check failed on devices: {'; '.join(failed_devices)}")
@@ -166,39 +207,40 @@ class ISISTest(aetest.Testcase):
     @aetest.test
     def verify_isis_interfaces(self):
         testbed = self.parent.parameters['testbed']
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        results = _run_parallel_device_command(testbed, 'show router isis interface', max_workers=max_workers)
         configured_count = 0
         failed_devices = []
-        for dev_name, dev in testbed.devices.items():
-            try:
-                output = dev.execute('show router isis interface')
-                output_lower = output.lower()
-                if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower:
-                    log.info(f"[{dev_name}] ISIS is not configured; skipping")
-                    continue
-
-                configured_count += 1
-                down_isis = []
-                up_count = 0
-                for line in output.splitlines():
-                    line_clean = line.strip()
-                    if not line_clean or line_clean.startswith(('=', '-', 'Router (', 'Interface', 'Total')):
-                        continue
-                    parts = line_clean.split()
-                    if len(parts) >= 4:
-                        if 'down' in line_clean.lower():
-                            down_isis.append(parts[0])
-                        elif 'up' in line_clean.lower():
-                            up_count += 1
-
-                if down_isis:
-                    failed_devices.append(f"{dev_name} (down ISIS interfaces: {', '.join(down_isis)})")
-                elif up_count == 0:
-                    failed_devices.append(f"{dev_name} (ISIS enabled but 0 Up interfaces detected)")
-                else:
-                    log.info(f"[{dev_name}] {up_count} ISIS interface(s) are operationally Up")
-            except Exception as exc:
+        for dev_name, (output, exc) in results.items():
+            if exc:
                 log.error(f"[{dev_name}] ISIS check exception: {exc}")
                 failed_devices.append(f"{dev_name} ({exc})")
+                continue
+            output_lower = output.lower()
+            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower:
+                log.info(f"[{dev_name}] ISIS is not configured; skipping")
+                continue
+
+            configured_count += 1
+            down_isis = []
+            up_count = 0
+            for line in output.splitlines():
+                line_clean = line.strip()
+                if not line_clean or line_clean.startswith(('=', '-', 'Router (', 'Interface', 'Total')):
+                    continue
+                parts = line_clean.split()
+                if len(parts) >= 4:
+                    if 'down' in line_clean.lower():
+                        down_isis.append(parts[0])
+                    elif 'up' in line_clean.lower():
+                        up_count += 1
+
+            if down_isis:
+                failed_devices.append(f"{dev_name} (down ISIS interfaces: {', '.join(down_isis)})")
+            elif up_count == 0:
+                failed_devices.append(f"{dev_name} (ISIS enabled but 0 Up interfaces detected)")
+            else:
+                log.info(f"[{dev_name}] {up_count} ISIS interface(s) are operationally Up")
 
         if failed_devices:
             self.failed(f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}")
@@ -211,38 +253,39 @@ class OSPFTest(aetest.Testcase):
     @aetest.test
     def verify_ospf_neighbors(self):
         testbed = self.parent.parameters['testbed']
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        results = _run_parallel_device_command(testbed, 'show router ospf neighbor', max_workers=max_workers)
         configured_count = 0
         failed_devices = []
-        for dev_name, dev in testbed.devices.items():
-            try:
-                output = dev.execute('show router ospf neighbor')
-                output_lower = output.lower()
-                if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower:
-                    log.info(f"[{dev_name}] OSPF is not configured; skipping")
-                    continue
-
-                configured_count += 1
-                degraded_neighbors = []
-                full_count = 0
-                for line in output.splitlines():
-                    line_clean = line.strip()
-                    if not line_clean or line_clean.startswith(('=', '-', 'OSPFv', 'Interface-Name', 'No. of')):
-                        continue
-                    parts = line_clean.split()
-                    if len(parts) >= 3:
-                        state = parts[2].lower()
-                        if state in ('down', 'init', 'attempt'):
-                            degraded_neighbors.append(f"{parts[0]}:{parts[1]} (state: {parts[2]})")
-                        elif state in ('full', '2-way'):
-                            full_count += 1
-
-                if degraded_neighbors:
-                    failed_devices.append(f"{dev_name} (degraded OSPF neighbors: {', '.join(degraded_neighbors)})")
-                else:
-                    log.info(f"[{dev_name}] {full_count} OSPF neighbor(s) active")
-            except Exception as exc:
+        for dev_name, (output, exc) in results.items():
+            if exc:
                 log.error(f"[{dev_name}] OSPF check exception: {exc}")
                 failed_devices.append(f"{dev_name} ({exc})")
+                continue
+            output_lower = output.lower()
+            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower:
+                log.info(f"[{dev_name}] OSPF is not configured; skipping")
+                continue
+
+            configured_count += 1
+            degraded_neighbors = []
+            full_count = 0
+            for line in output.splitlines():
+                line_clean = line.strip()
+                if not line_clean or line_clean.startswith(('=', '-', 'OSPFv', 'Interface-Name', 'No. of')):
+                    continue
+                parts = line_clean.split()
+                if len(parts) >= 3:
+                    state = parts[2].lower()
+                    if state in ('down', 'init', 'attempt'):
+                        degraded_neighbors.append(f"{parts[0]}:{parts[1]} (state: {parts[2]})")
+                    elif state in ('full', '2-way'):
+                        full_count += 1
+
+            if degraded_neighbors:
+                failed_devices.append(f"{dev_name} (degraded OSPF neighbors: {', '.join(degraded_neighbors)})")
+            else:
+                log.info(f"[{dev_name}] {full_count} OSPF neighbor(s) active")
 
         if failed_devices:
             self.failed(f"OSPF neighbor verification failed on devices: {'; '.join(failed_devices)}")
@@ -255,38 +298,39 @@ class BGPTest(aetest.Testcase):
     @aetest.test
     def verify_bgp_peers(self):
         testbed = self.parent.parameters['testbed']
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        results = _run_parallel_device_command(testbed, 'show router bgp summary', max_workers=max_workers)
         configured_count = 0
         failed_devices = []
-        for dev_name, dev in testbed.devices.items():
-            try:
-                output = dev.execute('show router bgp summary')
-                output_lower = output.lower()
-                if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "bgp is not" in output_lower:
-                    log.info(f"[{dev_name}] BGP is not configured; skipping")
-                    continue
-
-                configured_count += 1
-                degraded_peers = []
-                established_count = 0
-                for line in output.splitlines():
-                    line_clean = line.strip()
-                    if not line_clean or line_clean.startswith(('=', '-', 'BGP Router', 'BGP Admin', 'Total', 'Neighbor', 'Description', 'ServiceId')):
-                        continue
-                    parts = line_clean.split()
-                    if len(parts) >= 2:
-                        last_token = parts[-1].lower()
-                        if last_token in ('idle', 'active', 'connect', 'opensent', 'openconfirm'):
-                            degraded_peers.append(f"{parts[0]} (state: {parts[-1]})")
-                        elif '/' in last_token or last_token == 'established':
-                            established_count += 1
-
-                if degraded_peers:
-                    failed_devices.append(f"{dev_name} (degraded BGP peers: {', '.join(degraded_peers)})")
-                else:
-                    log.info(f"[{dev_name}] {established_count} BGP peer(s) established")
-            except Exception as exc:
+        for dev_name, (output, exc) in results.items():
+            if exc:
                 log.error(f"[{dev_name}] BGP check exception: {exc}")
                 failed_devices.append(f"{dev_name} ({exc})")
+                continue
+            output_lower = output.lower()
+            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "bgp is not" in output_lower:
+                log.info(f"[{dev_name}] BGP is not configured; skipping")
+                continue
+
+            configured_count += 1
+            degraded_peers = []
+            established_count = 0
+            for line in output.splitlines():
+                line_clean = line.strip()
+                if not line_clean or line_clean.startswith(('=', '-', 'BGP Router', 'BGP Admin', 'Total', 'Neighbor', 'Description', 'ServiceId')):
+                    continue
+                parts = line_clean.split()
+                if len(parts) >= 2:
+                    last_token = parts[-1].lower()
+                    if last_token in ('idle', 'active', 'connect', 'opensent', 'openconfirm'):
+                        degraded_peers.append(f"{parts[0]} (state: {parts[-1]})")
+                    elif '/' in last_token or last_token == 'established':
+                        established_count += 1
+
+            if degraded_peers:
+                failed_devices.append(f"{dev_name} (degraded BGP peers: {', '.join(degraded_peers)})")
+            else:
+                log.info(f"[{dev_name}] {established_count} BGP peer(s) established")
 
         if failed_devices:
             self.failed(f"BGP peer verification failed on devices: {'; '.join(failed_devices)}")

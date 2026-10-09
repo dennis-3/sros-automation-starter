@@ -89,7 +89,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/filter_template.j2') }}"
-          when: filters is defined
+          when: filters is defined and (filters | length > 0)
           tags:
             - filters
             - acl
@@ -108,7 +108,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/interface_template.j2') }}"
-          when: interfaces is defined
+          when: interfaces is defined and (interfaces | length > 0)
           tags:
             - interfaces
             - ip
@@ -125,7 +125,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/mpls_labels_template.j2') }}"
-          when: mpls_labels is defined
+          when: mpls_labels is defined and (mpls_labels | length > 0)
           tags:
             - mpls_labels
             - mpls
@@ -142,7 +142,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/bier_template.j2') }}"
-          when: bier is defined
+          when: bier is defined and (bier | length > 0)
           tags:
             - bier
             - multicast
@@ -160,7 +160,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/isis_template.j2') }}"
-          when: isis is defined
+          when: isis is defined and (isis | length > 0)
           tags:
             - isis
             - igp
@@ -175,7 +175,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/ospf_template.j2') }}"
-          when: ospf is defined
+          when: ospf is defined and (ospf | length > 0)
           tags:
             - ospf
             - igp
@@ -194,7 +194,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/policy_options_template.j2') }}"
-          when: policy_options is defined
+          when: policy_options is defined and (policy_options | length > 0)
           tags:
             - policy_options
             - policy
@@ -213,7 +213,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/bgp_template.j2') }}"
-          when: bgp is defined
+          when: bgp is defined and (bgp | length > 0)
           tags:
             - bgp
             - routing
@@ -231,7 +231,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
-          when: mpls is defined
+          when: mpls is defined and (mpls | length > 0)
           tags:
             - mpls
             - rsvp
@@ -245,7 +245,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/ldp_template.j2') }}"
-          when: ldp is defined
+          when: ldp is defined and (ldp | length > 0)
           tags:
             - ldp
             - mpls
@@ -263,7 +263,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/sdp_template.j2') }}"
-          when: sdp_configs is defined
+          when: sdp_configs is defined and (sdp_configs | length > 0)
           tags:
             - sdp
             - transport
@@ -281,7 +281,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/pw_template.j2') }}"
-          when: pw_templates is defined
+          when: pw_templates is defined and (pw_templates | length > 0)
           tags:
             - pw_templates
             - services
@@ -299,7 +299,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/epipe_deploy.j2') }}"
-          when: epipe_services is defined
+          when: epipe_services is defined and (epipe_services | length > 0)
           tags:
             - epipe
             - services
@@ -314,7 +314,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/vpls_deploy.j2') }}"
-          when: vpls_services is defined
+          when: vpls_services is defined and (vpls_services | length > 0)
           tags:
             - vpls
             - services
@@ -333,7 +333,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/vprn_deploy.j2') }}"
-          when: vprn_services is defined
+          when: vprn_services is defined and (vprn_services | length > 0)
           tags:
             - vprn
             - services
@@ -348,7 +348,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/ies_deploy.j2') }}"
-          when: ies_services is defined
+          when: ies_services is defined and (ies_services | length > 0)
           tags:
             - ies
             - services
@@ -365,7 +365,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/qos_template.j2') }}"
-          when: qos_policies is defined
+          when: qos_policies is defined and (qos_policies | length > 0)
           tags:
             - qos
 
@@ -381,7 +381,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/igmp_template.j2') }}"
-          when: igmp is defined
+          when: igmp is defined and (igmp | length > 0)
           tags:
             - igmp
             - multicast
@@ -398,7 +398,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/pim_template.j2') }}"
-          when: pim is defined
+          when: pim is defined and (pim | length > 0)
           tags:
             - pim
             - multicast
@@ -416,7 +416,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
-          when: mirror_destinations is defined
+          when: mirror_destinations is defined and (mirror_destinations | length > 0)
           tags:
             - mirror_destination
             - mirror
@@ -431,7 +431,7 @@
             lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
             default_operation: merge
             content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
-          when: mirror_sources is defined
+          when: mirror_sources is defined and (mirror_sources | length > 0)
           tags:
             - mirror_source
             - mirror
@@ -454,6 +454,7 @@
                       <format>md-cli</format>
                     </md-compare>
                   </global-operations>
+              check_mode: false
               register: netconf_candidate_diff
               ignore_errors: true
 
@@ -466,6 +467,7 @@
                   x: urn:ietf:params:xml:ns:netconf:base:1.0
                   nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
               delegate_to: localhost
+              check_mode: false
               register: candidate_diff_parsed
               when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
               ignore_errors: true
@@ -489,6 +491,7 @@
           ansible.netcommon.netconf_rpc:
             rpc: discard-changes
             xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          check_mode: false
           when:
             - ansible_check_mode
             - not (sros_commit_per_task | default(false))
@@ -569,6 +572,7 @@
           ansible.netcommon.netconf_rpc:
             rpc: discard-changes
             xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          check_mode: false
           when: not (sros_commit_per_task | default(false))
           ignore_errors: true
           tags:

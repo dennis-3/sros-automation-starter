@@ -17,6 +17,21 @@ on:
         required: false
         default: ''
         type: string
+      limit:
+        description: 'Limit deployment to specific hosts/groups (e.g., edge_pe, r1)'
+        required: false
+        default: ''
+        type: string
+      serial_batch:
+        description: 'Canary batch size (e.g. 1 or 20%)'
+        required: false
+        default: '100%'
+        type: string
+      confirm_timeout:
+        description: 'Confirmed commit timeout in seconds (0 for immediate)'
+        required: false
+        default: '0'
+        type: string
 
 jobs:
   validate-and-deploy:
@@ -38,29 +53,53 @@ jobs:
       - name: Dry Run Deployment (Check Mode)
         if: github.event_name == 'pull_request' || inputs.dry_run == true
         run: |
-          ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
+          EXTRA_ARGS=""
+          if [ -n "${{ inputs.limit }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --limit ${{ inputs.limit }}"
+          fi
+          if [ -n "${{ inputs.tags }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --tags ${{ inputs.tags }}"
+          fi
+          ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true $EXTRA_ARGS
 
       # Production pipeline step 1: Pre-change baseline snapshot
       - name: Capture Pre-Change Baseline State (pyATS)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
         run: |
-          python pyats_test_suite.py --mode pre
+          if [ -n "${{ inputs.limit }}" ]; then
+            python pyats_test_suite.py --mode pre --limit "${{ inputs.limit }}"
+          else
+            python pyats_test_suite.py --mode pre
+          fi
 
       # Production pipeline step 2: Execute configuration deployment
       - name: Deploy Nokia Configuration
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
         run: |
+          EXTRA_ARGS=""
           if [ -n "${{ inputs.tags }}" ]; then
-            ansible-playbook ansible/playbooks/deploy.yml --tags "${{ inputs.tags }}"
-          else
-            ansible-playbook ansible/playbooks/deploy.yml
+            EXTRA_ARGS="$EXTRA_ARGS --tags ${{ inputs.tags }}"
           fi
+          if [ -n "${{ inputs.limit }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --limit ${{ inputs.limit }}"
+          fi
+          if [ -n "${{ inputs.serial_batch }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS -e sros_serial_batch=${{ inputs.serial_batch }}"
+          fi
+          if [ -n "${{ inputs.confirm_timeout }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS -e sros_confirm_timeout=${{ inputs.confirm_timeout }}"
+          fi
+          ansible-playbook ansible/playbooks/deploy.yml $EXTRA_ARGS
 
       # Production pipeline step 3: Post-change state verification and drift detection
       - name: Verify Network State & Drift Detection (pyATS)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.dry_run != true
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
         run: |
-          python pyats_test_suite.py --mode post
+          if [ -n "${{ inputs.limit }}" ]; then
+            python pyats_test_suite.py --mode post --limit "${{ inputs.limit }}"
+          else
+            python pyats_test_suite.py --mode post
+          fi
 
       # Production pipeline step 4: Upload HTML visual drift report artifact
       - name: Upload Network Drift Report Artifact

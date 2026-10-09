@@ -2,6 +2,7 @@
 import json
 import logging
 import argparse
+import sys
 import os
 import re
 import shutil
@@ -480,7 +481,8 @@ class VerifyChanges(aetest.Testcase):
             </html>
             """
 
-            with open(html_path, "w") as f:
+            os.makedirs(os.path.dirname(html_path) or ".", exist_ok=True)
+            with open(html_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
             log.info(f"Visual delta report saved to {html_path}")
@@ -558,6 +560,8 @@ if __name__ == '__main__':
                         help="Path to pyATS testbed YAML file (default: pyats_testbed.yml or testbed.yml).")
     parser.add_argument('--inventory', default=None,
                         help="Path to Ansible inventory YAML file to dynamically synthesize pyATS testbed.")
+    parser.add_argument('--limit', default=None,
+                        help="Comma-separated device names or patterns to limit verification scope.")
     parser.add_argument('--paths', default='/nokia-state:state',
                         help="Comma-separated YANG state paths to query (default: '/nokia-state:state').")
     parser.add_argument('--max-workers', type=int, default=10,
@@ -584,6 +588,19 @@ if __name__ == '__main__':
         testbed_data = 'pyats_testbed.yml'
 
     testbed = topology.loader.load(testbed_data)
+
+    if args.limit:
+        limit_patterns = [p.strip().lower() for p in args.limit.split(',') if p.strip()]
+        filtered_devices = {
+            d_name: dev for d_name, dev in testbed.devices.items()
+            if any(pat in d_name.lower() or pat == d_name.lower() for pat in limit_patterns)
+        }
+        if not filtered_devices:
+            log.error(f"No testbed devices matched --limit criteria '{args.limit}'. Available devices: {list(testbed.devices.keys())}")
+            sys.exit(1)
+        log.info(f"Limiting pyATS verification to {len(filtered_devices)} device(s): {list(filtered_devices.keys())}")
+        testbed.devices = filtered_devices
+
     yang_paths = [p.strip() for p in args.paths.split(',') if p.strip()]
 
     base_tests = [ConnectivityTest, InterfaceStateTest, ISISTest, OSPFTest, BGPTest, SnapshotState]

@@ -233,6 +233,7 @@ python pyats_test_suite.py --testbed pyats_testbed.yml --mode post
 ```
 
 Optional flags:
+- `--limit`: Comma-separated router names or patterns to restrict verification scope during targeted changes (e.g., `--limit r1` or `--limit edge_pe`).
 - `--inventory`: Path to Ansible inventory YAML file (`ansible/inventory.yml`) to dynamically synthesize pyATS testbed definitions on-the-fly, eliminating duplicate testbed drift.
 - `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml`, `testbed.yml`, or synthesizes from `ansible/inventory.yml`).
 - `--paths`: Comma-separated YANG state paths for targeted operational state capture (defaults to `/nokia-state:state`). Example: `--paths "/nokia-state:state/router[router-name='Base']/interface,/nokia-state:state/service"`.
@@ -249,6 +250,20 @@ The pyATS test pipeline automatically runs:
 7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles and HTML delta report generation.
 
 The drift report is saved to `snapshots/network_drift_report.html`.
+
+## CI/CD Deployment Pipeline (GitHub Actions)
+
+The repository includes enterprise-grade GitHub Actions workflows:
+- **Linting (`.github/workflows/lint.yml`)**: Executes template syntax validation (`validate_templates.py`), Python compilation, and Ansible syntax checks on every pull request and push.
+- **Deployment & Verification (`.github/workflows/deploy.yml`)**:
+  - Triggers automatically on `push` to `main`, and dry-runs on `pull_request`.
+  - Supports manual execution via `workflow_dispatch` with parameter overrides:
+    - `dry_run`: Run in check mode (`--check -e sros_show_diff=true`).
+    - `limit`: Restrict deployment and pyATS testing scope to specific hosts/groups (e.g., `edge_pe`, `r1`).
+    - `tags`: Run specific configuration tags (e.g., `interfaces`, `bgp`).
+    - `serial_batch`: Control canary rollout batch size (e.g., `1`, `20%`, `100%`).
+    - `confirm_timeout`: Timeout in seconds for confirmed commits with automatic rollback on unconfirmed changes.
+  - Automatically captures pre-change pyATS snapshots, deploys staged NETCONF candidates, and runs post-change operational verifications, publishing HTML drift reports as artifacts.
 
 ## Configuration Order
 

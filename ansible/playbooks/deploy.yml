@@ -444,6 +444,10 @@
 
         # Preview staged candidate changes before commit when running in check mode or when sros_show_diff=true
         - name: Preview staged candidate delta via md-compare
+          when: (sros_show_diff | default(false)) or ansible_check_mode
+          tags:
+            - always
+            - diff
           block:
             - name: Query Nokia md-compare RPC
               ansible.netcommon.netconf_rpc:
@@ -457,7 +461,7 @@
                   </global-operations>
               check_mode: false
               register: netconf_candidate_diff
-              ignore_errors: true
+              failed_when: false
 
             - name: Extract and display candidate diff output
               community.general.xml:
@@ -471,16 +475,12 @@
               check_mode: false
               register: candidate_diff_parsed
               when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
-              ignore_errors: true
+              failed_when: false
 
             - name: Display candidate configuration changes
               ansible.builtin.debug:
                 msg: "{{ (candidate_diff_parsed.matches[0].values() | first) | default('No staged candidate changes.') }}"
               when: candidate_diff_parsed is not skipped and candidate_diff_parsed.matches is defined and (candidate_diff_parsed.matches | length > 0)
-          when: (sros_show_diff | default(false)) or ansible_check_mode
-          tags:
-            - always
-            - diff
 
         # ============================================================================
         # CHECK-MODE CANDIDATE CLEANUP (DRY-RUN SAFETY)
@@ -496,7 +496,7 @@
           when:
             - ansible_check_mode
             - not (sros_commit_per_task | default(false))
-          ignore_errors: true
+          failed_when: false
           tags:
             - always
             - check
@@ -575,17 +575,19 @@
             xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
           check_mode: false
           when: not (sros_commit_per_task | default(false))
-          ignore_errors: true
+          failed_when: false
           tags:
             - always
 
         - name: Cancel unconfirmed commit on failure
-          ansible.netcommon.netconf_config:
-            cancel_commit: true
+          ansible.netcommon.netconf_rpc:
+            rpc: cancel-commit
+            xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+          check_mode: false
           when:
             - not (sros_commit_per_task | default(false))
             - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
-          ignore_errors: true
+          failed_when: false
           tags:
             - always
 

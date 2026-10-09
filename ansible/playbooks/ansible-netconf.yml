@@ -8,6 +8,10 @@
     # XML EDIT BOF CONFIGURATION
     # =========================================================================
     - name: Edit BOF configuration via NETCONF RPC
+      tags:
+        - never
+        - xml-bof-config
+        - bof-config-xml
       block:
         - name: Lock BOF candidate
           ansible.netcommon.netconf_rpc:
@@ -27,7 +31,10 @@
                 <bof-candidate xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments"/>
               </target>
               <config>
-                <bof xmlns="urn:nokia.com:sros:ns:yang:sr:bof-conf" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nokia-attr="urn:nokia.com:sros:ns:yang:sr:attributes">
+                <bof
+                  xmlns="urn:nokia.com:sros:ns:yang:sr:bof-conf"
+                  xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  xmlns:nokia-attr="urn:nokia.com:sros:ns:yang:sr:attributes">
                   <dns>
                     <primary-server>{{ bof_primary_dns | default('192.168.122.1') }}</primary-server>
                   </dns>
@@ -51,15 +58,15 @@
               <target>
                 <bof-candidate xmlns="urn:nokia.com:sros:ns:yang:sr:ietf-netconf-augments"/>
               </target>
-      tags:
-        - never
-        - xml-bof-config
-        - bof-config-xml
 
     # =========================================================================
     # XML LOAD CONFIGURATION FROM FILE (REPLACE RUNNING CONFIG)
     # =========================================================================
     - name: Load XML configuration file and replace active running config
+      tags:
+        - never
+        - xml-load-config
+        - load-config-xml
       block:
         - name: Load XML configuration from file
           ansible.netcommon.netconf_config:
@@ -68,15 +75,15 @@
             lock: always
             default_operation: replace
             content: "{{ lookup('file', config_file | default('snapshots/' ~ inventory_hostname ~ '_config.xml')) }}"
-      tags:
-        - never
-        - xml-load-config
-        - load-config-xml
 
     # =========================================================================
     # XML COMPARE CONFIGURATION (MD-COMPARE DRY-RUN PREVIEW)
     # =========================================================================
     - name: Preview candidate configuration changes using md-compare RPC
+      tags:
+        - never
+        - xml-compare-config
+        - compare-config-xml
       block:
         - name: Execute Nokia md-compare NETCONF action RPC
           ansible.netcommon.netconf_rpc:
@@ -107,7 +114,3 @@
           ansible.builtin.debug:
             msg: "{{ (compare_config.matches[0].values() | first) | default('No candidate differences detected.') }}"
           when: compare_config is not skipped and compare_config.matches is defined and (compare_config.matches | length > 0)
-      tags:
-        - never
-        - xml-compare-config
-        - compare-config-xml

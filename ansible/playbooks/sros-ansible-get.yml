@@ -4,7 +4,7 @@
   gather_facts: false
 
   pre_tasks:
-    - name: Ensure snapshots directory exists
+    - name: Ensure snapshots directory exists  # noqa: run-once[task]
       ansible.builtin.file:
         path: snapshots
         state: directory
@@ -19,6 +19,10 @@
     # JSON OPERATIONAL STATE
     # =========================================================================
     - name: Retrieve and save operational state in JSON format
+      tags:
+        - never
+        - json-state
+        - state-json
       block:
         - name: Get state in JSON format via NETCONF
           ansible.netcommon.netconf_get:
@@ -37,15 +41,15 @@
         - name: Log state file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_state.json"
-      tags:
-        - never
-        - json-state
-        - state-json
 
     # =========================================================================
     # JSON RUNNING CONFIGURATION
     # =========================================================================
     - name: Retrieve and save configuration in JSON format
+      tags:
+        - never
+        - json-config
+        - config-json
       block:
         - name: Get config in JSON format via NETCONF
           ansible.netcommon.netconf_get:
@@ -64,15 +68,15 @@
         - name: Log config file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_config.json"
-      tags:
-        - never
-        - json-config
-        - config-json
 
     # =========================================================================
     # YAML OPERATIONAL STATE
     # =========================================================================
     - name: Retrieve and save operational state in YAML format
+      tags:
+        - never
+        - yaml-state
+        - state-yaml
       block:
         - name: Get state in YAML format via NETCONF
           ansible.netcommon.netconf_get:
@@ -91,15 +95,15 @@
         - name: Log YAML state file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_state.yaml"
-      tags:
-        - never
-        - yaml-state
-        - state-yaml
 
     # =========================================================================
     # YAML RUNNING CONFIGURATION
     # =========================================================================
     - name: Retrieve and save configuration in YAML format
+      tags:
+        - never
+        - yaml-config
+        - config-yaml
       block:
         - name: Get config in YAML format via NETCONF
           ansible.netcommon.netconf_get:
@@ -118,15 +122,15 @@
         - name: Log YAML config file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_config.yaml"
-      tags:
-        - never
-        - yaml-config
-        - config-yaml
 
     # =========================================================================
     # XML OPERATIONAL STATE
     # =========================================================================
     - name: Retrieve and save operational state in XML format
+      tags:
+        - never
+        - xml-state
+        - state-xml
       block:
         - name: Get state in XML format via NETCONF
           ansible.netcommon.netconf_get:
@@ -145,15 +149,15 @@
         - name: Log XML state file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_state.xml"
-      tags:
-        - never
-        - xml-state
-        - state-xml
 
     # =========================================================================
     # XML RUNNING CONFIGURATION
     # =========================================================================
     - name: Retrieve and save configuration in XML format
+      tags:
+        - never
+        - xml-config
+        - config-xml
       block:
         - name: Get config in XML format via NETCONF
           ansible.netcommon.netconf_get:
@@ -172,7 +176,3 @@
         - name: Log XML config file creation
           ansible.builtin.debug:
             msg: "Saved snapshots/{{ inventory_hostname }}_config.xml"
-      tags:
-        - never
-        - xml-config
-        - config-xml

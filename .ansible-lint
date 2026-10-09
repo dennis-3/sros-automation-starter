@@ -13,6 +13,7 @@ exclude_paths:
 # Rules to ignore entirely if you find them too annoying
 skip_list:
   - yaml[truthy] # Optional: skip if you prefer 'yes/no' over 'true/false'
+  - run-once[task]
 
 # ignore netconf_config error, since it is installed in the EE
 mock_modules:

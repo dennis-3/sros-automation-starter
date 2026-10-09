@@ -1,0 +1,69 @@
+---
+# ==============================================================================
+# 08. OPERATIONS, QOS & MULTICAST
+# ==============================================================================
+
+- name: Configure QoS
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/qos_template.j2') }}"
+  when: qos is defined or qos_policies is defined
+  tags:
+    - qos
+    - traffic-management
+
+- name: Configure IGMP
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/igmp_template.j2') }}"
+  when: igmp is defined and (igmp | length > 0)
+  tags:
+    - igmp
+    - multicast
+
+- name: Configure PIM
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/pim_template.j2') }}"
+  when: pim is defined and (pim | length > 0)
+  tags:
+    - pim
+    - multicast
+
+- name: Configure Mirror Destinations
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
+  when: mirror_destinations is defined and (mirror_destinations | length > 0)
+  tags:
+    - mirror-destinations
+    - telemetry
+
+- name: Configure Mirror Sources
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
+  when: mirror_sources is defined and (mirror_sources | length > 0)
+  tags:
+    - mirror-sources
+    - telemetry

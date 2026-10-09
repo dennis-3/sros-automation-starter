@@ -1,0 +1,18 @@
+---
+# ==============================================================================
+# 06. BGP PEERING & MULTIPROTOCOL OVERLAY
+# ==============================================================================
+
+- name: Configure BGP
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/bgp_template.j2') }}"
+  when: bgp is defined and (bgp | length > 0)
+  tags:
+    - bgp
+    - overlay
+    - peering

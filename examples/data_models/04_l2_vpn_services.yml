@@ -1,0 +1,42 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: Layer 2 VPN Services (Epipe & VPLS)
+# =============================================================================
+# Used with:
+# - templates/epipe_deploy.j2
+# - templates/vpls_deploy.j2
+# =============================================================================
+
+# 1. Point-to-Point Pseudowire Service (Epipe / VPWS)
+epipe_services:
+  - id: 101
+    description: "Point-to-Point Circuit Customer A"
+    vc_switching: false
+    saps:
+      - id: "1/1/c1/1:100"
+        description: "Customer A Handoff"
+    spokes:
+      - sdp_id: 12
+        vc_id: 101
+
+# 2. Multipoint Layer 2 Service (VPLS)
+vpls_services:
+  # Standard Mesh-SDP VPLS
+  - id: 201
+    vc_id: 201
+    description: "Enterprise LAN VPLS Mesh"
+    igmp_snooping: true
+    saps:
+      - port: "1/1/c1/1:200"
+        description: "LAN Handoff"
+    mesh_sdps: [12]
+
+  # BGP Auto-Discovery (BGP-AD) VPLS
+  - id: 202
+    description: "BGP Auto-Discovery VPLS"
+    pw_template: "PW-LDP-DYNAMIC"
+    rd: "65000:202"
+    rt: "target:65000:202"
+    vpls_id: "65000:202"
+    saps:
+      - port: "1/1/c1/1:202"
+        description: "Branch LAN"

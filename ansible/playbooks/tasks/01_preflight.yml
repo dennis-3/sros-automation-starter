@@ -1,0 +1,34 @@
+---
+# ==============================================================================
+# 01. PRE-FLIGHT VARIABLE SCHEMA VALIDATION
+# ==============================================================================
+
+- name: Validate global host variables
+  ansible.builtin.assert:
+    that:
+      - system_name is defined or inventory_hostname is defined
+      - interfaces is not defined or (interfaces | type_debug == 'list')
+      - bgp is not defined or (bgp.asn is defined and (bgp.asn | int > 0))
+      - isis is not defined or (isis.instance is defined or isis.net is defined)
+      - ospf is not defined or (ospf.router_id is defined or ospf.area is defined)
+      - ntp is not defined or (ntp.servers is defined and (ntp.servers | type_debug == 'list'))
+      - tacplus is not defined or (tacplus.servers is defined and (tacplus.servers | type_debug == 'list'))
+    fail_msg: "Pre-flight validation failed on {{ inventory_hostname }}: Check host_vars syntax."
+    success_msg: "Pre-flight schema validation passed for {{ inventory_hostname }}."
+  tags:
+    - always
+    - preflight
+    - validate
+
+- name: Validate interface address attributes
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.address is not defined or (item.mask is defined and (item.mask | int >= 0 and item.mask | int <= 32))
+    fail_msg: "Interface '{{ item.name | default('unnamed') }}' on {{ inventory_hostname }} has an invalid IP address or missing mask."
+  loop: "{{ interfaces }}"
+  when: interfaces is defined
+  tags:
+    - always
+    - preflight
+    - validate

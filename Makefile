@@ -35,6 +35,9 @@ canary-deploy:
 check:
 	ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
 
+snapshot:
+	ansible-playbook ansible/playbooks/snapshot.yml --tags state-json
+
 test-pre:
 	python pyats_test_suite.py --mode pre
 

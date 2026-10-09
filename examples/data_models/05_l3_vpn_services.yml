@@ -1,0 +1,54 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: Layer 3 VPN Services (VPRN & IES)
+# =============================================================================
+# Used with:
+# - templates/vprn_deploy.j2
+# - templates/ies_deploy.j2
+# =============================================================================
+
+# 1. Virtual Private Routed Network (VPRN / L3VPN / BGP IP-VPN)
+vprn_services:
+  - id: 10
+    name: "CORP_WAN_VRF"
+    customer_id: 1
+    as_number: 65000
+    router_id: "10.10.10.1"
+
+    # MP-BGP IP-VPN Auto-Binding
+    bgp_ipvpn:
+      route_distinguisher: "65000:10"
+      vrf_target: "65000:10"
+      auto_bind_tunnel: "ldp"  # or "rsvp", "sr-isis", "bgp"
+
+    # VRF Local Interfaces
+    interfaces:
+      - name: "corp-lan"
+        address: "192.168.10.1"
+        mask: 24
+        description: "Corporate LAN Gateway"
+        loopback: true
+
+      - name: "ce-handoff"
+        address: "172.16.1.1"
+        mask: 30
+        sap: "1/1/c1/1:10"
+
+    # PE-CE BGP Session inside VRF
+    bgp:
+      router_id: "10.10.10.1"
+      groups:
+        - name: "PE-CE-BGP"
+          peer_as: 65010
+          family_ipv4: true
+          neighbors:
+            - ip: "172.16.1.2"
+              description: "Customer-Edge-Router"
+
+# 2. Internet Enhanced Service (IES Direct Routed Service)
+ies_services:
+  - id: 100
+    name: "DIRECT_INTERNET_ACCESS"
+    interface_name: "dia-cust1"
+    address: "198.51.100.1"
+    prefix: 30
+    sap: "1/1/c1/1:100"

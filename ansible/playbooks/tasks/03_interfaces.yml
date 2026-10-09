@@ -1,0 +1,31 @@
+---
+# ==============================================================================
+# 03. TRAFFIC FILTERS (ACLS) & NETWORK INTERFACES
+# ==============================================================================
+
+- name: Configure Filters
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/filter_template.j2') }}"
+  when: filters is defined and (filters | length > 0)
+  tags:
+    - filters
+    - acl
+    - security
+
+- name: Configure interfaces
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/interface_template.j2') }}"
+  when: interfaces is defined and (interfaces | length > 0)
+  tags:
+    - interfaces
+    - base-routing

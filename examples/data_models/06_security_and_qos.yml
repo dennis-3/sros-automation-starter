@@ -1,0 +1,80 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: Security ACLs, QoS Policies & AAA Management
+# =============================================================================
+# Used with:
+# - templates/filter_template.j2
+# - templates/qos_template.j2
+# - templates/system_management_template.j2
+# =============================================================================
+
+# 1. IP Traffic Filters / ACLs
+filters:
+  - id: 10
+    name: "MANAGEMENT_PROTECTION"
+    default_action: "drop"
+    entries:
+      - entry_id: 10
+        protocol: "tcp"
+        match_dst_port: 830  # NETCONF
+        action: "accept"
+
+      - entry_id: 20
+        protocol: "tcp"
+        match_dst_port: 22   # SSH
+        action: "accept"
+
+# 2. Quality of Service (QoS SAP-Ingress & SAP-Egress)
+qos_policies:
+  sap_ingress:
+    - name: "INGRESS_ENTERPRISE_QOS"
+      policy_id: 10
+      description: "Enterprise 4-Class Ingress QoS"
+      default_fc: "be"
+      queues:
+        - id: 1  # Best Effort
+          rate_pir: "100000"
+          rate_cir: "10000"
+        - id: 5  # Expedited Forwarding (Voice)
+          rate_pir: "50000"
+          rate_cir: "50000"
+      fc_mappings:
+        - name: "ef"
+          queue: 5
+        - name: "be"
+          queue: 1
+      ip_criteria:
+        - entry_id: 10
+          match_protocol: "udp"
+          match_dst_port: 5060
+          action_fc: "ef"
+
+  sap_egress:
+    - name: "EGRESS_DEFAULT_QOS"
+      policy_id: 10
+      queues:
+        - id: 1
+          rate_pir: "100000"
+
+# 3. System Management Services (NTP, AAA / TACACS+, DNS)
+ntp:
+  admin_state: "enable"
+  servers:
+    - address: "172.20.20.1"
+      prefer: true
+      router_instance: "Base"
+
+tacplus:
+  servers:
+    - index: 1
+      address: "172.20.20.100"
+      secret: "lab_secret_2026"
+      port: 49
+      timeout: 5
+  authentication_order:
+    - "tacplus"
+    - "local"
+
+dns:
+  servers:
+    - "1.1.1.1"
+    - "8.8.8.8"

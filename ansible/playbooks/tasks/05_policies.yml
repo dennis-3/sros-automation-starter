@@ -1,0 +1,18 @@
+---
+# ==============================================================================
+# 05. ROUTING POLICIES & PREFIX LISTS
+# ==============================================================================
+
+- name: Configure Policy Options
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/policy_options_template.j2') }}"
+  when: policy_options is defined and (policy_options | length > 0)
+  tags:
+    - policy-options
+    - routing-policy
+    - prefix-lists

@@ -1,0 +1,48 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: Multicast (IGMP, PIM) & Port Mirroring
+# =============================================================================
+# Used with:
+# - templates/igmp_template.j2
+# - templates/pim_template.j2
+# - templates/mirror_destination_deploy.j2
+# - templates/mirror_source_deploy.j2
+# =============================================================================
+
+# 1. IGMP (Internet Group Management Protocol)
+igmp:
+  query_interval: 15
+  interfaces:
+    - name: "toR2"
+  ssm_translate:
+    - start: "233.1.1.1"
+      end: "233.1.1.1"
+      source: "10.10.10.2"
+
+# 2. PIM (Protocol Independent Multicast Sparse Mode & SSM)
+pim:
+  ssm_groups:
+    - "233.0.0.0/8"
+  interfaces:
+    - "system"
+    - "toR2"
+  static_rp:
+    - address: "10.10.10.1"
+      group_prefixes:
+        - "239.1.1.0/24"
+  anycast_rp:
+    - anycast_address: "10.10.100.1"
+      peers:
+        - "10.10.10.1"
+        - "10.10.10.2"
+
+# 3. Port Mirroring & Traffic Analysis
+mirror_destinations:
+  - name: "TRAFFIC_CAPTURE"
+    id: 101
+    sap: "1/1/c1/1:101"
+
+mirror_sources:
+  - name: "TRAFFIC_CAPTURE"
+    monitor_port: "1/1/c2/1"
+    ingress: true
+    egress: true

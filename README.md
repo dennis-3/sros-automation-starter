@@ -8,22 +8,26 @@ Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS.
 sros-automation-starter/
 ├── ansible.cfg                   # Tuned Ansible settings (forks, timeouts, default inventory)
 ├── ansible/
+│   ├── site.yml                  # Master entry-point playbook
 │   ├── group_vars/
 │   │   ├── all.yml               # Global credentials, connection parameters, commit toggles
 │   │   ├── edge_pe.yml           # Edge PE role settings
 │   │   └── core_p.yml            # Core P role settings
 │   ├── host_vars/
-│   │   ├── r1.yml                # Host-specific variables (hardware, dual-stack IPs, services)
-│   │   └── r2.yml                # R2 peer node variables (hardware, interconnect, iBGP)
+│   │   ├── r1.yml                # Lean active baseline configuration for R1
+│   │   └── r2.yml                # Lean active baseline configuration for R2
 │   ├── inventory.yml             # Role-based inventory (edge_pe, core_p, access_ce)
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
-│   │   ├── deploy.yml            # Main deployment playbook (atomic candidate staging)
-│   │   ├── ansible-netconf.yml   # Raw NETCONF execution
-│   │   └── sros-ansible-get.yml  # Operational state retrieval
+│   │   ├── deploy.yml            # Main deployment orchestrator (atomic candidate staging)
+│   │   ├── tasks/                # Modular deployment pipeline tasks (01_preflight to 09_commit)
+│   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
+│   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
 │   ├── templates/                # 22 Jinja2 NETCONF XML templates
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
+├── examples/
+│   └── data_models/              # Comprehensive reference schemas (BGP, VPNs, MPLS, QoS, etc.)
 ├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
@@ -156,15 +160,25 @@ ansible-playbook ansible/playbooks/deploy.yml --tags interfaces -e sros_commit_p
 Capture running configuration or operational state snapshots in JSON, YAML, or XML:
 ```bash
 # Snapshot operational state in JSON
-ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags state-json
+ansible-playbook ansible/playbooks/snapshot.yml --tags state-json
 
 # Snapshot running configuration in YAML
-ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags config-yaml
+ansible-playbook ansible/playbooks/snapshot.yml --tags config-yaml
 
 # Scalable targeted subtree query (e.g. interfaces only):
-ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags state-json \
+ansible-playbook ansible/playbooks/snapshot.yml --tags state-json \
   -e 'sros_state_filter="<state xmlns=\"urn:nokia.com:sros:ns:yang:sr:state\"><router><router-name>Base</router-name><interface/></router></state>"'
 ```
+
+### Reference Data Model Catalog
+Complete, production-tested data schemas for all supported Nokia SR OS features are available in `examples/data_models/`:
+- `01_underlay_routing.yml`: IS-IS, OSPF, Segment Routing (SRGB), BIER
+- `02_mpls_signaling.yml`: MPLS, RSVP-TE CSPF LSPs, LDP, SDP transport tunnels, Pseudowire templates
+- `03_bgp_and_policies.yml`: Prefix lists, route policy statements, iBGP/eBGP peering, MP-BGP
+- `04_l2_vpn_services.yml`: Point-to-point Epipes (VPWS) and multipoint VPLS (with BGP-AD & EVPN)
+- `05_l3_vpn_services.yml`: VPRN (L3VPN) with MP-BGP auto-bind tunnels, VRF interfaces, IES services
+- `06_security_and_qos.yml`: IP traffic filters (ACLs), SAP-ingress / SAP-egress QoS queuing, NTP, TACACS+ AAA
+- `07_multicast_and_mirror.yml`: IGMP, PIM (Sparse Mode, SSM, Anycast RP), Port Mirroring
 
 ### Pre-Flight Validation
 Validate Jinja2 templates for syntax errors and unclosed block tags, verify Python syntax, and check YAML schema:

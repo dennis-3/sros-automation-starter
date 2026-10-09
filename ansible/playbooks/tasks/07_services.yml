@@ -1,0 +1,85 @@
+---
+# ==============================================================================
+# 07. VPN & MULTI-SERVICE INFRASTRUCTURE (L2VPN & L3VPN)
+# ==============================================================================
+
+- name: Configure SDPs
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/sdp_template.j2') }}"
+  when: sdp_configs is defined and (sdp_configs | length > 0)
+  tags:
+    - sdp
+    - transport-tunnels
+
+- name: Configure Pseudowire Templates
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/pw_template.j2') }}"
+  when: pw_templates is defined and (pw_templates | length > 0)
+  tags:
+    - pw-templates
+    - pseudowire
+
+- name: Configure Epipe services
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/epipe_deploy.j2') }}"
+  when: epipe_services is defined and (epipe_services | length > 0)
+  tags:
+    - epipe
+    - vpws
+    - l2vpn
+
+- name: Configure VPLS services
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/vpls_deploy.j2') }}"
+  when: vpls_services is defined and (vpls_services | length > 0)
+  tags:
+    - vpls
+    - evpn
+    - l2vpn
+
+- name: Configure VPRN services
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/vprn_deploy.j2') }}"
+  when: vprn_services is defined and (vprn_services | length > 0)
+  tags:
+    - vprn
+    - l3vpn
+    - vrf
+
+- name: Configure IES services
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/ies_deploy.j2') }}"
+  when: ies_services is defined and (ies_services | length > 0)
+  tags:
+    - ies
+    - routed-interfaces

@@ -1,0 +1,9 @@
+---
+# ==============================================================================
+# SROS AUTOMATION STARTER - MASTER PLAYBOOK ENTRY POINT
+# ==============================================================================
+# Executes standard deployment pipeline:
+#   ansible-playbook ansible/site.yml
+# ==============================================================================
+- name: SROS Master Automation Orchestrator
+  ansible.builtin.import_playbook: playbooks/deploy.yml

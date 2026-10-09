@@ -1,11 +1,13 @@
 # =============================================================================
-# ACTIVE BASELINE CONFIGURATION FOR R2
+# ACTIVE BASELINE CONFIGURATION: R2
+# =============================================================================
+# Reference data models for BGP, IGP, MPLS, VPNs, and QoS are located in:
+# examples/data_models/
 # =============================================================================
 
-# System identity
 system_name: "R2-PE2"
 
-# Hardware and card provisioning
+# Hardware & Card Provisioning (Nokia SR-1 / SR-1s / vSIM)
 card_slot: 1
 card_type: "iom-1"
 mda_slot: 1
@@ -14,13 +16,13 @@ port_connector: "breakout"
 breakout_type: "c1-100g"
 port_mode: "hybrid"
 
-# Port provisioning
+# Physical port channelization
 provisioned_ports:
   - id: "1/1/c1"
   - id: "1/1/c2"
   - id: "1/1/c3"
 
-# Base interfaces (IPv4 and Dual-Stack IPv6)
+# Base interfaces (Dual-Stack IPv4 / IPv6)
 interfaces:
   - name: "system"
     address: "10.10.10.2"
@@ -29,6 +31,7 @@ interfaces:
     ipv6:
       address: "fd50:2026::2"
       prefix_length: 128
+
   - name: "toR1"
     address: "10.1.2.2"
     mask: 27
@@ -36,28 +39,3 @@ interfaces:
     ipv6:
       address: "fd50:2026:12::2"
       prefix_length: 64
-
-# =============================================================================
-# OPTIONAL SERVICES & ROUTING (UNCOMMENT AS NEEDED)
-# =============================================================================
-
-# isis:
-#   instance: 0
-#   area_address: "49.0001"
-#   level_capability: 2
-#   active_interfaces:
-#     - name: "toR1"
-#   passive_interfaces:
-#     - name: "system"
-#       ipv4_node_sid_index: 2
-
-# bgp:
-#   asn: 65000
-#   router_id: "10.10.10.2"
-#   groups:
-#     - name: "iBGP-CORE"
-#       peer_as: 65000
-#       local_address: "10.10.10.2"
-#       neighbors:
-#         - ip: "10.10.10.1"
-#           description: "Peer to R1"

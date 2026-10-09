@@ -1,0 +1,63 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: MPLS Signaling, Traffic Engineering & SDPs
+# =============================================================================
+# Used with:
+# - templates/mpls_template.j2
+# - templates/ldp_template.j2
+# - templates/sdp_template.j2
+# - templates/pw_template.j2
+# =============================================================================
+
+# 1. MPLS & RSVP-TE Traffic Engineering
+mpls:
+  interfaces:
+    - "system"
+    - "toR2"
+  paths:
+    - name: "viaR2"
+      hops:
+        - address: "10.1.2.2"
+          type: "strict"
+  lsps:
+    - lsp_name: "LSP-R1-to-R2"
+      to: "10.10.10.2"
+      lsp_type: "p2p-rsvp"
+      path_computation_method: "local-cspf"
+      primary_path_name: "viaR2"
+
+rsvp:
+  interfaces:
+    - "system"
+    - "toR2"
+
+# 2. LDP (Label Distribution Protocol)
+ldp:
+  interfaces:
+    - "toR2"
+
+# 3. Service Distribution Points (SDP Transport Tunnels)
+sdp_configs:
+  - id: 12
+    description: "RSVP-SDP-to-R2"
+    far_end_ip: "10.10.10.2"
+    lsp_name: "LSP-R1-to-R2"
+    keep_alive: true
+
+  - id: 102
+    description: "LDP-SDP-to-R2"
+    far_end_ip: "10.10.10.2"
+    signaling: "ldp"
+    keep_alive: true
+
+# 4. Pseudowire Templates (for Auto-Provisioned L2 Services)
+pw_templates:
+  - name: "PW-BGP-VPLS"
+    id: 1
+    description: "BGP-VPLS Provisioned SDP"
+    provisioned_sdp: "use"
+    shg_name: "mesh"
+
+  - name: "PW-LDP-DYNAMIC"
+    id: 2
+    description: "Dynamic LDP Auto-Provision"
+    shg_name: "mesh"

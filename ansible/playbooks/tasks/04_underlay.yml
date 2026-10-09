@@ -1,0 +1,85 @@
+---
+# ==============================================================================
+# 04. UNDERLAY ROUTING & LABEL DISTRIBUTION (IGP & MPLS)
+# ==============================================================================
+
+- name: Configure MPLS Labels
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/mpls_labels_template.j2') }}"
+  when: mpls_labels is defined and (mpls_labels | length > 0)
+  tags:
+    - mpls-labels
+    - segment-routing
+
+- name: Configure BIER
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/bier_template.j2') }}"
+  when: bier is defined and (bier | length > 0)
+  tags:
+    - bier
+    - multicast
+
+- name: Configure IS-IS
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/isis_template.j2') }}"
+  when: isis is defined and (isis | length > 0)
+  tags:
+    - isis
+    - igp
+    - underlay
+
+- name: Configure OSPF
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/ospf_template.j2') }}"
+  when: ospf is defined and (ospf | length > 0)
+  tags:
+    - ospf
+    - igp
+    - underlay
+
+- name: Configure MPLS and RSVP
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
+  when: mpls is defined or rsvp is defined
+  tags:
+    - mpls
+    - rsvp
+    - traffic-engineering
+
+- name: Configure LDP
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/ldp_template.j2') }}"
+  when: ldp is defined and (ldp | length > 0)
+  tags:
+    - ldp
+    - label-distribution

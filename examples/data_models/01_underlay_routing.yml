@@ -1,0 +1,67 @@
+# =============================================================================
+# DATA MODEL EXAMPLE: Underlay Routing & Segment Routing
+# =============================================================================
+# Used with:
+# - templates/isis_template.j2
+# - templates/ospf_template.j2
+# - templates/mpls_labels_template.j2
+# - templates/bier_template.j2
+# =============================================================================
+
+# 1. Segment Routing Global Block (SRGB) Label Range
+mpls_labels:
+  sr_labels:
+    start: 100000
+    end: 100999
+
+# 2. IS-IS Underlay Routing (with Segment Routing & BIER support)
+isis:
+  instance: 0
+  area_address: "49.0001"
+  level_capability: 2  # 1, 2, or "1/2"
+  advertise_capability: "as"
+  traffic_engineering: true
+
+  # Optional Segment Routing extensions
+  segment_routing:
+    admin_state: "enable"
+    prefix_sid_range:
+      start_label: 100000
+      max_index: 499
+
+  # Optional BIER integration
+  bier:
+    admin_state: "enable"
+    template_name: "BIER-SD0"
+
+  active_interfaces:
+    - name: "toR2"
+      level: 2
+      metric: 10
+
+  passive_interfaces:
+    - name: "system"
+      ipv4_node_sid_index: 1  # Node SID for Segment Routing
+
+# 3. OSPF Underlay Routing (Alternative IGP)
+ospf:
+  instance: 0
+  router_id: "10.10.10.1"
+  area: "0.0.0.0"
+  metric: 100
+  active_interfaces:
+    - name: "toR2"
+      interface_type: "point-to-point"
+  passive_interfaces:
+    - name: "system"
+
+# 4. BIER Global Multicast Underlay
+bier:
+  admin_state: "enable"
+  templates:
+    - name: "BIER-SD0"
+      sub_domains:
+        - start: 0
+          end: 0
+          bfr_id: 1
+          prefix: "10.10.10.1"

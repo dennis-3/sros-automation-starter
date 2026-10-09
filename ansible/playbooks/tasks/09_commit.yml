@@ -1,0 +1,123 @@
+---
+# ==============================================================================
+# 09. ATOMIC TRANSACTION COMMIT & VALIDATION
+# ==============================================================================
+
+# Preview staged candidate changes before commit when running in check mode or when sros_show_diff=true
+- name: Preview staged candidate delta via md-compare
+  when: (sros_show_diff | default(false)) or ansible_check_mode
+  tags:
+    - always
+    - diff
+  block:
+    - name: Query Nokia md-compare RPC
+      ansible.netcommon.netconf_rpc:
+        rpc: action
+        xmlns: "urn:ietf:params:xml:ns:yang:1"
+        content: |
+          <global-operations xmlns="urn:nokia.com:sros:ns:yang:sr:oper-global">
+            <md-compare>
+              <format>md-cli</format>
+            </md-compare>
+          </global-operations>
+      check_mode: false
+      register: netconf_candidate_diff
+      failed_when: false
+
+    - name: Extract and display candidate diff output
+      community.general.xml:
+        xmlstring: "{{ netconf_candidate_diff.stdout }}"
+        content: text
+        xpath: /x:rpc-reply/nokiaoper:results/nokiaoper:md-compare-output
+        namespaces:
+          x: urn:ietf:params:xml:ns:netconf:base:1.0
+          nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
+      delegate_to: localhost
+      check_mode: false
+      register: candidate_diff_parsed
+      when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
+      failed_when: false
+
+    - name: Display candidate configuration changes
+      ansible.builtin.debug:
+        msg: "{{ (candidate_diff_parsed.matches[0].values() | first) | default('No staged candidate changes.') }}"
+      when: candidate_diff_parsed is not skipped and candidate_diff_parsed.matches is defined and (candidate_diff_parsed.matches | length > 0)
+
+# In check mode (dry run), discard staged candidate changes so the router's
+# candidate datastore is left clean with zero residual configuration drift.
+- name: Discard staged candidate changes in check mode (dry run)
+  ansible.netcommon.netconf_rpc:
+    rpc: discard-changes
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+  check_mode: false
+  when:
+    - ansible_check_mode
+    - not (sros_commit_per_task | default(false))
+  failed_when: false
+  tags:
+    - always
+    - check
+
+# Validates and commits all staged candidate edits with confirmed commit and auto-rollback
+- name: Validate and Commit Staged Candidate Changes (Confirmed Commit)
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: true
+    commit: true
+    confirm: "{{ sros_confirm_timeout | int }}"
+    lock: always
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+  tags:
+    - always
+
+# Post-commit reachability probe: verifies management plane and state responsiveness
+# prior to confirming. If this check fails, the transaction aborts and auto-reverts.
+- name: Verify Management Session Health after Confirmed Commit
+  ansible.netcommon.netconf_rpc:
+    rpc: get
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+    content: |
+      <filter type="subtree">
+        <state xmlns="urn:nokia.com:sros:ns:yang:sr:state">
+          <system>
+            <name/>
+          </system>
+        </state>
+      </filter>
+  register: sros_post_commit_probe
+  retries: 3
+  delay: 5
+  until: sros_post_commit_probe is not failed
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+  tags:
+    - always
+
+- name: Confirm Previous Commit
+  ansible.netcommon.netconf_config:
+    confirm_commit: true
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+  tags:
+    - always
+
+# Validates and commits all staged candidate edits in standard atomic mode
+- name: Validate and Commit All Staged Candidate Changes (Standard Commit)
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: true
+    commit: true
+    lock: always
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - sros_confirm_timeout is not defined or (sros_confirm_timeout | int == 0)
+  tags:
+    - always

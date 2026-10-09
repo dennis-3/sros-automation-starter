@@ -3,16 +3,37 @@
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
             <ldp>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ ldp.admin_state | default('enable') }}</admin-state>
 
-                {# <targeted-session>
-                    <ipv4></ipv4>
-                </targeted-session> #}
+                {# Targeted LDP Sessions (for T-LDP Pseudowires & BGP-AD) #}
+                {% if ldp.targeted_sessions is defined or ldp.targeted_peers is defined %}
+                <targeted-session>
+                    {% for peer in (ldp.targeted_sessions | default(ldp.targeted_peers)) %}
+                    {% set peer_ip = peer.ip if peer is mapping else peer %}
+                    {% set peer_state = peer.state | default('present') if peer is mapping else 'present' %}
+                    {% if peer_state == 'absent' %}
+                    <peer operation="remove">
+                        <ip-address>{{ peer_ip }}</ip-address>
+                    </peer>
+                    {% else %}
+                    <peer>
+                        <ip-address>{{ peer_ip }}</ip-address>
+                        <admin-state>{{ (peer.admin_state | default('enable')) if peer is mapping else 'enable' }}</admin-state>
+                    </peer>
+                    {% endif %}
+                    {% endfor %}
+                </targeted-session>
+                {% endif %}
 
+                {# Interface Parameters (Dual-Stack IPv4 / IPv6) #}
                 {% if ldp.interfaces is defined %}
                 <interface-parameters>
-                    {# Global IPv4 context #}
+                    {% if ldp.ipv4 | default(true) %}
                     <ipv4></ipv4>
+                    {% endif %}
+                    {% if ldp.ipv6 | default(false) %}
+                    <ipv6></ipv6>
+                    {% endif %}
 
                     {% for iface in ldp.interfaces %}
                     {% set iface_name = iface.name if iface is mapping else iface %}
@@ -24,7 +45,12 @@
                     {% else %}
                     <interface>
                         <ip-int-name>{{ iface_name }}</ip-int-name>
+                        {% if (iface is mapping and iface.ipv4 | default(true)) or (iface is not mapping and ldp.ipv4 | default(true)) %}
                         <ipv4></ipv4>
+                        {% endif %}
+                        {% if iface is mapping and iface.ipv6 | default(false) %}
+                        <ipv6></ipv6>
+                        {% endif %}
                     </interface>
                     {% endif %}
                     {% endfor %}

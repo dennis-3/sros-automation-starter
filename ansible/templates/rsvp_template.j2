@@ -1,0 +1,27 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <router>
+            <router-name>{{ router_instance | default('Base') }}</router-name>
+            <rsvp>
+                <admin-state>{{ rsvp.admin_state | default('enable') }}</admin-state>
+                {% for iface in rsvp.interfaces | default([]) %}
+                {% set iface_name = iface.name if iface is mapping else iface %}
+                {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
+                {% if iface_state == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ iface_name }}</interface-name>
+                </interface>
+                {% else %}
+                <interface>
+                    <interface-name>{{ iface_name }}</interface-name>
+                    <admin-state>{{ (iface.admin_state | default('enable')) if iface is mapping else 'enable' }}</admin-state>
+                    {% if iface is mapping and iface.subscription is defined %}
+                    <subscription>{{ iface.subscription }}</subscription>
+                    {% endif %}
+                </interface>
+                {% endif %}
+                {% endfor %}
+            </rsvp>
+        </router>
+    </configure>
+</config>

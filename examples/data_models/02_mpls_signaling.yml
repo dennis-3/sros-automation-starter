@@ -2,13 +2,20 @@
 # DATA MODEL EXAMPLE: MPLS Signaling, Traffic Engineering & SDPs
 # =============================================================================
 # Used with:
+# - templates/rsvp_template.j2
 # - templates/mpls_template.j2
 # - templates/ldp_template.j2
 # - templates/sdp_template.j2
 # - templates/pw_template.j2
 # =============================================================================
 
-# 1. MPLS & RSVP-TE Traffic Engineering
+# 1. RSVP-TE Traffic Engineering Protocol
+rsvp:
+  interfaces:
+    - "system"
+    - "toR2"
+
+# 2. MPLS Protocol, Explicit Paths & LSPs
 mpls:
   interfaces:
     - "system"
@@ -19,21 +26,19 @@ mpls:
         - address: "10.1.2.2"
           type: "strict"
   lsps:
-    - lsp_name: "LSP-R1-to-R2"
+    - name: "LSP-R1-to-R2"
       to: "10.10.10.2"
-      lsp_type: "p2p-rsvp"
+      type: "p2p-rsvp"
       path_computation_method: "local-cspf"
-      primary_path_name: "viaR2"
+      primary:
+        path_name: "viaR2"
 
-rsvp:
-  interfaces:
-    - "system"
-    - "toR2"
-
-# 2. LDP (Label Distribution Protocol)
+# 3. LDP (Label Distribution Protocol & Targeted Sessions)
 ldp:
   interfaces:
     - "toR2"
+  targeted_sessions:
+    - ip: "10.10.10.2"
 
 # 3. Service Distribution Points (SDP Transport Tunnels)
 sdp_configs:

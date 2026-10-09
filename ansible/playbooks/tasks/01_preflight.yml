@@ -7,6 +7,8 @@
   ansible.builtin.assert:
     that:
       - system_name is defined or inventory_hostname is defined
+      - cards is not defined or (cards | type_debug == 'list')
+      - ports is not defined or (ports | type_debug == 'list')
       - interfaces is not defined or (interfaces | type_debug == 'list')
       - bgp is not defined or (bgp.asn is defined and (bgp.asn | int > 0))
       - isis is not defined or (isis.instance is defined or isis.net is defined)
@@ -24,11 +26,30 @@
   ansible.builtin.assert:
     that:
       - item.name is defined
-      - item.address is not defined or (item.mask is defined and (item.mask | int >= 0 and item.mask | int <= 32))
-    fail_msg: "Interface '{{ item.name | default('unnamed') }}' on {{ inventory_hostname }} has an invalid IP address or missing mask."
+      - >
+        item.address is not defined or
+        (((item.prefix_length is defined) or (item.mask is defined)) and
+        ((item.prefix_length | default(item.mask)) | int >= 0) and
+        ((item.prefix_length | default(item.mask)) | int <= 32))
+    fail_msg: >
+      Interface '{{ item.name | default('unnamed') }}' on {{ inventory_hostname }} has an invalid IP address
+      or missing prefix length.
   loop: "{{ interfaces }}"
   when: interfaces is defined
   tags:
     - always
     - preflight
     - validate
+
+- name: Clear stale uncommitted candidate changes to ensure clean baseline
+  ansible.netcommon.netconf_rpc:
+    rpc: discard-changes
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+  check_mode: false
+  when:
+    - not (sros_commit_per_task | default(false))
+    - sros_clean_candidate_start | default(true)
+  failed_when: false
+  tags:
+    - always
+    - preflight

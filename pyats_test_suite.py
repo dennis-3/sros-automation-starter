@@ -236,7 +236,12 @@ class ISISTest(aetest.Testcase):
                 failed_devices.append(f"{dev_name} ({exc})")
                 continue
             output_lower = output.lower()
-            if "not configured" in output_lower or "disabled" in output_lower or "no matching" in output_lower or "not running" in output_lower or "no. of interfaces: 0" in output_lower or "total interfaces: 0" in output_lower:
+            not_configured = (
+                "not configured" in output_lower or "disabled" in output_lower or
+                "no matching" in output_lower or "not running" in output_lower or
+                "no. of interfaces: 0" in output_lower or "total interfaces: 0" in output_lower
+            )
+            if not_configured:
                 log.info(f"[{dev_name}] ISIS is not configured or has 0 interfaces; skipping")
                 continue
 
@@ -496,8 +501,8 @@ class VerifyChanges(aetest.Testcase):
                     h3 { color: #0d6efd; margin-top: 30px; border-bottom: 1px solid #ced4da; padding-bottom: 6px; }
                     .change-type { font-weight: bold; font-size: 1.1em; margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; }
                     .added { color: #2b753e; } .removed { color: #b32424; } .changed { color: #b07d00; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                    th, td { padding: 12px; text-align: left; border: 1px solid #dee2e6; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.9em; }
+                    th, td { padding: 12px; text-align: left; border: 1px solid #dee2e6;
+                             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.9em; }
                     th { background-color: #f1f3f5; color: #495057; font-family: inherit; font-size: 0.95em; }
                     pre { margin: 0; white-space: pre-wrap; }
                 </style>
@@ -725,13 +730,13 @@ if __name__ == '__main__':
         testbed_data = load_testbed_from_ansible_inventory(args.inventory)
     elif args.testbed:
         testbed_data = args.testbed
+    elif os.path.exists('ansible/inventory.yml'):
+        log.info("Using ansible/inventory.yml as single source of truth for pyATS testbed")
+        testbed_data = load_testbed_from_ansible_inventory('ansible/inventory.yml')
     elif os.path.exists('pyats_testbed.yml'):
         testbed_data = 'pyats_testbed.yml'
     elif os.path.exists('testbed.yml'):
         testbed_data = 'testbed.yml'
-    elif os.path.exists('ansible/inventory.yml'):
-        log.info("pyats_testbed.yml not specified; dynamically synthesizing testbed from ansible/inventory.yml")
-        testbed_data = load_testbed_from_ansible_inventory('ansible/inventory.yml')
     else:
         testbed_data = 'pyats_testbed.yml'
 

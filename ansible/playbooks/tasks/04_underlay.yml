@@ -57,7 +57,20 @@
     - igp
     - underlay
 
-- name: Configure MPLS and RSVP
+- name: Configure RSVP
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: "{{ sros_commit_per_task | default(false) }}"
+    commit: "{{ sros_commit_per_task | default(false) }}"
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/rsvp_template.j2') }}"
+  when: rsvp is defined and (rsvp | length > 0)
+  tags:
+    - rsvp
+    - traffic-engineering
+
+- name: Configure MPLS
   ansible.netcommon.netconf_config:
     target: candidate
     validate: "{{ sros_commit_per_task | default(false) }}"
@@ -65,10 +78,9 @@
     lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
     default_operation: merge
     content: "{{ lookup('template', '../templates/mpls_template.j2') }}"
-  when: mpls is defined or rsvp is defined
+  when: mpls is defined and (mpls | length > 0)
   tags:
     - mpls
-    - rsvp
     - traffic-engineering
 
 - name: Configure LDP

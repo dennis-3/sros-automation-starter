@@ -314,6 +314,7 @@ Tasks in `deploy.yml` run in this sequence:
 - `ospf_template.j2`
 - `policy_options_template.j2`
 - `bgp_template.j2`
+- `rsvp_template.j2`
 - `mpls_template.j2`
 - `ldp_template.j2`
 - `sdp_template.j2`

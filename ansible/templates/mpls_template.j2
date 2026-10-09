@@ -3,26 +3,6 @@
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
 
-            {% if rsvp is defined and rsvp.interfaces is defined %}
-            <rsvp>
-                <admin-state>{{ rsvp.admin_state | default('enable') }}</admin-state>
-                {% for iface in rsvp.interfaces %}
-                {% set iface_name = iface.name if iface is mapping else iface %}
-                {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
-                {% if iface_state == 'absent' %}
-                <interface operation="remove">
-                    <interface-name>{{ iface_name }}</interface-name>
-                </interface>
-                {% else %}
-                <interface>
-                    <interface-name>{{ iface_name }}</interface-name>
-                    <admin-state>{{ iface.admin_state | default('enable') if iface is mapping else 'enable' }}</admin-state>
-                </interface>
-                {% endif %}
-                {% endfor %}
-            </rsvp>
-            {% endif %}
-
             <mpls>
                 <admin-state>{{ mpls.admin_state | default('enable') }}</admin-state>
 
@@ -53,7 +33,7 @@
                 <path>
                     <path-name>{{ path.name }}</path-name>
                     <admin-state>{{ path.admin_state | default('enable') }}</admin-state>
-                    {% if path.hops %}
+                    {% if path.hops is defined and path.hops %}
                     {% for hop in path.hops %}
                     <hop>
                         <hop-index>{{ loop.index }}</hop-index>
@@ -71,19 +51,57 @@
                 {% for lsp in mpls.lsps %}
                 {% if lsp.state | default('present') == 'absent' %}
                 <lsp operation="remove">
-                    <lsp-name>{{ lsp.lsp_name }}</lsp-name>
+                    <lsp-name>{{ lsp.name | default(lsp.lsp_name) }}</lsp-name>
                 </lsp>
                 {% else %}
                 <lsp>
-                    <lsp-name>{{ lsp.lsp_name }}</lsp-name>
+                    <lsp-name>{{ lsp.name | default(lsp.lsp_name) }}</lsp-name>
                     <admin-state>{{ lsp.admin_state | default('enable') }}</admin-state>
-                    <type>{{ lsp.lsp_type }}</type>
+                    {% if lsp.type is defined or lsp.lsp_type is defined %}
+                    <type>{{ lsp.type | default(lsp.lsp_type) }}</type>
+                    {% endif %}
+                    {% if lsp.path_computation_method is defined %}
                     <path-computation-method>{{ lsp.path_computation_method }}</path-computation-method>
+                    {% endif %}
+                    {% if lsp.to is defined %}
                     <to>{{ lsp.to }}</to>
+                    {% endif %}
+
+                    {# Primary Path #}
+                    {% if lsp.primary is defined or lsp.primary_path_name is defined %}
+                    {% if lsp.primary is mapping and lsp.primary.path_name is defined %}
+                    {% set p_name = lsp.primary.path_name %}
+                    {% else %}
+                    {% set p_name = lsp.primary_path_name | default(lsp.primary) %}
+                    {% endif %}
+                    {% if lsp.primary is mapping and lsp.primary.admin_state is defined %}
+                    {% set p_admin = lsp.primary.admin_state %}
+                    {% else %}
+                    {% set p_admin = lsp.primary_admin_state | default('enable') %}
+                    {% endif %}
                     <primary>
-                        <path-name>{{ lsp.primary_path_name }}</path-name>
-                        <admin-state>{{ lsp.primary_admin_state | default('enable') }}</admin-state>
+                        <path-name>{{ p_name }}</path-name>
+                        <admin-state>{{ p_admin }}</admin-state>
                     </primary>
+                    {% endif %}
+
+                    {# Secondary Standby Paths #}
+                    {% if lsp.secondary is defined or lsp.secondary_paths is defined %}
+                    {% if lsp.secondary is defined and (lsp.secondary is iterable and lsp.secondary is not string) %}
+                    {% set sec_list = lsp.secondary %}
+                    {% else %}
+                    {% set sec_list = lsp.secondary_paths | default([lsp.secondary]) %}
+                    {% endif %}
+                    {% for sec in sec_list %}
+                    <secondary>
+                        <path-name>{{ sec.path_name if sec is mapping else sec }}</path-name>
+                        <admin-state>{{ (sec.admin_state | default('enable')) if sec is mapping else 'enable' }}</admin-state>
+                        {% if sec is mapping and sec.standby | default(false) %}
+                        <standby>true</standby>
+                        {% endif %}
+                    </secondary>
+                    {% endfor %}
+                    {% endif %}
                 </lsp>
                 {% endif %}
                 {% endfor %}

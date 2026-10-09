@@ -66,7 +66,10 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
                     else:
                         last_tag, last_line = open_blocks.pop()
                         if last_tag != base_tag:
-                            print(f"    [FAIL] {t_name}:{line_no}: Mismatched closing tag '{{% {tag} %}}' (expected 'end{last_tag}', opened at line {last_line})")
+                            print(
+                                f"    [FAIL] {t_name}:{line_no}: Mismatched closing tag '{{% {tag} %}}' "
+                                f"(expected 'end{last_tag}', opened at line {last_line})"
+                            )
                             has_errors = True
 
         if open_blocks:
@@ -145,17 +148,58 @@ def validate_yaml_files(root_dir="."):
 
     return not has_errors
 
+def validate_template_rendering(template_dir="ansible/templates", data_dir="examples/data_models"):
+    print("[*] Validating synthetic rendering and XML syntax of Jinja2 templates...")
+    try:
+        import jinja2
+        import yaml
+        import xml.etree.ElementTree as ET
+    except ImportError as err:
+        print(f"    (Skipping render validation: {err})")
+        return True
+
+    context = {}
+    data_files = glob.glob(os.path.join(data_dir, "*.yml")) + glob.glob("ansible/host_vars/*.yml")
+    for df in data_files:
+        try:
+            with open(df, "r", encoding="utf-8") as f:
+                d = yaml.safe_load(f)
+                if isinstance(d, dict):
+                    context.update(d)
+        except Exception as err:
+            print(f"    [FAIL] Failed loading context from {df}: {err}")
+            return False
+
+    env = jinja2.Environment()
+    template_files = glob.glob(os.path.join(template_dir, "*.j2"))
+    has_errors = False
+
+    for t_path in sorted(template_files):
+        t_name = os.path.basename(t_path)
+        try:
+            with open(t_path, "r", encoding="utf-8") as f:
+                tmpl = env.from_string(f.read())
+            rendered = tmpl.render(**context)
+            ET.fromstring(rendered)
+            print(f"    [OK RENDER] {t_name}")
+        except Exception as err:
+            print(f"    [FAIL RENDER] {t_name}: {err}")
+            has_errors = True
+
+    return not has_errors
+
 def main():
     print("=" * 60)
     print("Pre-Flight CI Validation Suite")
     print("=" * 60)
 
     t_ok = validate_jinja2_templates()
+    r_ok = validate_template_rendering()
     p_ok = validate_python_files()
     y_ok = validate_yaml_files()
 
     print("=" * 60)
-    if t_ok and p_ok and y_ok:
+    if t_ok and r_ok and p_ok and y_ok:
         print("ALL PRE-FLIGHT VALIDATIONS PASSED.")
         sys.exit(0)
     else:

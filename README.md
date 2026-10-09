@@ -255,27 +255,29 @@ The drift report is saved to `snapshots/network_drift_report.html`.
 Tasks in `deploy.yml` run in this sequence:
 
 1. System name & hardware provisioning (card, MDA, port breakout)
-2. IP filters & ACLs
-3. IP interfaces (IPv4 & IPv6 dual-stack)
-4. MPLS label ranges
-5. BIER global configuration
-6. IGP (IS-IS or OSPF)
-7. Route policies & prefix lists
-8. BGP
-9. MPLS & RSVP-TE
-10. LDP
-11. SDP (Service Distribution Points)
-12. Pseudowire templates
-13. Layer 2 services (EPIPE, VPLS)
-14. Layer 3 services (VPRN, IES)
-15. QoS policies
-16. Multicast (IGMP, PIM)
-17. Port mirroring (destinations & sources)
-18. Atomic candidate commit (`tags: [always]`)
+2. System management (NTP, AAA/TACACS+, DNS)
+3. IP filters & ACLs
+4. IP interfaces (IPv4 & IPv6 dual-stack)
+5. MPLS label ranges
+6. BIER global configuration
+7. IGP (IS-IS or OSPF)
+8. Route policies & prefix lists
+9. BGP
+10. MPLS & RSVP-TE
+11. LDP
+12. SDP (Service Distribution Points)
+13. Pseudowire templates
+14. Layer 2 services (EPIPE, VPLS)
+15. Layer 3 services (VPRN, IES)
+16. QoS policies
+17. Multicast (IGMP, PIM)
+18. Port mirroring (destinations & sources)
+19. Atomic candidate commit (`tags: [always]`)
 
 ## Templates Included
 
 - `hardware_and_system_name_template.j2`
+- `system_management_template.j2`
 - `filter_template.j2`
 - `interface_template.j2`
 - `mpls_labels_template.j2`

@@ -8,3 +8,30 @@ ansible_host_key_auto_add: yes
 ansible_host_key_checking: False
 ansible_connection: ansible.netcommon.netconf
 ansible_network_os: nokia.sros.sros
+
+# =============================================================================
+# OPTIONAL SYSTEM MANAGEMENT DEFAULTS (UNCOMMENT AS NEEDED)
+# =============================================================================
+# ntp:
+#   admin_state: "enable"
+#   servers:
+#     - address: "172.20.20.1"
+#       prefer: true
+#       router_instance: "Base"
+
+# tacplus:
+#   servers:
+#     - index: 1
+#       address: "172.20.20.100"  # Matches aaa-server in topology.yaml
+#       secret: "lab_secret_2026"  # Matches key in tac_plus.conf
+#       port: 49
+#       timeout: 5
+#   authentication_order:
+#     - "tacplus"
+#     - "local"
+
+# dns:
+#   servers:
+#     - "1.1.1.1"
+#     - "8.8.8.8"
+

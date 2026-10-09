@@ -48,6 +48,8 @@ topology:
       mgmt-ipv4: 172.20.20.103
       ports:
         - 3000:3000
+      binds:
+        - grafana_datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
       env:
         GF_AUTH_ANONYMOUS_ENABLED: "true"
         GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"

@@ -20,6 +20,8 @@
               - bgp is not defined or (bgp.asn is defined and (bgp.asn | int > 0))
               - isis is not defined or (isis.instance is defined or isis.net is defined)
               - ospf is not defined or (ospf.router_id is defined or ospf.area is defined)
+              - ntp is not defined or (ntp.servers is defined and (ntp.servers | type_debug == 'list'))
+              - tacplus is not defined or (tacplus.servers is defined and (tacplus.servers | type_debug == 'list'))
             fail_msg: "Pre-flight validation failed on {{ inventory_hostname }}: Check host_vars syntax."
             success_msg: "Pre-flight schema validation passed for {{ inventory_hostname }}."
           tags:
@@ -56,6 +58,23 @@
           tags:
             - system
             - hardware
+
+        # Configure system management services (NTP time synchronization, TACACS+ AAA, DNS)
+        - name: Configure System Management (NTP, AAA/TACACS+, DNS)
+          ansible.netcommon.netconf_config:
+            target: candidate
+            validate: "{{ sros_commit_per_task | default(false) }}"
+            commit: "{{ sros_commit_per_task | default(false) }}"
+            lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
+            default_operation: merge
+            content: "{{ lookup('template', '../templates/system_management_template.j2') }}"
+          when: ntp is defined or tacplus is defined or dns is defined
+          tags:
+            - system
+            - ntp
+            - aaa
+            - tacplus
+            - security
 
         # ============================================================================
         # TRAFFIC FILTERS

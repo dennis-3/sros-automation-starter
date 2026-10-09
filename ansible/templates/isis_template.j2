@@ -38,39 +38,68 @@
                     {% endif %}
                 </level>
 
-                {% for intf in isis.active_interfaces %}
-                <interface>
-                    <interface-name>{{ intf.name }}</interface-name>
-                    <admin-state>enable</admin-state>
-                    <interface-type>point-to-point</interface-type>
+                {% for intf in isis.active_interfaces | default([]) %}
+                {% set intf_name = intf.name if intf is mapping else intf %}
+                {% set intf_state = intf.state | default('present') if intf is mapping else 'present' %}
+                {% if intf_state == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ intf_name }}</interface-name>
                 </interface>
+                {% else %}
+                <interface>
+                    <interface-name>{{ intf_name }}</interface-name>
+                    <admin-state>{{ intf.admin_state | default('enable') if intf is mapping else 'enable' }}</admin-state>
+                    <interface-type>{{ intf.interface_type | default('point-to-point') if intf is mapping else 'point-to-point' }}</interface-type>
+                    {% if intf is mapping and intf.metric is defined %}
+                    <level>
+                        <level-number>{{ isis.level_capability }}</level-number>
+                        <metric>{{ intf.metric }}</metric>
+                    </level>
+                    {% endif %}
+                </interface>
+                {% endif %}
                 {% endfor %}
 
-                {% for intf in isis.passive_interfaces %}
+                {% for intf in isis.passive_interfaces | default([]) %}
+                {% set intf_name = intf.name if intf is mapping else intf %}
+                {% set intf_state = intf.state | default('present') if intf is mapping else 'present' %}
+                {% if intf_state == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ intf_name }}</interface-name>
+                </interface>
+                {% else %}
                 <interface>
-                    <interface-name>{{ intf.name }}</interface-name>
-                    {% if intf.name == "system" and intf.ipv4_node_sid_index is defined %}
+                    <interface-name>{{ intf_name }}</interface-name>
+                    {% if intf is mapping and intf.ipv4_node_sid_index is defined %}
                     <ipv4-node-sid>
                         <index>{{ intf.ipv4_node_sid_index }}</index>
                     </ipv4-node-sid>
                     {% endif %}
-                    <admin-state>enable</admin-state>
-                    <interface-type>point-to-point</interface-type>
+                    {% if intf is mapping and intf.ipv6_node_sid_index is defined %}
+                    <ipv6-node-sid>
+                        <index>{{ intf.ipv6_node_sid_index }}</index>
+                    </ipv6-node-sid>
+                    {% endif %}
+                    <admin-state>{{ intf.admin_state | default('enable') if intf is mapping else 'enable' }}</admin-state>
+                    <interface-type>{{ intf.interface_type | default('point-to-point') if intf is mapping else 'point-to-point' }}</interface-type>
                     <passive>true</passive>
                 </interface>
+                {% endif %}
                 {% endfor %}
 
                 {% if isis is defined and 'core_links' in isis %}
                     {% for intf in isis.core_links %}
+                    {% set intf_name = intf.name if intf is mapping else intf %}
+                    {% set intf_metric = intf.metric | default(5) if intf is mapping else 5 %}
                     <interface>
-                        <interface-name>{{ intf.name }}</interface-name>
+                        <interface-name>{{ intf_name }}</interface-name>
                         <level>
                             <level-number>1</level-number>
-                            <metric>5</metric>
+                            <metric>{{ intf_metric }}</metric>
                         </level>
                         <level>
                             <level-number>2</level-number>
-                            <metric>5</metric>
+                            <metric>{{ intf_metric }}</metric>
                         </level>
                     </interface>
                     {% endfor %}

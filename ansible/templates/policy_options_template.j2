@@ -72,7 +72,7 @@
             {% endif %}
 
             {# Policy Statements Configuration #}
-            {% for policy in policy_options.policy_statements %}
+            {% for policy in policy_options.policy_statements | default([]) %}
             {% if policy.state | default('present') == 'absent' %}
             <policy-statement operation="remove">
                 <name>{{ policy.name }}</name>
@@ -85,29 +85,48 @@
                 {% endif %}
 
                 {% if policy.entries is defined %}
-                {% for entry in policy.entries %}
+                {% for entry in policy.entries | default([]) %}
                 <entry>
                     <entry-id>{{ entry.id }}</entry-id>
                     {% if entry.description is defined %}
                     <description>{{ entry.description }}</description>
                     {% endif %}
                     <from>
-                        {# Loop through prefix lists if provided as a list #}
+                        {# Loop through prefix lists if provided #}
                         {% if entry.from_prefix_list is defined %}
-                        {% for pl_name in entry.from_prefix_list %}
+                        {% for pl_name in (entry.from_prefix_list if entry.from_prefix_list is iterable and entry.from_prefix_list is not string else [entry.from_prefix_list]) %}
                         <prefix-list>{{ pl_name }}</prefix-list>
                         {% endfor %}
+                        {% elif entry.from is defined and entry.from.prefix_list is defined %}
+                        {% for pl_name in (entry.from.prefix_list if entry.from.prefix_list is iterable and entry.from.prefix_list is not string else [entry.from.prefix_list]) %}
+                        <prefix-list>{{ pl_name }}</prefix-list>
+                        {% endfor %}
+                        {% endif %}
+
+                        {# Match BGP community or Route Target #}
+                        {% if entry.from_community is defined %}
+                        <community>{{ entry.from_community }}</community>
+                        {% elif entry.from is defined and entry.from.community is defined %}
+                        <community>{{ entry.from.community }}</community>
                         {% endif %}
 
                         {% if entry.from_protocol is defined %}
                         <protocol>
                             <name>{{ entry.from_protocol }}</name>
                         </protocol>
+                        {% elif entry.from is defined and entry.from.protocol is defined %}
+                        <protocol>
+                            <name>{{ entry.from.protocol }}</name>
+                        </protocol>
                         {% endif %}
 
                         {% if entry.to_protocol is defined %}
                         <protocol>
                             <name>{{ entry.to_protocol }}</name>
+                        </protocol>
+                        {% elif entry.to is defined and entry.to.protocol is defined %}
+                        <protocol>
+                            <name>{{ entry.to.protocol }}</name>
                         </protocol>
                         {% endif %}
                     </from>

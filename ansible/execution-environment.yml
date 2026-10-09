@@ -27,6 +27,8 @@ dependencies:
     - xmltodict>=0.13.0
     - requests>=2.31.0
     - deepdiff>=6.7.0
+    - pyats>=24.0.0
+    - genie>=24.0.0
 
   system:
     - python3-devel

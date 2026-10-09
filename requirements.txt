@@ -23,3 +23,5 @@ requests>=2.31.0
 
 # Testing & Validation
 deepdiff>=6.7.0
+pyats>=24.0.0
+genie>=24.0.0

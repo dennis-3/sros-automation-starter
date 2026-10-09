@@ -217,6 +217,15 @@ Optional flags:
 - `--max-workers`: Number of concurrent worker threads for parallel multi-router state collection (defaults to `10`).
 - `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `60`).
 
+The pyATS test pipeline automatically runs:
+1. `ConnectivityTest`: SSH reachability and Nokia SR OS TiMOS validation.
+2. `InterfaceStateTest`: Asserts all administratively enabled IP interfaces (`adm == Up`) are operationally `Up/Up`.
+3. `ISISTest`: Asserts configured ISIS interfaces are operationally `Up` (skips gracefully if ISIS is unconfigured).
+4. `OSPFTest`: Asserts configured OSPF neighbors are in `Full` or active adjacency states.
+5. `BGPTest`: Asserts configured BGP peer sessions are established with zero degraded states (`Active`/`Idle`/`Connect`).
+6. `SnapshotState`: Concurrent multi-threaded YANG state capture across all routers.
+7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles and HTML delta report generation.
+
 The drift report is saved to `snapshots/network_drift_report.html`.
 
 ## Configuration Order

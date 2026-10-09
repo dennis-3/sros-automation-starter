@@ -18,6 +18,7 @@ help:
 install:
 	pip install -r requirements.txt
 	ansible-galaxy collection install -r ansible/requirements.yml
+	pre-commit install
 
 lab-up:
 	sudo containerlab deploy -t topology.yaml

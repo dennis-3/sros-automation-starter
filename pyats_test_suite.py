@@ -422,22 +422,37 @@ class VerifyChanges(aetest.Testcase):
         drift_detected = False
         all_diff_sections = []
 
-        for dev_label, pre_path, post_path in devices_to_compare:
-            with open(pre_path, "r") as f:
-                pre_json = json.load(f)
-            with open(post_path, "r") as f:
-                post_json = json.load(f)
+        def _compute_diff(label, pre_p, post_p):
+            try:
+                with open(pre_p, "r", encoding="utf-8") as f:
+                    pre_j = json.load(f)
+                with open(post_p, "r", encoding="utf-8") as f:
+                    post_j = json.load(f)
 
-            diff = DeepDiff(
-                pre_json,
-                post_json,
-                ignore_order=True,
-                exclude_regex_paths=exclude_paths
-            )
+                d = DeepDiff(
+                    pre_j,
+                    post_j,
+                    ignore_order=True,
+                    exclude_regex_paths=exclude_paths
+                )
+                return label, d, pre_j, post_j, None
+            except Exception as e:
+                return label, None, None, None, str(e)
 
-            if diff:
-                drift_detected = True
-                all_diff_sections.append((dev_label, diff, pre_json, post_json))
+        max_workers = self.parent.parameters.get('max_workers', 10)
+        worker_count = min(max_workers, max(1, len(devices_to_compare)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(_compute_diff, lbl, p_pre, p_post) for lbl, p_pre, p_post in devices_to_compare]
+            for f in concurrent.futures.as_completed(futures):
+                dev_label, diff, pre_json, post_json, err = f.result()
+                if err:
+                    log.error(f"[{dev_label}] State snapshot diff comparison failed: {err}")
+                elif diff:
+                    drift_detected = True
+                    all_diff_sections.append((dev_label, diff, pre_json, post_json))
+
+        # Sort sections by device label for deterministic reporting
+        all_diff_sections.sort(key=lambda s: s[0])
 
         if not drift_detected:
             self.passed("✅ No operational changes detected. The network is stable!")

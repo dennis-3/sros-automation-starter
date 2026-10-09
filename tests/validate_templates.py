@@ -41,7 +41,15 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
                 has_errors = True
                 continue
 
-        # Method 2: Lexical tag balance verification
+        # Method 2: Delimiter pair balance verification
+        for open_delim, close_delim, d_name in [('{{', '}}', 'variable'), ('{%', '%}', 'statement'), ('{#', '#}', 'comment')]:
+            open_count = content.count(open_delim)
+            close_count = content.count(close_delim)
+            if open_count != close_count:
+                print(f"    [FAIL] {t_name}: Unbalanced {d_name} delimiters '{open_delim}' vs '{close_delim}' ({open_count} open vs {close_count} close)")
+                has_errors = True
+
+        # Method 3: Lexical tag block hierarchy verification
         open_blocks = []
         lines = content.splitlines()
         for line_no, line in enumerate(lines, start=1):

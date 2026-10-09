@@ -178,22 +178,27 @@
 
                         {% if vprn.bgp_ipvpn.auto_bind_tunnel is defined %}
                         <auto-bind-tunnel>
-                            <resolution>filter</resolution>
+                            {% if vprn.bgp_ipvpn.auto_bind_tunnel == 'any' or (vprn.bgp_ipvpn.auto_bind_tunnel is mapping and vprn.bgp_ipvpn.auto_bind_tunnel.resolution == 'any') %}
+                            <resolution>any</resolution>
+                            {% else %}
+                            <resolution>{{ vprn.bgp_ipvpn.auto_bind_tunnel.resolution | default('filter') }}</resolution>
                             <resolution-filter>
-                                {% if vprn.bgp_ipvpn.auto_bind_tunnel == 'bgp' %}
+                                {% set filter_type = vprn.bgp_ipvpn.auto_bind_tunnel.type | default(vprn.bgp_ipvpn.auto_bind_tunnel) if vprn.bgp_ipvpn.auto_bind_tunnel is mapping else vprn.bgp_ipvpn.auto_bind_tunnel %}
+                                {% if filter_type == 'bgp' %}
                                 <bgp>true</bgp>
-                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'ldp' %}
+                                {% elif filter_type == 'ldp' %}
                                 <ldp>true</ldp>
-                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'rsvp' %}
+                                {% elif filter_type == 'rsvp' %}
                                 <rsvp>true</rsvp>
-                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-ospf' %}
+                                {% elif filter_type == 'sr-ospf' %}
                                 <sr-ospf>true</sr-ospf>
-                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-isis' %}
+                                {% elif filter_type == 'sr-isis' %}
                                 <sr-isis>true</sr-isis>
-                                {% elif vprn.bgp_ipvpn.auto_bind_tunnel == 'sr-te' %}
+                                {% elif filter_type == 'sr-te' %}
                                 <sr-te>true</sr-te>
                                 {% endif %}
                             </resolution-filter>
+                            {% endif %}
                         </auto-bind-tunnel>
                         {% endif %}
                     </mpls>
@@ -225,12 +230,10 @@
                             <ipv4>false</ipv4>
                             {% endif %}
 
-                            {# Label-IPv4 Family Toggle #}
-                            {# {% if group.family_label_ipv4 | default(false) %}
-                            <label-ipv4>true</label-ipv4>
-                            {% else %}
-                            <label-ipv4>false</label-ipv4>
-                            {% endif %} #}
+                            {# IPv6 Family Toggle #}
+                            {% if group.family_ipv6 | default(false) %}
+                            <ipv6>true</ipv6>
+                            {% endif %}
                         </family>
 
                         {# Policy Handling #}

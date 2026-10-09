@@ -110,18 +110,58 @@
                 {% endfor %}
                 {% endif %}
 
-                {# Forwarding Plane: ONLY for manual LDP services (Instance 1) #}
-                {# We skip this for BGP-VPLS because the PW-Template handles it #}
-                {% if vpls.rd is not defined and vpls.mesh_sdps is defined %}
-                {% for sdp_id in vpls.mesh_sdps %}
-                <mesh-sdp>
-                    <sdp-bind-id>{{ sdp_id }}:{{ vpls.vc_id }}</sdp-bind-id>
-                    <admin-state>enable</admin-state>
+                {# BGP-EVPN Context #}
+                {% if vpls.evpn is defined %}
+                <bgp-evpn>
+                    <evi>{{ vpls.evpn.evi | default(vpls.id) }}</evi>
+                    <mpls>
+                        <admin-state>{{ vpls.evpn.admin_state | default('enable') }}</admin-state>
+                        {% if vpls.evpn.auto_bind_tunnel is defined %}
+                        <auto-bind-tunnel>
+                            <resolution>{{ vpls.evpn.auto_bind_tunnel.resolution | default(vpls.evpn.auto_bind_tunnel) }}</resolution>
+                        </auto-bind-tunnel>
+                        {% endif %}
+                    </mpls>
+                </bgp-evpn>
+                {% endif %}
+
+                {# Forwarding Plane: mesh-sdps #}
+                {% if vpls.mesh_sdps is defined %}
+                {% for sdp in vpls.mesh_sdps %}
+                {% set sdp_bind_id = (sdp.id ~ ':' ~ (sdp.vc_id | default(vpls.vc_id))) if sdp is mapping else (sdp ~ ':' ~ vpls.vc_id) %}
+                {% set sdp_state = sdp.state | default('present') if sdp is mapping else 'present' %}
+                {% if sdp_state == 'absent' %}
+                <mesh-sdp operation="remove">
+                    <sdp-bind-id>{{ sdp_bind_id }}</sdp-bind-id>
                 </mesh-sdp>
+                {% else %}
+                <mesh-sdp>
+                    <sdp-bind-id>{{ sdp_bind_id }}</sdp-bind-id>
+                    <admin-state>{{ (sdp.admin_state | default('enable')) if sdp is mapping else 'enable' }}</admin-state>
+                </mesh-sdp>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
-                <admin-state>enable</admin-state>
+                {# Forwarding Plane: spoke-sdps #}
+                {% if vpls.spokes is defined or vpls.spoke_sdps is defined %}
+                {% for spoke in (vpls.spokes | default(vpls.spoke_sdps)) %}
+                {% set spoke_bind_id = (spoke.sdp_id ~ ':' ~ spoke.vc_id) if spoke.sdp_id is defined else ((spoke.id ~ ':' ~ (spoke.vc_id | default(vpls.vc_id))) if spoke is mapping else (spoke ~ ':' ~ vpls.vc_id)) %}
+                {% set spoke_state = spoke.state | default('present') if spoke is mapping else 'present' %}
+                {% if spoke_state == 'absent' %}
+                <spoke-sdp operation="remove">
+                    <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
+                </spoke-sdp>
+                {% else %}
+                <spoke-sdp>
+                    <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
+                    <admin-state>{{ (spoke.admin_state | default('enable')) if spoke is mapping else 'enable' }}</admin-state>
+                </spoke-sdp>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                <admin-state>{{ vpls.admin_state | default('enable') }}</admin-state>
             </vpls>
             {% endif %}
             {% endfor %}

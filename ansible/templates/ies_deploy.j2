@@ -37,6 +37,15 @@
                     </ipv4>
                     {% endif %}
 
+                    {% if iface.ipv6 is defined %}
+                    <ipv6>
+                        <address>
+                            <ipv6-address>{{ iface.ipv6.address }}</ipv6-address>
+                            <prefix-length>{{ iface.ipv6.prefix_length | default(iface.ipv6.mask | default(128)) }}</prefix-length>
+                        </address>
+                    </ipv6>
+                    {% endif %}
+
                     {% if iface.mac is defined %}
                     <mac>{{ iface.mac }}</mac>
                     {% endif %}

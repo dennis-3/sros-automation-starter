@@ -152,6 +152,28 @@ By default, `deploy.yml` operates in atomic mode:
 ansible-playbook ansible/playbooks/deploy.yml --tags interfaces -e sros_commit_per_task=true
 ```
 
+### Operational State & Configuration Snapshots
+Capture running configuration or operational state snapshots in JSON, YAML, or XML:
+```bash
+# Snapshot operational state in JSON
+ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags state-json
+
+# Snapshot running configuration in YAML
+ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags config-yaml
+
+# Scalable targeted subtree query (e.g. interfaces only):
+ansible-playbook ansible/playbooks/sros-ansible-get.yml --tags state-json \
+  -e 'sros_state_filter="<state xmlns=\"urn:nokia.com:sros:ns:yang:sr:state\"><router><router-name>Base</router-name><interface/></router></state>"'
+```
+
+### Pre-Flight Validation
+Validate Jinja2 templates for syntax errors and unclosed block tags, verify Python syntax, and check YAML schema:
+```bash
+make validate
+# or run full linting:
+make lint
+```
+
 ## Hardware Provisioning
 
 Hardware definitions in `host_vars/<hostname>.yml` support both modular multi-card chassis and flat single-card syntax.

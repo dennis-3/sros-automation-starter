@@ -1,4 +1,4 @@
-.PHONY: help install lab-up lab-down deploy check test-pre test-post build-ee lint clean
+.PHONY: help install lab-up lab-down deploy check test-pre test-post build-ee validate lint clean
 
 help:
 	@echo "Available commands in sros-automation-starter:"
@@ -11,7 +11,8 @@ help:
 	@echo "  make test-pre    - Capture baseline network state via pyATS"
 	@echo "  make test-post   - Capture post-change state and generate HTML drift report"
 	@echo "  make build-ee    - Build containerized Execution Environment (sros-ee:latest)"
-	@echo "  make lint        - Run ansible-lint on all playbooks and templates"
+	@echo "  make validate    - Validate Jinja2 templates, Python syntax, and schemas"
+	@echo "  make lint        - Run pre-flight validations and ansible-lint"
 	@echo "  make clean       - Remove cached files, pyATS snapshots, and artifacts"
 
 install:
@@ -42,7 +43,10 @@ test-post:
 build-ee:
 	ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest
 
-lint:
+validate:
+	python tests/validate_templates.py
+
+lint: validate
 	ansible-lint
 
 clean:

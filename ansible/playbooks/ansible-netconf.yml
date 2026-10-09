@@ -29,7 +29,7 @@
               <config>
                 <bof xmlns="urn:nokia.com:sros:ns:yang:sr:bof-conf" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nokia-attr="urn:nokia.com:sros:ns:yang:sr:attributes">
                   <dns>
-                    <primary-server>192.168.122.1</primary-server>
+                    <primary-server>{{ bof_primary_dns | default('192.168.122.1') }}</primary-server>
                   </dns>
                 </bof>
               </config>

@@ -334,6 +334,64 @@ class VerifyChanges(aetest.Testcase):
             log.info(f"Visual delta report saved to {html_path}")
             self.failed(f"Network state has drifted! Isolated exception details here: {html_path}")
 
+def load_testbed_from_ansible_inventory(inventory_file):
+    """
+    Dynamically converts an Ansible YAML inventory into a native pyATS Testbed schema.
+    Enables single-source-of-truth network definitions without maintaining duplicate testbed files.
+    """
+    import yaml
+    with open(inventory_file, 'r', encoding='utf-8') as f:
+        inv = yaml.safe_load(f) or {}
+
+    default_user = os.getenv('SROS_USER', 'admin')
+    default_password = os.getenv('SROS_PASSWORD', 'NokiaSros1!')
+
+    def _extract_hosts(group_dict):
+        hosts = {}
+        if not isinstance(group_dict, dict):
+            return hosts
+        if 'hosts' in group_dict and isinstance(group_dict['hosts'], dict):
+            hosts.update(group_dict['hosts'])
+        if 'children' in group_dict and isinstance(group_dict['children'], dict):
+            for child_val in group_dict['children'].values():
+                hosts.update(_extract_hosts(child_val))
+        return hosts
+
+    all_hosts = _extract_hosts(inv.get('all', inv))
+    devices = {}
+    for dev_name, dev_vars in all_hosts.items():
+        if not dev_vars or not isinstance(dev_vars, dict):
+            dev_vars = {}
+        dev_ip = str(dev_vars.get('ansible_host', dev_name))
+        user = dev_vars.get('ansible_user', default_user)
+        pwd = dev_vars.get('ansible_password', default_password)
+        devices[dev_name] = {
+            'os': 'sros',
+            'type': 'router',
+            'connections': {
+                'defaults': {
+                    'class': 'unicon.Unicon'
+                },
+                'cli': {
+                    'protocol': 'ssh',
+                    'ip': dev_ip
+                }
+            },
+            'credentials': {
+                'default': {
+                    'username': user,
+                    'password': pwd
+                }
+            }
+        }
+
+    return {
+        'testbed': {
+            'name': 'ansible-synthesized-testbed'
+        },
+        'devices': devices
+    }
+
 class CommonCleanup(aetest.CommonCleanup):
     @aetest.subsection
     def disconnect(self, testbed):
@@ -346,6 +404,8 @@ if __name__ == '__main__':
                         help="Specify 'pre' for baseline check or 'post' for change verification & diffing.")
     parser.add_argument('--testbed', default=None,
                         help="Path to pyATS testbed YAML file (default: pyats_testbed.yml or testbed.yml).")
+    parser.add_argument('--inventory', default=None,
+                        help="Path to Ansible inventory YAML file to dynamically synthesize pyATS testbed.")
     parser.add_argument('--paths', default='/nokia-state:state',
                         help="Comma-separated YANG state paths to query (default: '/nokia-state:state').")
     parser.add_argument('--max-workers', type=int, default=10,
@@ -355,16 +415,23 @@ if __name__ == '__main__':
 
     args, unknown = parser.parse_known_args()
 
-    testbed_file = args.testbed
-    if not testbed_file:
-        if os.path.exists('pyats_testbed.yml'):
-            testbed_file = 'pyats_testbed.yml'
-        elif os.path.exists('testbed.yml'):
-            testbed_file = 'testbed.yml'
-        else:
-            testbed_file = 'pyats_testbed.yml'
+    testbed_data = None
+    if args.inventory:
+        log.info(f"Dynamically synthesizing pyATS testbed from Ansible inventory: {args.inventory}")
+        testbed_data = load_testbed_from_ansible_inventory(args.inventory)
+    elif args.testbed:
+        testbed_data = args.testbed
+    elif os.path.exists('pyats_testbed.yml'):
+        testbed_data = 'pyats_testbed.yml'
+    elif os.path.exists('testbed.yml'):
+        testbed_data = 'testbed.yml'
+    elif os.path.exists('ansible/inventory.yml'):
+        log.info("pyats_testbed.yml not specified; dynamically synthesizing testbed from ansible/inventory.yml")
+        testbed_data = load_testbed_from_ansible_inventory('ansible/inventory.yml')
+    else:
+        testbed_data = 'pyats_testbed.yml'
 
-    testbed = topology.loader.load(testbed_file)
+    testbed = topology.loader.load(testbed_data)
     yang_paths = [p.strip() for p in args.paths.split(',') if p.strip()]
 
     if args.mode == 'pre':

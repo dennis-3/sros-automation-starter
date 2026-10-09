@@ -6,6 +6,7 @@ help:
 	@echo "  make lab-up      - Deploy Containerlab lab topology"
 	@echo "  make lab-down    - Destroy Containerlab lab topology"
 	@echo "  make deploy      - Deploy configuration to all routers via Ansible"
+	@echo "  make canary-deploy - Execute canary deployment (1 router per batch)"
 	@echo "  make check       - Dry-run deployment in check mode with candidate diff"
 	@echo "  make test-pre    - Capture baseline network state via pyATS"
 	@echo "  make test-post   - Capture post-change state and generate HTML drift report"
@@ -25,6 +26,9 @@ lab-down:
 
 deploy:
 	ansible-playbook ansible/playbooks/deploy.yml
+
+canary-deploy:
+	ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=1
 
 check:
 	ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true

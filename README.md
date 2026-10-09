@@ -91,6 +91,16 @@ Deploy core changes with a confirmed commit window (in seconds). If connectivity
 ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
 ```
 
+### Canary Rollouts (Rolling Batches)
+Deploy changes in rolling canary batches with automated fail-fast thresholds to safeguard large fleets:
+```bash
+# Canary deployment: 1 router at a time
+ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=1
+
+# Percentage-based canary batching with zero fail tolerance
+ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=20% -e sros_max_fail_percentage=0
+```
+
 ### Target Specific Device Roles
 The inventory defines role groups (`edge_pe`, `core_p`, `access_ce`). Use `--limit` to target specific tiers:
 ```bash
@@ -201,9 +211,11 @@ python pyats_test_suite.py --testbed pyats_testbed.yml --mode post
 ```
 
 Optional flags:
+- `--inventory`: Path to Ansible inventory YAML file (`ansible/inventory.yml`) to dynamically synthesize pyATS testbed definitions on-the-fly, eliminating duplicate testbed drift.
+- `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml`, `testbed.yml`, or synthesizes from `ansible/inventory.yml`).
 - `--paths`: Comma-separated YANG state paths for targeted operational state capture (defaults to `/nokia-state:state`). Example: `--paths "/nokia-state:state/router[router-name='Base']/interface,/nokia-state:state/service"`.
 - `--max-workers`: Number of concurrent worker threads for parallel multi-router state collection (defaults to `10`).
-- `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml` or `testbed.yml`).
+- `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `60`).
 
 The drift report is saved to `snapshots/network_drift_report.html`.
 

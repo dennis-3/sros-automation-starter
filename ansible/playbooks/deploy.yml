@@ -2,6 +2,8 @@
 - name: Unified Nokia SR OS Deployment (XML Format)
   hosts: all
   gather_facts: false
+  serial: "{{ sros_serial_batch | default('100%') }}"
+  max_fail_percentage: "{{ sros_max_fail_percentage | default(0) }}"
 
   tasks:
     - name: Execute deployment transaction with automated candidate rollback

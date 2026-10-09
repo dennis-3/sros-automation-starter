@@ -8,7 +8,6 @@ Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS.
 sros-automation-starter/
 ├── ansible.cfg                   # Tuned Ansible settings (forks, timeouts, default inventory)
 ├── ansible/
-│   ├── site.yml                  # Master entry-point playbook
 │   ├── group_vars/
 │   │   ├── all.yml               # Global credentials, connection parameters, commit toggles
 │   │   ├── edge_pe.yml           # Edge PE role settings

@@ -5,13 +5,18 @@
             {% for vpls in vpls_services %}
             {% if vpls.state | default('present') == 'absent' %}
             <vpls operation="remove">
-                <service-name>{{ vpls.id }}</service-name>
+                <service-name>{{ vpls.name | default(vpls.id) }}</service-name>
             </vpls>
             {% else %}
             <vpls>
-                <service-name>{{ vpls.id }}</service-name>
-                <customer>1</customer>
+                <service-name>{{ vpls.name | default(vpls.id) }}</service-name>
+                {% if vpls.id is defined %}
+                <service-id>{{ vpls.id }}</service-id>
+                {% endif %}
+                <customer>{{ vpls.customer_id | default('1') }}</customer>
+                {% if vpls.description is defined %}
                 <description>{{ vpls.description }}</description>
+                {% endif %}
 
                 {# BGP Context: Only renders if RD is defined #}
                 {% if vpls.rd is defined %}
@@ -61,9 +66,14 @@
 
                 {% if vpls.saps is defined %}
                 {% for sap in vpls.saps %}
+                {% if sap.state | default('present') == 'absent' %}
+                <sap operation="remove">
+                    <sap-id>{{ sap.port | default(sap.id) }}</sap-id>
+                </sap>
+                {% else %}
                 <sap>
-                    <sap-id>{{ sap.port }}</sap-id>
-                    <admin-state>enable</admin-state>
+                    <sap-id>{{ sap.port | default(sap.id) }}</sap-id>
+                    <admin-state>{{ sap.admin_state | default('enable') }}</admin-state>
 
                     <igmp-snooping>
                         {% if sap.is_mrouter | default (false) %}
@@ -96,6 +106,7 @@
                         {% endif %}
                     </igmp-snooping>
                 </sap>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 

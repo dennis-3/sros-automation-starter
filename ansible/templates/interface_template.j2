@@ -12,6 +12,10 @@
                 <interface-name>{{ intf.name }}</interface-name>
                 <admin-state>{{ intf.admin_state | default('enable') }}</admin-state>
                 
+                {% if intf.description is defined %}
+                <description>{{ intf.description }}</description>
+                {% endif %}
+
                 {% if intf.address is defined %}
                 <ipv4>
                     <primary>
@@ -38,12 +42,24 @@
                 <loopback/>
                 {% endif %}
 
+                {% if intf.mtu is defined %}
+                <ip-mtu>{{ intf.mtu }}</ip-mtu>
+                {% endif %}
+
                 {% if intf.ingress_ip_filter is defined %}
                 <ingress>
                   <filter>
                     <ip>{{ intf.ingress_ip_filter }}</ip>
                   </filter>
                 </ingress>
+                {% endif %}
+
+                {% if intf.egress_ip_filter is defined %}
+                <egress>
+                  <filter>
+                    <ip>{{ intf.egress_ip_filter }}</ip>
+                  </filter>
+                </egress>
                 {% endif %}
 
             </interface>

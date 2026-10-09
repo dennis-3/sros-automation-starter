@@ -9,30 +9,75 @@
             <filter-id>{{ filter.id }}</filter-id>
           </ip-filter>
           {% else %}
+          {% if filter.log_id is defined %}
           <log>
             <log-id>{{ filter.log_id }}</log-id>
 
             <destination>
               <memory>
-                <max-entries>{{ filter.max_entries }}</max-entries>
+                <max-entries>{{ filter.max_entries | default(1000) }}</max-entries>
               </memory>
             </destination>
 
-            <admin-state>enable</admin-state>
+            <admin-state>{{ filter.log_admin_state | default('enable') }}</admin-state>
           </log>
+          {% endif %}
 
           <ip-filter>
             <filter-name>{{ filter.name }}</filter-name>
-            <default-action>{{ filter.default_action }}</default-action>
+            <default-action>{{ filter.default_action | default('accept') }}</default-action>
             <filter-id>{{ filter.id }}</filter-id>
-            <entry>
-              <entry-id>{{ filter.entry_id }}</entry-id>
-              <log>{{ filter.log_id }}</log>
-              <match>
-                <protocol>{{ filter.protocol }}</protocol>
-              </match>
-              <action><{{ filter.action }} /></action>
+            {% if filter.description is defined %}
+            <description>{{ filter.description }}</description>
+            {% endif %}
+
+            {% set entries = filter.entries if filter.entries is defined else ([filter] if filter.entry_id is defined else []) %}
+            {% for entry in entries %}
+            {% if entry.state | default('present') == 'absent' %}
+            <entry operation="remove">
+              <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
             </entry>
+            {% else %}
+            <entry>
+              <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
+              {% if entry.description is defined %}
+              <description>{{ entry.description }}</description>
+              {% endif %}
+              {% if entry.log_id is defined or (entry.log is defined and entry.log) or (filter.log_id is defined and filter.entry_id is defined) %}
+              <log>{{ entry.log_id | default(filter.log_id) }}</log>
+              {% endif %}
+              {% if entry.protocol is defined or entry.match_protocol is defined or entry.src_ip is defined or entry.dst_ip is defined or entry.dst_port is defined %}
+              <match>
+                {% if entry.protocol is defined or entry.match_protocol is defined %}
+                <protocol>{{ entry.protocol | default(entry.match_protocol) }}</protocol>
+                {% endif %}
+                {% if entry.src_ip is defined %}
+                <src-ip>
+                  <address>{{ entry.src_ip.address | default(entry.src_ip) }}</address>
+                  {% if entry.src_ip.mask is defined %}
+                  <prefix-length>{{ entry.src_ip.mask }}</prefix-length>
+                  {% endif %}
+                </src-ip>
+                {% endif %}
+                {% if entry.dst_ip is defined %}
+                <dst-ip>
+                  <address>{{ entry.dst_ip.address | default(entry.dst_ip) }}</address>
+                  {% if entry.dst_ip.mask is defined %}
+                  <prefix-length>{{ entry.dst_ip.mask }}</prefix-length>
+                  {% endif %}
+                </dst-ip>
+                {% endif %}
+                {% if entry.dst_port is defined %}
+                <dst-port>
+                  <eq>{{ entry.dst_port }}</eq>
+                </dst-port>
+                {% endif %}
+              </match>
+              {% endif %}
+              <action><{{ entry.action | default('accept') }} /></action>
+            </entry>
+            {% endif %}
+            {% endfor %}
           </ip-filter>
           {% endif %}
         </filter>

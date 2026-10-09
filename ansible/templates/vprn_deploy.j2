@@ -9,7 +9,11 @@
             {% else %}
             <vprn>
                 <service-name>{{ vprn.name }}</service-name>
-                <admin-state>enable</admin-state>
+                <admin-state>{{ vprn.admin_state | default('enable') }}</admin-state>
+
+                {% if vprn.description is defined %}
+                <description>{{ vprn.description }}</description>
+                {% endif %}
 
                 {% if vprn.id is defined %}
                 <service-id>{{ vprn.id }}</service-id>
@@ -264,24 +268,73 @@
 
                 {# --- INTERFACES SECTION --- #}
                 {% for interface in vprn.interfaces %}
+                {% if interface.state | default('present') == 'absent' %}
+                <interface operation="remove">
+                    <interface-name>{{ interface.name }}</interface-name>
+                </interface>
+                {% else %}
                 <interface>
                     <interface-name>{{ interface.name }}</interface-name>
-                    <admin-state>enable</admin-state>
-                    {% if interface.loopback | default (false) %}
+                    <admin-state>{{ interface.admin_state | default('enable') }}</admin-state>
+
+                    {% if interface.description is defined %}
+                    <description>{{ interface.description }}</description>
+                    {% endif %}
+
+                    {% if interface.loopback | default(false) %}
                     <loopback/>
                     {% endif %}
+
+                    {% if interface.address is defined %}
                     <ipv4>
                         <primary>
-                            <address>{{ interface.address}}</address>
-                            <prefix-length>{{ interface.mask }}</prefix-length>
+                            <address>{{ interface.address }}</address>
+                            <prefix-length>{{ interface.mask | default(interface.prefix_length | default(24)) }}</prefix-length>
                         </primary>
                     </ipv4>
+                    {% endif %}
+
+                    {% if interface.ipv6 is defined %}
+                    <ipv6>
+                        <address>
+                            <ipv6-address>{{ interface.ipv6.address }}</ipv6-address>
+                            <prefix-length>{{ interface.ipv6.prefix_length | default(interface.ipv6.mask | default(128)) }}</prefix-length>
+                        </address>
+                    </ipv6>
+                    {% endif %}
+
+                    {% if interface.port is defined %}
+                    <port>{{ interface.port }}</port>
+                    {% endif %}
+
                     {% if interface.sap is defined %}
                     <sap>
                         <sap-id>{{ interface.sap }}</sap-id>
+                        <admin-state>{{ interface.sap_admin_state | default('enable') }}</admin-state>
                     </sap>
                     {% endif %}
+
+                    {% if interface.mtu is defined %}
+                    <ip-mtu>{{ interface.mtu }}</ip-mtu>
+                    {% endif %}
+
+                    {% if interface.ingress_ip_filter is defined %}
+                    <ingress>
+                        <filter>
+                            <ip>{{ interface.ingress_ip_filter }}</ip>
+                        </filter>
+                    </ingress>
+                    {% endif %}
+
+                    {% if interface.egress_ip_filter is defined %}
+                    <egress>
+                        <filter>
+                            <ip>{{ interface.egress_ip_filter }}</ip>
+                        </filter>
+                    </egress>
+                    {% endif %}
                 </interface>
+                {% endif %}
                 {% endfor %}
             </vprn>
             {% endif %}

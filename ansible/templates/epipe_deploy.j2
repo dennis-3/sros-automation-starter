@@ -5,12 +5,18 @@
             {% for epipe in epipe_services %}
             {% if epipe.state | default('present') == 'absent' %}
             <epipe operation="remove">
-                <service-name>{{ epipe.id }}</service-name>
+                <service-name>{{ epipe.name | default(epipe.id) }}</service-name>
             </epipe>
             {% else %}
             <epipe>
-                <service-name>{{ epipe.id }}</service-name>
-                <customer>1</customer>
+                <service-name>{{ epipe.name | default(epipe.id) }}</service-name>
+                {% if epipe.id is defined %}
+                <service-id>{{ epipe.id }}</service-id>
+                {% endif %}
+                <customer>{{ epipe.customer_id | default('1') }}</customer>
+                {% if epipe.description is defined %}
+                <description>{{ epipe.description }}</description>
+                {% endif %}
 
                 {# Enable VC-Switching if flag is present #}
                 {% if epipe.vc_switching | default(false) %}
@@ -20,9 +26,14 @@
                 {# Build SAPs if they exist #}
                 {% if epipe.saps is defined %}
                 {% for sap in epipe.saps %}
+                {% if sap.state | default('present') == 'absent' %}
+                <sap operation="remove">
+                    <sap-id>{{ sap.id }}</sap-id>
+                </sap>
+                {% else %}
                 <sap>
                     <sap-id>{{ sap.id }}</sap-id>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ sap.admin_state | default('enable') }}</admin-state>
 
                     {# Ingress QoS Logic #}
                     {% if sap.ingress_qos is defined %}
@@ -46,20 +57,27 @@
                     </egress>
                     {% endif %}
                 </sap>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
                 {# Render Spoke-SDPs with sdp:vc concatenation #}
                 {% if epipe.spokes is defined %}
                 {% for spoke in epipe.spokes %}
+                {% if spoke.state | default('present') == 'absent' %}
+                <spoke-sdp operation="remove">
+                    <sdp-bind-id>{{ spoke.sdp_id }}:{{ spoke.vc_id }}</sdp-bind-id>
+                </spoke-sdp>
+                {% else %}
                 <spoke-sdp>
                     <sdp-bind-id>{{ spoke.sdp_id }}:{{ spoke.vc_id }}</sdp-bind-id>
-                    <admin-state>enable</admin-state>
+                    <admin-state>{{ spoke.admin_state | default('enable') }}</admin-state>
                 </spoke-sdp>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
-                <admin-state>enable</admin-state>
+                <admin-state>{{ epipe.admin_state | default('enable') }}</admin-state>
             </epipe>
             {% endif %}
             {% endfor %}

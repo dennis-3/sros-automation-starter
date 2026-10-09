@@ -88,6 +88,7 @@
                   <format>md-cli</format>
                 </md-compare>
               </global-operations>
+          check_mode: false
           register: netconf_facts_compare_config_xml
 
         - name: Extract compare delta from XML response
@@ -99,6 +100,7 @@
               x: urn:ietf:params:xml:ns:netconf:base:1.0
               nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
           delegate_to: localhost
+          check_mode: false
           register: compare_config
 
         - name: Display candidate configuration diff

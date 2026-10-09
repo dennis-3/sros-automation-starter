@@ -1,87 +1,91 @@
 <config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
-
-        {% for filter in filters %}
         <filter>
-          {% if filter.state | default('present') == 'absent' %}
-          <ip-filter operation="remove">
-            <filter-name>{{ filter.name }}</filter-name>
-            <filter-id>{{ filter.id }}</filter-id>
-          </ip-filter>
-          {% else %}
-          {% if filter.log_id is defined %}
-          <log>
-            <log-id>{{ filter.log_id }}</log-id>
-
-            <destination>
-              <memory>
-                <max-entries>{{ filter.max_entries | default(1000) }}</max-entries>
-              </memory>
-            </destination>
-
-            <admin-state>{{ filter.log_admin_state | default('enable') }}</admin-state>
-          </log>
-          {% endif %}
-
-          <ip-filter>
-            <filter-name>{{ filter.name }}</filter-name>
-            <default-action>{{ filter.default_action | default('accept') }}</default-action>
-            <filter-id>{{ filter.id }}</filter-id>
-            {% if filter.description is defined %}
-            <description>{{ filter.description }}</description>
+            {% for filter in filters | default([]) %}
+            {% if filter.state | default('present') == 'absent' %}
+            <ip-filter operation="remove">
+                <filter-name>{{ filter.name }}</filter-name>
+                <filter-id>{{ filter.id }}</filter-id>
+            </ip-filter>
+            {% else %}
+            {% if filter.log_id is defined %}
+            <log>
+                <log-id>{{ filter.log_id }}</log-id>
+                <destination>
+                    <memory>
+                        <max-entries>{{ filter.max_entries | default(1000) }}</max-entries>
+                    </memory>
+                </destination>
+                <admin-state>{{ filter.log_admin_state | default('enable') }}</admin-state>
+            </log>
             {% endif %}
 
-            {% set entries = filter.entries if filter.entries is defined else ([filter] if filter.entry_id is defined else []) %}
-            {% for entry in entries %}
-            {% if entry.state | default('present') == 'absent' %}
-            <entry operation="remove">
-              <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
-            </entry>
-            {% else %}
-            <entry>
-              <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
-              {% if entry.description is defined %}
-              <description>{{ entry.description }}</description>
-              {% endif %}
-              {% if entry.log_id is defined or (entry.log is defined and entry.log) or (filter.log_id is defined and filter.entry_id is defined) %}
-              <log>{{ entry.log_id | default(filter.log_id) }}</log>
-              {% endif %}
-              {% if entry.protocol is defined or entry.match_protocol is defined or entry.src_ip is defined or entry.dst_ip is defined or entry.dst_port is defined %}
-              <match>
-                {% if entry.protocol is defined or entry.match_protocol is defined %}
-                <protocol>{{ entry.protocol | default(entry.match_protocol) }}</protocol>
+            <ip-filter>
+                <filter-name>{{ filter.name }}</filter-name>
+                <default-action>{{ filter.default_action | default('accept') }}</default-action>
+                <filter-id>{{ filter.id }}</filter-id>
+                {% if filter.description is defined %}
+                <description>{{ filter.description }}</description>
                 {% endif %}
-                {% if entry.src_ip is defined %}
-                <src-ip>
-                  <address>{{ entry.src_ip.address | default(entry.src_ip) }}</address>
-                  {% if entry.src_ip.mask is defined %}
-                  <prefix-length>{{ entry.src_ip.mask }}</prefix-length>
-                  {% endif %}
-                </src-ip>
+
+                {% for entry in filter.entries | default([]) %}
+                {% if entry.state | default('present') == 'absent' %}
+                <entry operation="remove">
+                    <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
+                </entry>
+                {% else %}
+                <entry>
+                    <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
+                    {% if entry.description is defined %}
+                    <description>{{ entry.description }}</description>
+                    {% endif %}
+                    {% if entry.log_id is defined or (entry.log is defined and entry.log) or filter.log_id is defined %}
+                    <log>{{ entry.log_id | default(filter.log_id) }}</log>
+                    {% endif %}
+
+                    {% set match_proto = entry.protocol | default(entry.match_protocol | default(none)) %}
+                    {% set match_dport = entry.dst_port | default(entry.match_dst_port | default(none)) %}
+                    {% set match_sport = entry.src_port | default(entry.match_src_port | default(none)) %}
+                    {% if match_proto or entry.src_ip is defined or entry.dst_ip is defined or match_dport or match_sport %}
+                    <match>
+                        {% if match_proto %}
+                        <protocol>{{ match_proto }}</protocol>
+                        {% endif %}
+                        {% if entry.src_ip is defined %}
+                        <src-ip>
+                            <address>{{ entry.src_ip.address if entry.src_ip is mapping else entry.src_ip }}</address>
+                            {% if entry.src_ip is mapping and (entry.src_ip.prefix_length is defined or entry.src_ip.mask is defined) %}
+                            <prefix-length>{{ entry.src_ip.prefix_length | default(entry.src_ip.mask) }}</prefix-length>
+                            {% endif %}
+                        </src-ip>
+                        {% endif %}
+                        {% if entry.dst_ip is defined %}
+                        <dst-ip>
+                            <address>{{ entry.dst_ip.address if entry.dst_ip is mapping else entry.dst_ip }}</address>
+                            {% if entry.dst_ip is mapping and (entry.dst_ip.prefix_length is defined or entry.dst_ip.mask is defined) %}
+                            <prefix-length>{{ entry.dst_ip.prefix_length | default(entry.dst_ip.mask) }}</prefix-length>
+                            {% endif %}
+                        </dst-ip>
+                        {% endif %}
+                        {% if match_dport %}
+                        <dst-port>
+                            <eq>{{ match_dport }}</eq>
+                        </dst-port>
+                        {% endif %}
+                        {% if match_sport %}
+                        <src-port>
+                            <eq>{{ match_sport }}</eq>
+                        </src-port>
+                        {% endif %}
+                    </match>
+                    {% endif %}
+                    <action><{{ entry.action | default('accept') }} /></action>
+                </entry>
                 {% endif %}
-                {% if entry.dst_ip is defined %}
-                <dst-ip>
-                  <address>{{ entry.dst_ip.address | default(entry.dst_ip) }}</address>
-                  {% if entry.dst_ip.mask is defined %}
-                  <prefix-length>{{ entry.dst_ip.mask }}</prefix-length>
-                  {% endif %}
-                </dst-ip>
-                {% endif %}
-                {% if entry.dst_port is defined %}
-                <dst-port>
-                  <eq>{{ entry.dst_port }}</eq>
-                </dst-port>
-                {% endif %}
-              </match>
-              {% endif %}
-              <action><{{ entry.action | default('accept') }} /></action>
-            </entry>
+                {% endfor %}
+            </ip-filter>
             {% endif %}
             {% endfor %}
-          </ip-filter>
-          {% endif %}
         </filter>
-        {% endfor %}
-
     </configure>
 </config>

@@ -14,19 +14,27 @@
                 <description>{{ sdp.description }}</description>
                 {% endif %}
 
+                {% if sdp.far_end is mapping and sdp.far_end.ip_address is defined %}
+                {% set fe_ip = sdp.far_end.ip_address %}
+                {% else %}
+                {% set fe_ip = sdp.far_end_ip | default(sdp.far_end) %}
+                {% endif %}
                 <far-end>
-                  <ip-address>{{ sdp.far_end_ip }}</ip-address>
+                  <ip-address>{{ fe_ip }}</ip-address>
                 </far-end>
 
                 {% if sdp.ldp | default(false) %}
                 <ldp>true</ldp>
-                {% else %}
-                <ldp>false</ldp>
-                {% if sdp.lsp_name is defined %}
+                {% elif sdp.sr_isis | default(false) %}
+                <sr-isis>true</sr-isis>
+                {% elif sdp.sr_ospf | default(false) %}
+                <sr-ospf>true</sr-ospf>
+                {% elif sdp.sr_te | default(false) %}
+                <sr-te>true</sr-te>
+                {% elif sdp.lsp is defined or sdp.lsp_name is defined %}
                 <lsp>
-                  <lsp-name>{{ sdp.lsp_name }}</lsp-name>
+                  <lsp-name>{{ sdp.lsp | default(sdp.lsp_name) }}</lsp-name>
                 </lsp>
-                {% endif %}
                 {% endif %}
 
                 <signaling>{{ sdp.signaling | default('tldp') }}</signaling>

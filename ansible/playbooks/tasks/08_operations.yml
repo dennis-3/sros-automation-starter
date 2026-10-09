@@ -42,28 +42,18 @@
     - pim
     - multicast
 
-- name: Configure Mirror Destinations
+- name: Configure Mirror Services
   ansible.netcommon.netconf_config:
     target: candidate
     validate: "{{ sros_commit_per_task | default(false) }}"
     commit: "{{ sros_commit_per_task | default(false) }}"
     lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
     default_operation: merge
-    content: "{{ lookup('template', '../templates/mirror_destination_deploy.j2') }}"
-  when: mirror_destinations is defined and (mirror_destinations | length > 0)
+    content: "{{ lookup('template', '../templates/mirror_template.j2') }}"
+  when: >
+    (mirror is defined and (mirror | length > 0)) or
+    (mirror_destinations is defined and (mirror_destinations | length > 0)) or
+    (mirror_sources is defined and (mirror_sources | length > 0))
   tags:
-    - mirror-destinations
-    - telemetry
-
-- name: Configure Mirror Sources
-  ansible.netcommon.netconf_config:
-    target: candidate
-    validate: "{{ sros_commit_per_task | default(false) }}"
-    commit: "{{ sros_commit_per_task | default(false) }}"
-    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-    default_operation: merge
-    content: "{{ lookup('template', '../templates/mirror_source_deploy.j2') }}"
-  when: mirror_sources is defined and (mirror_sources | length > 0)
-  tags:
-    - mirror-sources
+    - mirror
     - telemetry

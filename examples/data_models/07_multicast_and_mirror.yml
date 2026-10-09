@@ -4,8 +4,7 @@
 # Used with:
 # - templates/igmp_template.j2
 # - templates/pim_template.j2
-# - templates/mirror_destination_deploy.j2
-# - templates/mirror_source_deploy.j2
+# - templates/mirror_template.j2
 # =============================================================================
 
 # 1. IGMP (Internet Group Management Protocol)
@@ -35,14 +34,15 @@ pim:
         - "10.10.10.1"
         - "10.10.10.2"
 
-# 3. Port Mirroring & Traffic Analysis
-mirror_destinations:
-  - name: "TRAFFIC_CAPTURE"
-    id: 101
-    sap: "1/1/c1/1:101"
-
-mirror_sources:
-  - name: "TRAFFIC_CAPTURE"
-    monitor_port: "1/1/c2/1"
-    ingress: true
-    egress: true
+# 3. Native Port Mirroring (Mirror Destinations & Sources)
+mirror:
+  destinations:
+    - name: "TRAFFIC_CAPTURE"
+      id: 101
+      sap_id: "1/1/c1/1:101"
+  sources:
+    - name: "TRAFFIC_CAPTURE"
+      ports:
+        - port_id: "1/1/c2/1"
+          ingress: true
+          egress: true

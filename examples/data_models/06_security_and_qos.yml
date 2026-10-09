@@ -15,12 +15,12 @@ filters:
     entries:
       - entry_id: 10
         protocol: "tcp"
-        match_dst_port: 830  # NETCONF
+        dst_port: 830  # NETCONF
         action: "accept"
 
       - entry_id: 20
         protocol: "tcp"
-        match_dst_port: 22   # SSH
+        dst_port: 22   # SSH
         action: "accept"
 
 # 2. Quality of Service (QoS SAP-Ingress & SAP-Egress)

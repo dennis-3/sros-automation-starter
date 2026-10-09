@@ -177,13 +177,15 @@
                         {% endif %}
 
                         {% if vprn.bgp_ipvpn.auto_bind_tunnel is defined %}
+                        {% set abt = vprn.bgp_ipvpn.auto_bind_tunnel %}
+                        {% set is_any = (abt == 'any') or (abt is mapping and abt.resolution == 'any') %}
                         <auto-bind-tunnel>
-                            {% if vprn.bgp_ipvpn.auto_bind_tunnel == 'any' or (vprn.bgp_ipvpn.auto_bind_tunnel is mapping and vprn.bgp_ipvpn.auto_bind_tunnel.resolution == 'any') %}
+                            {% if is_any %}
                             <resolution>any</resolution>
                             {% else %}
-                            <resolution>{{ vprn.bgp_ipvpn.auto_bind_tunnel.resolution | default('filter') }}</resolution>
+                            <resolution>{{ abt.resolution | default('filter') if abt is mapping else 'filter' }}</resolution>
                             <resolution-filter>
-                                {% set filter_type = vprn.bgp_ipvpn.auto_bind_tunnel.type | default(vprn.bgp_ipvpn.auto_bind_tunnel) if vprn.bgp_ipvpn.auto_bind_tunnel is mapping else vprn.bgp_ipvpn.auto_bind_tunnel %}
+                                {% set filter_type = abt.type if (abt is mapping and abt.type is defined) else abt %}
                                 {% if filter_type == 'bgp' %}
                                 <bgp>true</bgp>
                                 {% elif filter_type == 'ldp' %}
@@ -223,16 +225,18 @@
                         {% endif %}
 
                         <family>
-                            {# IPv4 Family Toggle #}
-                            {% if group.family_ipv4 | default(false) %}
-                            <ipv4>true</ipv4>
+                            {% if group.family is defined and group.family is mapping %}
+                            {% for fam, state in group.family.items() %}
+                            <{{ fam | replace('_', '-') }}>{{ 'true' if state else 'false' }}</{{ fam | replace('_', '-') }}>
+                            {% endfor %}
+                            {% elif group.family is defined and (group.family is iterable and group.family is not string) %}
+                            {% for fam in group.family %}
+                            <{{ fam | replace('_', '-') }}>true</{{ fam | replace('_', '-') }}>
+                            {% endfor %}
                             {% else %}
-                            <ipv4>false</ipv4>
-                            {% endif %}
-
-                            {# IPv6 Family Toggle #}
-                            {% if group.family_ipv6 | default(false) %}
-                            <ipv6>true</ipv6>
+                            {# Fallback for legacy boolean flags #}
+                            {% if group.family_ipv4 is defined %}<ipv4>{{ 'true' if group.family_ipv4 else 'false' }}</ipv4>{% endif %}
+                            {% if group.family_ipv6 | default(false) %}<ipv6>true</ipv6>{% endif %}
                             {% endif %}
                         </family>
 

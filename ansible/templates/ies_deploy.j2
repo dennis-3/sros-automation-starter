@@ -32,7 +32,7 @@
                     <ipv4>
                         <primary>
                             <address>{{ iface.address }}</address>
-                            <prefix-length>{{ iface.prefix | default(iface.prefix_length | default(24)) }}</prefix-length>
+                            <prefix-length>{{ iface.prefix_length | default(iface.prefix | default(iface.mask | default(24))) }}</prefix-length>
                         </primary>
                     </ipv4>
                     {% endif %}
@@ -50,9 +50,9 @@
                     <mac>{{ iface.mac }}</mac>
                     {% endif %}
 
-                    {% if iface.sap is defined or iface.sap_id is defined %}
+                    {% if iface.sap_id is defined or iface.sap is defined %}
                     <sap>
-                        <sap-id>{{ iface.sap | default(iface.sap_id) }}</sap-id>
+                        <sap-id>{{ iface.sap_id | default(iface.sap) }}</sap-id>
                         <admin-state>{{ iface.sap_admin_state | default('enable') }}</admin-state>
                     </sap>
                     {% endif %}

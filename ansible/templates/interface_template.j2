@@ -20,7 +20,7 @@
                 <ipv4>
                     <primary>
                         <address>{{ intf.address }}</address>
-                        <prefix-length>{{ intf.mask }}</prefix-length>
+                        <prefix-length>{{ intf.prefix_length | default(intf.mask) }}</prefix-length>
                     </primary>
                 </ipv4>
                 {% endif %}

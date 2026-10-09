@@ -11,9 +11,9 @@
             {% else %}
             <prefix-list>
                 <name>{{ pl.name }}</name>
-                {% for entry in pl.prefixes %}
+                {% for entry in pl.prefixes | default([]) %}
                 <prefix>
-                    <ip-prefix>{{ entry.ip }}</ip-prefix>
+                    <ip-prefix>{{ entry.ip | default(entry.prefix) }}</ip-prefix>
                     <type>{{ entry.type }}</type>
                 </prefix>
                 {% endfor %}
@@ -22,7 +22,7 @@
             {% endfor %}
             {% endif %}
 
-            {# --- Generic BGP Community Definitions --- #}
+            {# BGP Community Definitions #}
             {% if policy_options.communities is defined %}
             {% for comm in policy_options.communities %}
             {% if comm.state | default('present') == 'absent' %}
@@ -45,32 +45,6 @@
             {% endfor %}
             {% endif %}
 
-            {# --- Legacy Community Definitions for backward compatibility --- #}
-            {% if region is defined and policy_options.communities is not defined %}
-                {% set as_prefix = "40" if (asn | default(65000)) == 65540 else "50" %}
-                {% set geo_tag = "2020" if region == "West" else "2010" %}
-
-                <community>
-                    <name>Client-CIDR-{{ region }}</name>
-                    <member>
-                        <member>{{ as_prefix|string }}:100</member>
-                    </member>
-                    <member>
-                        <member>{{ as_prefix|string }}:{{ geo_tag|string }}</member>
-                    </member>
-                </community>
-
-                <community>
-                    <name>Client-External-{{ region }}</name>
-                    <member>
-                        <member>{{ as_prefix|string }}:200</member>
-                    </member>
-                    <member>
-                        <member>{{ as_prefix|string }}:{{ geo_tag|string }}</member>
-                    </member>
-                </community>
-            {% endif %}
-
             {# Policy Statements Configuration #}
             {% for policy in policy_options.policy_statements | default([]) %}
             {% if policy.state | default('present') == 'absent' %}
@@ -85,61 +59,56 @@
                 {% endif %}
 
                 {% if policy.entries is defined %}
-                {% for entry in policy.entries | default([]) %}
+                {% for entry in policy.entries %}
                 <entry>
-                    <entry-id>{{ entry.id }}</entry-id>
+                    <entry-id>{{ entry.id | default(entry.entry_id) }}</entry-id>
                     {% if entry.description is defined %}
                     <description>{{ entry.description }}</description>
                     {% endif %}
+
+                    {# Match Criteria: <from> #}
+                    {% set from_ctx = entry.from if (entry.from is defined and entry.from is mapping) else entry %}
+                    {% set pl_list = from_ctx.prefix_list | default(entry.from_prefix_list | default([])) %}
+                    {% set pl_entries = pl_list if (pl_list is iterable and pl_list is not string) else ([pl_list] if pl_list else []) %}
+                    {% set proto_from = from_ctx.protocol | default(entry.from_protocol | default(none)) %}
+                    {% set comm_from = from_ctx.community | default(entry.from_community | default(none)) %}
+
+                    {% if pl_entries or proto_from or comm_from %}
                     <from>
-                        {# Loop through prefix lists if provided #}
-                        {% if entry.from_prefix_list is defined %}
-                        {% for pl_name in (entry.from_prefix_list if entry.from_prefix_list is iterable and entry.from_prefix_list is not string else [entry.from_prefix_list]) %}
+                        {% for pl_name in pl_entries %}
                         <prefix-list>{{ pl_name }}</prefix-list>
                         {% endfor %}
-                        {% elif entry.from is defined and entry.from.prefix_list is defined %}
-                        {% for pl_name in (entry.from.prefix_list if entry.from.prefix_list is iterable and entry.from.prefix_list is not string else [entry.from.prefix_list]) %}
-                        <prefix-list>{{ pl_name }}</prefix-list>
-                        {% endfor %}
+                        {% if comm_from %}
+                        <community>{{ comm_from }}</community>
                         {% endif %}
-
-                        {# Match BGP community or Route Target #}
-                        {% if entry.from_community is defined %}
-                        <community>{{ entry.from_community }}</community>
-                        {% elif entry.from is defined and entry.from.community is defined %}
-                        <community>{{ entry.from.community }}</community>
-                        {% endif %}
-
-                        {% if entry.from_protocol is defined %}
+                        {% if proto_from %}
                         <protocol>
-                            <name>{{ entry.from_protocol }}</name>
-                        </protocol>
-                        {% elif entry.from is defined and entry.from.protocol is defined %}
-                        <protocol>
-                            <name>{{ entry.from.protocol }}</name>
-                        </protocol>
-                        {% endif %}
-
-                        {% if entry.to_protocol is defined %}
-                        <protocol>
-                            <name>{{ entry.to_protocol }}</name>
-                        </protocol>
-                        {% elif entry.to is defined and entry.to.protocol is defined %}
-                        <protocol>
-                            <name>{{ entry.to.protocol }}</name>
+                            <name>{{ proto_from }}</name>
                         </protocol>
                         {% endif %}
                     </from>
-                    <action>
-                        <action-type>{{ entry.action }}</action-type>
+                    {% endif %}
 
-                        {# --- Add Communities: Only if they exist in variables --- #}
+                    {# Target Criteria: <to> (Sibling to <from> in SR OS YANG) #}
+                    {% set to_ctx = entry.to if (entry.to is defined and entry.to is mapping) else entry %}
+                    {% set proto_to = to_ctx.protocol | default(entry.to_protocol | default(none)) %}
+                    {% if proto_to %}
+                    <to>
+                        <protocol>
+                            <name>{{ proto_to }}</name>
+                        </protocol>
+                    </to>
+                    {% endif %}
+
+                    {# Action #}
+                    <action>
+                        <action-type>{{ entry.action | default(entry.action_type | default('accept')) }}</action-type>
                         {% if entry.add_communities is defined %}
-                            {% for comm_name in entry.add_communities %}
-                            <community>
-                                <add>{{ comm_name }}</add>
-                            </community>
-                            {% endfor %}
+                        {% for comm_name in entry.add_communities %}
+                        <community>
+                            <add>{{ comm_name }}</add>
+                        </community>
+                        {% endfor %}
                         {% endif %}
                     </action>
                 </entry>
@@ -147,7 +116,7 @@
                 {% endif %}
 
                 <default-action>
-                    <action-type>{{ policy.default_action }}</action-type>
+                    <action-type>{{ policy.default_action | default('reject') }}</action-type>
                 </default-action>
             </policy-statement>
             {% endif %}

@@ -11,7 +11,7 @@
     lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
     default_operation: merge
     content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2') }}"
-  when: system_name is defined or cards is defined or card_type is defined or provisioned_ports is defined
+  when: system_name is defined or cards is defined or ports is defined
   tags:
     - system
     - hardware

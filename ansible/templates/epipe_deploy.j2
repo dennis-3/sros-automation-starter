@@ -28,11 +28,11 @@
                 {% for sap in epipe.saps %}
                 {% if sap.state | default('present') == 'absent' %}
                 <sap operation="remove">
-                    <sap-id>{{ sap.id }}</sap-id>
+                    <sap-id>{{ sap.sap_id | default(sap.id) }}</sap-id>
                 </sap>
                 {% else %}
                 <sap>
-                    <sap-id>{{ sap.id }}</sap-id>
+                    <sap-id>{{ sap.sap_id | default(sap.id) }}</sap-id>
                     <admin-state>{{ sap.admin_state | default('enable') }}</admin-state>
 
                     {# Ingress QoS Logic #}
@@ -64,13 +64,14 @@
                 {# Render Spoke-SDPs with sdp:vc concatenation #}
                 {% if epipe.spokes is defined %}
                 {% for spoke in epipe.spokes %}
+                {% set spoke_bind_id = spoke.sdp_bind_id | default(spoke.sdp_id ~ ':' ~ spoke.vc_id) %}
                 {% if spoke.state | default('present') == 'absent' %}
                 <spoke-sdp operation="remove">
-                    <sdp-bind-id>{{ spoke.sdp_id }}:{{ spoke.vc_id }}</sdp-bind-id>
+                    <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
                 </spoke-sdp>
                 {% else %}
                 <spoke-sdp>
-                    <sdp-bind-id>{{ spoke.sdp_id }}:{{ spoke.vc_id }}</sdp-bind-id>
+                    <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
                     <admin-state>{{ spoke.admin_state | default('enable') }}</admin-state>
                 </spoke-sdp>
                 {% endif %}

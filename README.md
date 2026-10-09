@@ -325,5 +325,4 @@ Tasks in `deploy.yml` run in this sequence:
 - `qos_template.j2`
 - `igmp_template.j2`
 - `pim_template.j2`
-- `mirror_destination_deploy.j2`
-- `mirror_source_deploy.j2`
+- `mirror_template.j2`

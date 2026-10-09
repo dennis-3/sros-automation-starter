@@ -1,0 +1,66 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+    <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
+        <mirror>
+            {# Mirror Destinations #}
+            {% set dests = mirror.destinations if (mirror is defined and mirror.destinations is defined) else (mirror_destinations | default([])) %}
+            {% for dest in dests %}
+            {% if dest.state | default('present') == 'absent' %}
+            <mirror-dest operation="remove">
+                <service-name>{{ dest.name }}</service-name>
+            </mirror-dest>
+            {% else %}
+            <mirror-dest>
+                <service-name>{{ dest.name }}</service-name>
+                {% if dest.id is defined %}
+                <service-id>{{ dest.id }}</service-id>
+                {% endif %}
+                {% if dest.description is defined %}
+                <description>{{ dest.description }}</description>
+                {% endif %}
+                {% if dest.sap_id is defined or dest.sap is defined %}
+                <sap>
+                    <sap-id>{{ dest.sap_id | default(dest.sap) }}</sap-id>
+                </sap>
+                {% endif %}
+                <admin-state>{{ dest.admin_state | default('enable') }}</admin-state>
+            </mirror-dest>
+            {% endif %}
+            {% endfor %}
+
+            {# Mirror Sources #}
+            {% set srcs = mirror.sources if (mirror is defined and mirror.sources is defined) else (mirror_sources | default([])) %}
+            {% for src in srcs %}
+            {% if src.state | default('present') == 'absent' %}
+            <mirror-source operation="remove">
+                <service-name>{{ src.name }}</service-name>
+            </mirror-source>
+            {% else %}
+            <mirror-source>
+                <service-name>{{ src.name }}</service-name>
+                {% if src.description is defined %}
+                <description>{{ src.description }}</description>
+                {% endif %}
+
+                {% if src.ports is defined %}
+                {% for p in src.ports %}
+                <port>
+                    <port-id>{{ p.port_id | default(p.id | default(p)) }}</port-id>
+                    <ingress>{{ 'true' if (p.ingress | default(true)) else 'false' }}</ingress>
+                    <egress>{{ 'true' if (p.egress | default(true)) else 'false' }}</egress>
+                </port>
+                {% endfor %}
+                {% elif src.port_id is defined or src.monitor_port is defined %}
+                <port>
+                    <port-id>{{ src.port_id | default(src.monitor_port) }}</port-id>
+                    <ingress>{{ 'true' if (src.ingress | default(true)) else 'false' }}</ingress>
+                    <egress>{{ 'true' if (src.egress | default(true)) else 'false' }}</egress>
+                </port>
+                {% endif %}
+
+                <admin-state>{{ src.admin_state | default('enable') }}</admin-state>
+            </mirror-source>
+            {% endif %}
+            {% endfor %}
+        </mirror>
+    </configure>
+</config>

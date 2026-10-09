@@ -68,11 +68,11 @@
                 {% for sap in vpls.saps %}
                 {% if sap.state | default('present') == 'absent' %}
                 <sap operation="remove">
-                    <sap-id>{{ sap.port | default(sap.id) }}</sap-id>
+                    <sap-id>{{ sap.sap_id | default(sap.port | default(sap.id)) }}</sap-id>
                 </sap>
                 {% else %}
                 <sap>
-                    <sap-id>{{ sap.port | default(sap.id) }}</sap-id>
+                    <sap-id>{{ sap.sap_id | default(sap.port | default(sap.id)) }}</sap-id>
                     <admin-state>{{ sap.admin_state | default('enable') }}</admin-state>
 
                     <igmp-snooping>
@@ -128,8 +128,15 @@
                 {# Forwarding Plane: mesh-sdps #}
                 {% if vpls.mesh_sdps is defined %}
                 {% for sdp in vpls.mesh_sdps %}
-                {% set sdp_bind_id = (sdp.id ~ ':' ~ (sdp.vc_id | default(vpls.vc_id))) if sdp is mapping else (sdp ~ ':' ~ vpls.vc_id) %}
-                {% set sdp_state = sdp.state | default('present') if sdp is mapping else 'present' %}
+                {% if sdp is mapping %}
+                {% set sdp_bind_id = sdp.sdp_bind_id | default(sdp.id ~ ':' ~ (sdp.vc_id | default(vpls.vc_id))) %}
+                {% set sdp_state = sdp.state | default('present') %}
+                {% set sdp_admin = sdp.admin_state | default('enable') %}
+                {% else %}
+                {% set sdp_bind_id = sdp ~ ':' ~ vpls.vc_id %}
+                {% set sdp_state = 'present' %}
+                {% set sdp_admin = 'enable' %}
+                {% endif %}
                 {% if sdp_state == 'absent' %}
                 <mesh-sdp operation="remove">
                     <sdp-bind-id>{{ sdp_bind_id }}</sdp-bind-id>
@@ -137,7 +144,7 @@
                 {% else %}
                 <mesh-sdp>
                     <sdp-bind-id>{{ sdp_bind_id }}</sdp-bind-id>
-                    <admin-state>{{ (sdp.admin_state | default('enable')) if sdp is mapping else 'enable' }}</admin-state>
+                    <admin-state>{{ sdp_admin }}</admin-state>
                 </mesh-sdp>
                 {% endif %}
                 {% endfor %}
@@ -146,8 +153,15 @@
                 {# Forwarding Plane: spoke-sdps #}
                 {% if vpls.spokes is defined or vpls.spoke_sdps is defined %}
                 {% for spoke in (vpls.spokes | default(vpls.spoke_sdps)) %}
-                {% set spoke_bind_id = (spoke.sdp_id ~ ':' ~ spoke.vc_id) if spoke.sdp_id is defined else ((spoke.id ~ ':' ~ (spoke.vc_id | default(vpls.vc_id))) if spoke is mapping else (spoke ~ ':' ~ vpls.vc_id)) %}
-                {% set spoke_state = spoke.state | default('present') if spoke is mapping else 'present' %}
+                {% if spoke is mapping %}
+                {% set spoke_vc = spoke.vc_id | default(vpls.vc_id) %}
+                {% set spoke_id = spoke.sdp_id | default(spoke.id) %}
+                {% set spoke_bind_id = spoke.sdp_bind_id | default(spoke_id ~ ':' ~ spoke_vc) %}
+                {% set spoke_state = spoke.state | default('present') %}
+                {% else %}
+                {% set spoke_bind_id = spoke ~ ':' ~ vpls.vc_id %}
+                {% set spoke_state = 'present' %}
+                {% endif %}
                 {% if spoke_state == 'absent' %}
                 <spoke-sdp operation="remove">
                     <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>

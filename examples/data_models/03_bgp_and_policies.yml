@@ -21,7 +21,8 @@ policy_options:
       entries:
         - id: 10
           description: "Accept valid client CIDRs"
-          from_prefix_list: ["Internal-Prefixes"]
+          from:
+            prefix_list: ["Internal-Prefixes"]
           action: "accept"
 
     - name: "EXPORT-CORE"
@@ -29,7 +30,8 @@ policy_options:
       default_action: "reject"
       entries:
         - id: 10
-          from_protocol: "direct"
+          from:
+            protocol: "direct"
           action: "accept"
 
 # 2. BGP Peering (iBGP, eBGP, MP-BGP Overlay)
@@ -43,9 +45,10 @@ bgp:
     - name: "iBGP-CORE"
       description: "Core iBGP Mesh (AS 65000)"
       next_hop_self: true
-      family_ipv4: true
-      family_vpn_ipv4: true
-      family_l2vpn: true
+      family:
+        ipv4: true
+        vpn-ipv4: true
+        l2-vpn: true
       neighbors:
         - ip: "10.10.10.2"
           description: "R2-PE2"
@@ -56,7 +59,8 @@ bgp:
       peer_as: 65100
       import_policy: "IMPORT-EBGP"
       export_policy: ["EXPORT-CORE"]
-      family_ipv4: true
+      family:
+        ipv4: true
       neighbors:
         - ip: "192.0.2.2"
           description: "Peer-Border-Router"

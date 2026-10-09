@@ -24,14 +24,14 @@ vprn_services:
     interfaces:
       - name: "corp-lan"
         address: "192.168.10.1"
-        mask: 24
+        prefix_length: 24
         description: "Corporate LAN Gateway"
         loopback: true
 
       - name: "ce-handoff"
         address: "172.16.1.1"
-        mask: 30
-        sap: "1/1/c1/1:10"
+        prefix_length: 30
+        sap_id: "1/1/c1/1:10"
 
     # PE-CE BGP Session inside VRF
     bgp:
@@ -39,7 +39,8 @@ vprn_services:
       groups:
         - name: "PE-CE-BGP"
           peer_as: 65010
-          family_ipv4: true
+          family:
+            ipv4: true
           neighbors:
             - ip: "172.16.1.2"
               description: "Customer-Edge-Router"
@@ -48,7 +49,8 @@ vprn_services:
 ies_services:
   - id: 100
     name: "DIRECT_INTERNET_ACCESS"
-    interface_name: "dia-cust1"
-    address: "198.51.100.1"
-    prefix: 30
-    sap: "1/1/c1/1:100"
+    interfaces:
+      - name: "dia-cust1"
+        address: "198.51.100.1"
+        prefix_length: 30
+        sap_id: "1/1/c1/1:100"

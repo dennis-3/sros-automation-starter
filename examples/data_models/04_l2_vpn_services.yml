@@ -12,11 +12,10 @@ epipe_services:
     description: "Point-to-Point Circuit Customer A"
     vc_switching: false
     saps:
-      - id: "1/1/c1/1:100"
+      - sap_id: "1/1/c1/1:100"
         description: "Customer A Handoff"
     spokes:
-      - sdp_id: 12
-        vc_id: 101
+      - sdp_bind_id: "12:101"
 
 # 2. Multipoint Layer 2 Service (VPLS)
 vpls_services:
@@ -26,9 +25,10 @@ vpls_services:
     description: "Enterprise LAN VPLS Mesh"
     igmp_snooping: true
     saps:
-      - port: "1/1/c1/1:200"
+      - sap_id: "1/1/c1/1:200"
         description: "LAN Handoff"
-    mesh_sdps: [12]
+    mesh_sdps:
+      - sdp_bind_id: "12:201"
 
   # BGP Auto-Discovery (BGP-AD) VPLS
   - id: 202
@@ -38,5 +38,5 @@ vpls_services:
     rt: "target:65000:202"
     vpls_id: "65000:202"
     saps:
-      - port: "1/1/c1/1:202"
+      - sap_id: "1/1/c1/1:202"
         description: "Branch LAN"

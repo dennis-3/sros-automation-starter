@@ -6,11 +6,13 @@ Validates:
 2. Python compilation and syntax across all .py files.
 3. YAML formatting and document integrity across inventory, playbooks, vars, and topology configs.
 """
-import os
-import sys
+
 import glob
-import re
+import os
 import py_compile
+import re
+import sys
+
 
 def validate_jinja2_templates(template_dir="ansible/templates"):
     print(f"[*] Validating Jinja2 templates in {template_dir}...")
@@ -23,6 +25,7 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
     jinja_env = None
     try:
         import jinja2
+
         jinja_env = jinja2.Environment()
     except ImportError:
         print("    (jinja2 package not installed; utilizing lexical block validation)")
@@ -42,11 +45,17 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
                 continue
 
         # Method 2: Delimiter pair balance verification
-        for open_delim, close_delim, d_name in [('{{', '}}', 'variable'), ('{%', '%}', 'statement'), ('{#', '#}', 'comment')]:
+        for open_delim, close_delim, d_name in [
+            ("{{", "}}", "variable"),
+            ("{%", "%}", "statement"),
+            ("{#", "#}", "comment"),
+        ]:
             open_count = content.count(open_delim)
             close_count = content.count(close_delim)
             if open_count != close_count:
-                print(f"    [FAIL] {t_name}: Unbalanced {d_name} delimiters '{open_delim}' vs '{close_delim}' ({open_count} open vs {close_count} close)")
+                print(
+                    f"    [FAIL] {t_name}: Unbalanced {d_name} delimiters '{open_delim}' vs '{close_delim}' ({open_count} open vs {close_count} close)"
+                )
                 has_errors = True
 
         # Method 3: Lexical tag block hierarchy verification
@@ -56,12 +65,14 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
             # Match Jinja2 control statements: {% if ... %}, {% for ... %}, etc.
             tags = re.findall(r"{%\s*([a-zA-Z0-9_]+)\b", line)
             for tag in tags:
-                if tag in ('if', 'for', 'block', 'macro', 'filter'):
+                if tag in ("if", "for", "block", "macro", "filter"):
                     open_blocks.append((tag, line_no))
-                elif tag.startswith('end'):
-                    base_tag = tag[3:] # e.g. endif -> if, endfor -> for
+                elif tag.startswith("end"):
+                    base_tag = tag[3:]  # e.g. endif -> if, endfor -> for
                     if not open_blocks:
-                        print(f"    [FAIL] {t_name}:{line_no}: Stray closing tag '{{% {tag} %}}' with no matching open tag")
+                        print(
+                            f"    [FAIL] {t_name}:{line_no}: Stray closing tag '{{% {tag} %}}' with no matching open tag"
+                        )
                         has_errors = True
                     else:
                         last_tag, last_line = open_blocks.pop()
@@ -74,12 +85,15 @@ def validate_jinja2_templates(template_dir="ansible/templates"):
 
         if open_blocks:
             for unclosed_tag, unclosed_line in open_blocks:
-                print(f"    [FAIL] {t_name}:{unclosed_line}: Unclosed block tag '{{% {unclosed_tag} %}}'")
+                print(
+                    f"    [FAIL] {t_name}:{unclosed_line}: Unclosed block tag '{{% {unclosed_tag} %}}'"
+                )
             has_errors = True
         else:
             print(f"    [OK] {t_name}")
 
     return not has_errors
+
 
 EXCLUDED_PATTERNS = (
     ".git",
@@ -95,6 +109,7 @@ EXCLUDED_PATTERNS = (
     "context",
 )
 
+
 def is_excluded(filepath):
     normalized = os.path.normpath(filepath).replace("\\", "/")
     parts = normalized.split("/")
@@ -104,11 +119,13 @@ def is_excluded(filepath):
                 return True
     return False
 
+
 def validate_python_files(root_dir="."):
     print(f"[*] Validating Python syntax in {root_dir}...")
     has_errors = False
     py_files = [
-        f for f in glob.glob(os.path.join(root_dir, "**", "*.py"), recursive=True)
+        f
+        for f in glob.glob(os.path.join(root_dir, "**", "*.py"), recursive=True)
         if not is_excluded(f)
     ]
 
@@ -122,6 +139,7 @@ def validate_python_files(root_dir="."):
 
     return not has_errors
 
+
 def validate_yaml_files(root_dir="."):
     print(f"[*] Validating YAML documents in {root_dir}...")
     try:
@@ -132,7 +150,8 @@ def validate_yaml_files(root_dir="."):
 
     has_errors = False
     yaml_files = [
-        f for f in glob.glob(os.path.join(root_dir, "**", "*.y*ml"), recursive=True)
+        f
+        for f in glob.glob(os.path.join(root_dir, "**", "*.y*ml"), recursive=True)
         if not is_excluded(f)
     ]
 
@@ -148,18 +167,24 @@ def validate_yaml_files(root_dir="."):
 
     return not has_errors
 
-def validate_template_rendering(template_dir="ansible/templates", data_dir="examples/data_models"):
+
+def validate_template_rendering(
+    template_dir="ansible/templates", data_dir="examples/data_models"
+):
     print("[*] Validating synthetic rendering and XML syntax of Jinja2 templates...")
     try:
+        import xml.etree.ElementTree as ET
+
         import jinja2
         import yaml
-        import xml.etree.ElementTree as ET
     except ImportError as err:
         print(f"    (Skipping render validation: {err})")
         return True
 
     context = {}
-    data_files = glob.glob(os.path.join(data_dir, "*.yml")) + glob.glob("ansible/host_vars/*.yml")
+    data_files = glob.glob(os.path.join(data_dir, "*.yml")) + glob.glob(
+        "ansible/host_vars/*.yml"
+    )
     for df in data_files:
         try:
             with open(df, "r", encoding="utf-8") as f:
@@ -188,6 +213,7 @@ def validate_template_rendering(template_dir="ansible/templates", data_dir="exam
 
     return not has_errors
 
+
 def main():
     print("=" * 60)
     print("Pre-Flight CI Validation Suite")
@@ -205,6 +231,7 @@ def main():
     else:
         print("VALIDATION FAILURES DETECTED!")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

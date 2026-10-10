@@ -52,8 +52,8 @@ We use `make` for common workflow operations:
 | `make snapshot` | Capture operational state snapshot in JSON |
 | `make test-pre` | Capture pyATS baseline state |
 | `make test-post` | Capture pyATS post-change state and generate HTML drift report |
-| `make validate` | Validate Jinja2 templates, Python syntax, and schemas |
-| `make lint` | Run pre-flight checks and `ansible-lint` |
+| `make validate` | Fast pre-flight check: Jinja2 AST, XML schema rendering, Python & YAML syntax |
+| `make lint` | Comprehensive linting: validate, pre-commit hooks (Ruff, YAML), and ansible-lint |
 | `make lab-down` | Destroy Containerlab topology |
 | `make clean` | Clean temporary artifacts and test caches |
 
@@ -67,13 +67,39 @@ We use `make` for common workflow operations:
 - **Idempotency & Safe Rollbacks**: All tasks must be safe to re-run. In case of staging failures, the candidate store must be cleanly discarded via `<discard-changes/>`.
 - **Line Length**: Keep line lengths reasonable (recommended $\le 160$ characters).
 
-### 2. Pre-Flight CI Validation
-Before opening a pull request, run:
+### 2. Pre-Flight CI & Quality Assurance
+
+All pull requests must pass our automated CI pipeline before merging. We provide a two-tier verification workflow to catch issues locally before pushing:
+
+#### Tier 1: Fast Pre-Flight Validation (`make validate`)
+Executes [`tests/validate_templates.py`](tests/validate_templates.py) in $< 2$ seconds on any operating system:
+- **Jinja2 AST & Delimiter Balance**: Parses template syntax trees and ensures all statements (`{% if %}`, `{% for %}`) and delimiters (`{{ }}`, `{# #}`) are balanced.
+- **Synthetic XML Rendering & Parsing**: Dynamically renders all 23 Jinja2 templates using test context from [`examples/data_models/`](examples/data_models/) and [`ansible/host_vars/`](ansible/host_vars/), parsing the resulting XML with `xml.etree.ElementTree` to verify schema validity.
+- **Syntax Verification**: Validates Python compilation across all `.py` files and YAML document structure across playbooks, inventories, and topologies.
+
 ```bash
 make validate
+```
+
+#### Tier 2: Comprehensive Static Analysis (`make lint`)
+Runs the full local linting pipeline prior to submitting a PR:
+- Runs `make validate` first.
+- Executes all pre-commit hooks (`pre-commit run --all-files`) for Python code formatting (Ruff), code quality checks, trailing whitespace, end-of-file fixers, and merge conflict markers.
+- Executes `ansible-lint` to ensure playbook standards and Ansible best practices (gracefully skips if running natively on Windows where `ansible-lint` is unsupported; run inside WSL or Docker for local Ansible linting).
+
+```bash
 make lint
 ```
-All 23 Jinja2 templates must parse valid XML when rendered synthetically against sample data models.
+
+#### Continuous Integration Pipeline (GitHub Actions)
+When you open a Pull Request, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) automatically validates:
+1. **Security & Secret Scanning**: Scans all commits using `gitleaks` to prevent accidental credential or private key exposure.
+2. **Template & Schema Integrity**: Runs `tests/validate_templates.py`.
+3. **Formatting & Style**: Runs `pre-commit run --all-files`.
+4. **Ansible Standards**: Runs `ansible-lint` on an Ubuntu runner.
+
+> [!TIP]
+> If `make lint` fails due to Python formatting, run `ruff format .` to format your code automatically before committing.
 
 ### 3. Commit Message Convention
 We adhere to [Conventional Commits](https://www.conventionalcommits.org/):

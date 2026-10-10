@@ -1,9 +1,9 @@
-name: CI Lint and Pre-Flight Validation
+name: CI Pre-Flight Validation and Lint
 
 on: [push, pull_request]
 
 jobs:
-  lint:
+  validation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

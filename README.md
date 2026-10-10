@@ -267,7 +267,8 @@ The drift report is saved to `snapshots/network_drift_report.html`.
 ## CI/CD Deployment Pipeline (GitHub Actions)
 
 The repository includes enterprise-grade GitHub Actions workflows:
-- **Linting (`.github/workflows/lint.yml`)**: Executes template syntax validation (`validate_templates.py`), Python compilation, and Ansible syntax checks on every pull request and push.
+- **Continuous Integration (`.github/workflows/ci.yml`)**: Executes template syntax and XML schema validation (`validate_templates.py`),
+  pre-commit hooks, and Ansible lint checks on every pull request and push.
 - **Deployment & Verification (`.github/workflows/deploy.yml`)**:
   - Triggers automatically on `push` to `main`, and dry-runs on `pull_request`.
   - Supports manual execution via `workflow_dispatch` with parameter overrides:

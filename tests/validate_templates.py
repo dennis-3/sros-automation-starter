@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive CI/CD Pre-Flight Validator
+Pre-Flight CI/CD Validation Suite
 Validates:
 1. Jinja2 template AST syntax and block balancing across all templates in ansible/templates/.
 2. Synthetic rendering of all 23 Jinja2 templates and ElementTree XML schema parsing.

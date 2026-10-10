@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Two-tier local verification architecture: fast pre-flight check (`make validate`) and comprehensive linting (`make lint`).
+- Two-tier local verification architecture: fast pre-flight check (`make validate`) and full static analysis (`make lint`).
 - Synthetic Jinja2 rendering against data models with XML `ElementTree` schema validation across all 23 templates.
 - Automated secret and credential scanning with Gitleaks in GitHub Actions CI workflow.
 - Candidate datastore diff detection via Nokia native `md-compare` RPC to guarantee commit idempotency and skip no-op transactions.

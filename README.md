@@ -115,7 +115,7 @@ make snapshot        # Retrieve operational state snapshot in JSON via Ansible
 make test-pre        # Capture pre-change baseline network state via pyATS
 make test-post       # Verify post-change state and generate HTML drift report
 make validate        # Fast pre-flight check: Jinja2 templates, XML render, and schemas
-make lint            # Comprehensive linting: validate, pre-commit hooks, and ansible-lint
+make lint            # Full static analysis: validate, pre-commit hooks, and ansible-lint
 
 # Containerized Execution & Maintenance
 make build-ee        # Build containerized Execution Environment (sros-ee:latest)

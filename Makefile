@@ -13,7 +13,7 @@ help:
 	@echo "  make test-post     - Capture post-change state and generate HTML drift report"
 	@echo "  make build-ee      - Build containerized Execution Environment (sros-ee:latest)"
 	@echo "  make validate      - Fast pre-flight check: Jinja2 templates, XML render, and schemas"
-	@echo "  make lint          - Comprehensive linting: validate, pre-commit hooks, and ansible-lint"
+	@echo "  make lint          - Full static analysis: validate, pre-commit hooks, and ansible-lint"
 	@echo "  make clean         - Remove cached files, pyATS snapshots, and artifacts"
 
 install:

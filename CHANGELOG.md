@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Candidate datastore diff detection via Nokia native `md-compare` RPC to guarantee commit idempotency and skip no-op transactions.
 - Developer code quality dependencies (`pre-commit>=4.0.0`, `ruff>=0.8.4`) in `requirements.txt`.
 - Dynamic environment variable substitution (`SROS_IMAGE`, `SROS_LICENSE`) in Containerlab `topology.yaml`.
+- Added `SROS_PORT` environment variable definition to `.env.example` and credentials documentation.
 - Meta-tag `routing` and snake_case alias tags in `deploy.yml`.
 
 ### Changed
 - Decoupled `ansible-lint` from `.pre-commit-config.yaml` to ensure clean commits on native Windows systems without WSL requirement.
 - Updated `make install` help description and `CONTRIBUTING.md` task table to include all Makefile targets.
+- Modernized hardware provisioning documentation in `README.md` to reflect native SR OS YANG `cards` and `ports` hierarchy.
 
 ## [1.0.0] - 2026-10-10
 

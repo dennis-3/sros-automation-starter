@@ -155,6 +155,7 @@ Credentials can be injected dynamically via environment variables for Ansible an
 ```bash
 export SROS_USER="admin"
 export SROS_PASSWORD="your_secure_password"
+export SROS_PORT="830"
 ```
 
 If using NetBox dynamic inventory:
@@ -280,31 +281,28 @@ Or run the full static analysis suite (includes `validate`, all pre-commit forma
 make lint
 ```
 
-## Hardware Provisioning
+## Hardware & Port Provisioning
 
-Hardware definitions in `host_vars/<hostname>.yml` support both modular multi-card chassis and flat single-card syntax.
+Hardware and physical port definitions in `host_vars/<hostname>.yml` follow native Nokia SR OS YANG data hierarchies, configuring cards, MDAs, connector breakouts, and Ethernet encapsulation:
 
-Modular multi-card format:
 ```yaml
-hardware:
-  chassis_class: router
-  chassis_type: 7750 SR-1
-  cards:
-    - slot: 1
-      type: iom-1
-      mdas:
-        - slot: 1
-          type: me6-100gb-qsfp28
-```
+# Hardware & Card Provisioning (Nokia SR-1 / SR-1s / 7750 SR / vSIM)
+cards:
+  - slot: 1
+    type: "iom-1"
+    mdas:
+      - slot: 1
+        type: "me6-100gb-qsfp28"
 
-Flat legacy format (also supported):
-```yaml
-chassis_class: router
-chassis_type: 7750 SR-1
-card_slot: 1
-card_type: iom-1
-mda_slot: 1
-mda_type: me6-100gb-qsfp28
+# Port & Connector Provisioning (Native SR OS YANG port hierarchy)
+ports:
+  - id: "1/1/c1"
+    connector:
+      breakout: "c1-100g"
+  - id: "1/1/c1/1"
+    ethernet:
+      mode: "hybrid"
+      encap_type: "dot1q"
 ```
 
 ### Resource Decommissioning (Preventing Config Drift)

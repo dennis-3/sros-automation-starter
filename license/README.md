@@ -40,9 +40,9 @@ topology:
 
   kinds:
     nokia_srsim:
-      image: localhost/nokia/srsim:25.7.R1
+      image: "${SROS_IMAGE:-localhost/nokia/srsim:25.7.R1}"
       type: sr-1
-      license: license/license.txt
+      license: "${SROS_LICENSE:-license/license.txt}"
 
   nodes:
     r1:

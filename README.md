@@ -27,6 +27,9 @@ sros-automation-starter/
 │   └── ansible-navigator.yml     # Containerized execution settings
 ├── examples/
 │   └── data_models/              # Comprehensive reference schemas (BGP, VPNs, MPLS, QoS, etc.)
+├── license/
+│   ├── README.md                 # License instructions & Containerlab integration
+│   └── license.txt.example       # Example template for Nokia TiMOS license
 ├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
@@ -57,6 +60,17 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ansible-galaxy collection install -r ansible/requirements.yml
 ```
+
+### Nokia SR OS License Setup
+
+Before launching the Containerlab topology, provide your Nokia SR OS (TiMOS) simulation license file:
+
+```bash
+# Copy your license into the license/ directory
+cp /path/to/your/timos_license.txt license/license.txt
+```
+
+> **Note**: `license/license.txt` is untracked by Git to protect proprietary license keys. See [`license/README.md`](file:///C:/Users/Admin/Projects/sros-automation-starter/license/README.md) for format details and `license/license.txt.example` for reference.
 
 ### Environment Variables & Credentials
 

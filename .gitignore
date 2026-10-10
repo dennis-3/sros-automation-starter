@@ -7,6 +7,11 @@
 .env
 *.env
 
+# Nokia SR OS License keys (do not commit actual license files)
+license/*.txt
+!license/*.example
+!license/license.txt.example
+
 # Local service mounts & runner environments
 netbox/
 actions-runner/

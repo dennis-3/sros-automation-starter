@@ -1,0 +1,17 @@
+# ==============================================================================
+# Nokia SR OS (TiMOS) License File Template
+# ==============================================================================
+# Place your valid Nokia SR OS / SRsim license in this directory as 'license.txt'.
+#
+# Steps:
+# 1. Obtain a valid license file from your Nokia representative or support portal.
+# 2. Copy or save it to: license/license.txt
+#    Example: cp /path/to/my_license.txt license/license.txt
+#
+# Expected Format:
+# <UUID> <BASE64_SIGNATURE_PAYLOAD> # NOKIA BELL NV(TiMOS-[BC]-25.*)
+#
+# Note:
+# 'license.txt' is intentionally ignored by Git to prevent leaking proprietary
+# or confidential license keys to public or shared repositories.
+# ==============================================================================

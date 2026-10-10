@@ -51,15 +51,15 @@ sros-automation-starter/
 │   └── workflows/
 │       ├── ci.yml                # CI test, schema validation, and security scan workflow
 │       └── deploy.yml            # Automated lab deployment & verification workflow
-├── ansible.cfg                   # Tuned Ansible settings (forks, timeouts, default inventory)
+├── ansible.cfg                   # Ansible settings (forks, timeouts, default inventory)
 ├── ansible/
 │   ├── group_vars/
 │   │   ├── all.yml               # Global credentials, connection parameters, commit toggles
 │   │   ├── edge_pe.yml           # Edge PE role settings
 │   │   └── core_p.yml            # Core P role settings
 │   ├── host_vars/
-│   │   ├── r1.yml                # Lean active baseline configuration for R1
-│   │   └── r2.yml                # Lean active baseline configuration for R2
+│   │   ├── r1.yml                # Baseline host variables for R1
+│   │   └── r2.yml                # Baseline host variables for R2
 │   ├── inventory.yml             # Role-based inventory (edge_pe, core_p, access_ce)
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
@@ -71,7 +71,7 @@ sros-automation-starter/
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
 ├── examples/
-│   └── data_models/              # Comprehensive reference schemas (BGP, VPNs, MPLS, QoS, etc.)
+│   └── data_models/              # Reference data schemas (BGP, VPNs, MPLS, QoS, etc.)
 ├── license/
 │   ├── README.md                 # License instructions & Containerlab integration
 │   └── license.txt.example       # Example template for Nokia TiMOS license
@@ -186,7 +186,7 @@ ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
 ```
 
 ### Canary Rollouts (Rolling Batches)
-Deploy changes in rolling canary batches with automated fail-fast thresholds to safeguard large fleets:
+Deploy changes in rolling batches with failure thresholds:
 ```bash
 # Canary deployment: 1 router at a time
 ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=1
@@ -255,13 +255,13 @@ ansible-playbook ansible/playbooks/snapshot.yml --tags state-json
 # Snapshot running configuration in YAML
 ansible-playbook ansible/playbooks/snapshot.yml --tags config-yaml
 
-# Scalable targeted subtree query (e.g. interfaces only):
+# Targeted subtree query (e.g. interfaces only):
 ansible-playbook ansible/playbooks/snapshot.yml --tags state-json \
   -e 'sros_state_filter="<state xmlns=\"urn:nokia.com:sros:ns:yang:sr:state\"><router><router-name>Base</router-name><interface/></router></state>"'
 ```
 
 ### Reference Data Model Catalog
-Complete, production-tested data schemas for all supported Nokia SR OS features are available in `examples/data_models/`:
+Reference data schemas for supported Nokia SR OS features are located in `examples/data_models/`:
 - `01_underlay_routing.yml`: IS-IS, OSPF, Segment Routing (SRGB), BIER
 - `02_mpls_signaling.yml`: MPLS, RSVP-TE CSPF LSPs, LDP, SDP transport tunnels, Pseudowire templates
 - `03_bgp_and_policies.yml`: Prefix lists, route policy statements, iBGP/eBGP peering, MP-BGP
@@ -374,7 +374,7 @@ When the lab is launched (`make lab-up`), Containerlab spins up an integrated te
 
 ## CI/CD Deployment Pipeline (GitHub Actions)
 
-The repository includes enterprise-grade GitHub Actions workflows:
+The repository includes two GitHub Actions workflows:
 - **Continuous Integration (`.github/workflows/ci.yml`)**: Executes Gitleaks secret scanning, template syntax and XML schema validation (`validate_templates.py`),
   pre-commit hooks, and Ansible lint checks on every pull request and push.
 - **Deployment & Verification (`.github/workflows/deploy.yml`)**:

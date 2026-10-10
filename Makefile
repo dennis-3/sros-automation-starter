@@ -2,7 +2,7 @@
 
 help:
 	@echo "Available commands in sros-automation-starter:"
-	@echo "  make install       - Install Python dependencies and Ansible collections"
+	@echo "  make install       - Install Python dependencies, Ansible collections & pre-commit hooks"
 	@echo "  make lab-up        - Deploy Containerlab lab topology"
 	@echo "  make lab-down      - Destroy Containerlab lab topology"
 	@echo "  make deploy        - Deploy configuration to all routers via Ansible"

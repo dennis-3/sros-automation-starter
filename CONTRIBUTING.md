@@ -45,6 +45,7 @@ We use `make` for common workflow operations:
 
 | Command | Action |
 | :--- | :--- |
+| `make install` | Install Python dependencies, Ansible collections & pre-commit hooks |
 | `make lab-up` | Launch Containerlab topology |
 | `make check` | Run Ansible in dry-run mode with candidate diffs |
 | `make deploy` | Deploy configuration across routers |
@@ -52,6 +53,7 @@ We use `make` for common workflow operations:
 | `make snapshot` | Capture operational state snapshot in JSON |
 | `make test-pre` | Capture pyATS baseline state |
 | `make test-post` | Capture pyATS post-change state and generate HTML drift report |
+| `make build-ee` | Build containerized Execution Environment (`sros-ee:latest`) |
 | `make validate` | Fast pre-flight check: Jinja2 AST, XML schema rendering, Python & YAML syntax |
 | `make lint` | Comprehensive linting: validate, pre-commit hooks (Ruff, YAML), and ansible-lint |
 | `make lab-down` | Destroy Containerlab topology |

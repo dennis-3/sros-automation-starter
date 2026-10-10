@@ -3,8 +3,9 @@
 Comprehensive CI/CD Pre-Flight Validator
 Validates:
 1. Jinja2 template AST syntax and block balancing across all templates in ansible/templates/.
-2. Python compilation and syntax across all .py files.
-3. YAML formatting and document integrity across inventory, playbooks, vars, and topology configs.
+2. Synthetic rendering of all 23 Jinja2 templates and ElementTree XML schema parsing.
+3. Python compilation and syntax across all .py files.
+4. YAML formatting and document integrity across inventory, playbooks, vars, and topology configs.
 """
 
 import glob

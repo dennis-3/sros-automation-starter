@@ -40,7 +40,7 @@ ldp:
   targeted_sessions:
     - ip: "10.10.10.2"
 
-# 3. Service Distribution Points (SDP Transport Tunnels)
+# 4. Service Distribution Points (SDP Transport Tunnels)
 sdp_configs:
   - id: 12
     description: "RSVP-SDP-to-R2"
@@ -54,7 +54,7 @@ sdp_configs:
     signaling: "ldp"
     keep_alive: true
 
-# 4. Pseudowire Templates (for Auto-Provisioned L2 Services)
+# 5. Pseudowire Templates (for Auto-Provisioned L2 Services)
 pw_templates:
   - name: "PW-BGP-VPLS"
     id: 1

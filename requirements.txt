@@ -25,3 +25,7 @@ requests>=2.31.0
 deepdiff>=6.7.0
 pyats>=24.0.0
 genie>=24.0.0
+
+# Code Quality, Formatting & Git Hooks
+pre-commit>=4.0.0
+ruff>=0.8.4

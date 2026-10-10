@@ -86,7 +86,7 @@ sros-automation-starter/
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
 ├── .env.example                  # Centralized environment variable template
 ├── .editorconfig                 # Cross-editor formatting specifications
-├── .pre-commit-config.yaml       # Git hooks (YAML, formatting, ansible-lint)
+├── .pre-commit-config.yaml       # Git hooks (YAML, formatting, Ruff)
 ├── .gitleaks.toml                # Security scanning configuration
 ├── CHANGELOG.md                  # Release version history
 ├── CONTRIBUTING.md               # Community contribution guidelines
@@ -146,7 +146,7 @@ Before launching the Containerlab topology, provide your Nokia SR OS (TiMOS) sim
 cp /path/to/your/timos_license.txt license/license.txt
 ```
 
-> **Note**: `license/license.txt` is untracked by Git to protect proprietary license keys. See [`license/README.md`](file:///C:/Users/Admin/Projects/sros-automation-starter/license/README.md) for format details and `license/license.txt.example` for reference.
+> **Note**: `license/license.txt` is untracked by Git to protect proprietary license keys. See [`license/README.md`](license/README.md) for format details and `license/license.txt.example` for reference.
 
 ### Environment Variables & Credentials
 
@@ -377,7 +377,7 @@ When the lab is launched (`make lab-up`), Containerlab spins up an integrated te
 ## CI/CD Deployment Pipeline (GitHub Actions)
 
 The repository includes enterprise-grade GitHub Actions workflows:
-- **Continuous Integration (`.github/workflows/ci.yml`)**: Executes template syntax and XML schema validation (`validate_templates.py`),
+- **Continuous Integration (`.github/workflows/ci.yml`)**: Executes Gitleaks secret scanning, template syntax and XML schema validation (`validate_templates.py`),
   pre-commit hooks, and Ansible lint checks on every pull request and push.
 - **Deployment & Verification (`.github/workflows/deploy.yml`)**:
   - Triggers automatically on `push` to `main`, and dry-runs on `pull_request`.

@@ -129,8 +129,12 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 # .venv\Scripts\Activate.ps1  # Windows PowerShell
 
-pip install -r requirements.txt
-ansible-galaxy collection install -r ansible/requirements.yml
+make install  # Installs Python dependencies, Ansible collections, and pre-commit hooks
+
+# Or install manually without Make:
+# pip install -r requirements.txt
+# ansible-galaxy collection install -r ansible/requirements.yml
+# pre-commit install
 ```
 
 ### Nokia SR OS License Setup

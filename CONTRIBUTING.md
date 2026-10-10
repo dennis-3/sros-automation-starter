@@ -19,6 +19,7 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
    ```
 
 2. **Environment Setup**:
+   Create a virtual environment and run `make install` (which installs Python dependencies, Ansible collections, and registers pre-commit Git hooks):
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # Linux/macOS
@@ -27,12 +28,7 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
    make install
    ```
 
-3. **Install Pre-Commit Hooks**:
-   ```bash
-   pre-commit install
-   ```
-
-4. **License File**:
+3. **License File**:
    Ensure you have provided your Nokia SR OS (TiMOS) simulation license file:
    ```bash
    cp /path/to/your/timos_license.txt license/license.txt

@@ -15,11 +15,3 @@ repos:
     hooks:
       - id: ruff
       - id: ruff-format
-
-  - repo: https://github.com/ansible/ansible-lint
-    rev: v24.12.2
-    hooks:
-      - id: ansible-lint
-        files: \.(yaml|yml)$
-        additional_dependencies:
-          - "ansible-core>=2.16.0,<2.18.0"

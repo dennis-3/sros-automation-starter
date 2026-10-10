@@ -12,8 +12,8 @@ help:
 	@echo "  make test-pre      - Capture baseline network state via pyATS"
 	@echo "  make test-post     - Capture post-change state and generate HTML drift report"
 	@echo "  make build-ee      - Build containerized Execution Environment (sros-ee:latest)"
-	@echo "  make validate      - Validate Jinja2 templates, Python syntax, and schemas"
-	@echo "  make lint          - Run pre-flight validations and ansible-lint"
+	@echo "  make validate      - Fast pre-flight check: Jinja2 templates, XML render, and schemas"
+	@echo "  make lint          - Comprehensive linting: validate, pre-commit hooks, and ansible-lint"
 	@echo "  make clean         - Remove cached files, pyATS snapshots, and artifacts"
 
 install:
@@ -52,7 +52,8 @@ validate:
 	python tests/validate_templates.py
 
 lint: validate
-	ansible-lint
+	pre-commit run --all-files
+	@command -v ansible-lint >/dev/null 2>&1 && ansible-lint || echo "[INFO] Skipping ansible-lint (not installed or running on native Windows). Run inside WSL, container, or CI."
 
 clean:
 	rm -rf snapshots/*.json snapshots/*.html .cache/ __pycache__/

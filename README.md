@@ -114,8 +114,8 @@ make snapshot        # Retrieve operational state snapshot in JSON via Ansible
 # Testing & Verification
 make test-pre        # Capture pre-change baseline network state via pyATS
 make test-post       # Verify post-change state and generate HTML drift report
-make validate        # Validate Jinja2 templates, Python syntax, and schemas
-make lint            # Run pre-flight validations and ansible-lint
+make validate        # Fast pre-flight check: Jinja2 templates, XML render, and schemas
+make lint            # Comprehensive linting: validate, pre-commit hooks, and ansible-lint
 
 # Containerized Execution & Maintenance
 make build-ee        # Build containerized Execution Environment (sros-ee:latest)
@@ -269,11 +269,14 @@ Complete, production-tested data schemas for all supported Nokia SR OS features 
 - `06_security_and_qos.yml`: IP traffic filters (ACLs), SAP-ingress / SAP-egress QoS queuing, NTP, TACACS+ AAA
 - `07_multicast_and_mirror.yml`: IGMP, PIM (Sparse Mode, SSM, Anycast RP), Port Mirroring
 
-### Pre-Flight Validation
-Validate Jinja2 templates for syntax errors and unclosed block tags, verify Python syntax, and check YAML schema:
+### Pre-Flight Validation & Code Quality
+Run fast pre-flight validation (Jinja2 AST, XML schema rendering, Python syntax, and YAML schemas):
 ```bash
 make validate
-# or run full linting:
+```
+
+Or run the full static analysis suite (includes `validate`, all pre-commit formatting/Ruff checks, and `ansible-lint`):
+```bash
 make lint
 ```
 

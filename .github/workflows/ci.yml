@@ -3,7 +3,23 @@ name: CI Pre-Flight Validation and Lint
 on: [push, pull_request]
 
 jobs:
+  security-scan:
+    name: Security & Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
   validation:
+    name: Pre-Flight Validation & Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -13,11 +29,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache Ansible Collections
+        uses: actions/cache@v4
+        with:
+          path: ~/.ansible/collections
+          key: ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
 
       - name: Install Validation and Lint Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jinja2 PyYAML pre-commit "ansible-core>=2.16.0,<2.18.0" "ansible-lint>=24.10.0,<25.0.0"
+          pip install jinja2 PyYAML pre-commit ruff "ansible-core>=2.16.0,<2.18.0" "ansible-lint>=24.10.0,<25.0.0"
           ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Run Pre-Flight Template and Schema Validation

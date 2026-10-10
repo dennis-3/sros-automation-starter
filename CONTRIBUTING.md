@@ -1,0 +1,111 @@
+# Contributing to sros-automation-starter
+
+Thank you for your interest in contributing to **sros-automation-starter**! We welcome community contributions to improve Nokia SR OS automation, templates, testing pipelines, and documentation.
+
+---
+
+## Code of Conduct
+
+This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+
+---
+
+## Getting Started
+
+1. **Fork and Clone**:
+   ```bash
+   git clone https://github.com/dennis-3/sros-automation-starter.git
+   cd sros-automation-starter
+   ```
+
+2. **Environment Setup**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Linux/macOS
+   # .venv\Scripts\Activate.ps1  # Windows PowerShell
+
+   make install
+   ```
+
+3. **Install Pre-Commit Hooks**:
+   ```bash
+   pre-commit install
+   ```
+
+4. **License File**:
+   Ensure you have provided your Nokia SR OS (TiMOS) simulation license file:
+   ```bash
+   cp /path/to/your/timos_license.txt license/license.txt
+   ```
+   > See [`license/README.md`](license/README.md) for details.
+
+---
+
+## Development Workflow
+
+### Task Runner Commands
+
+We use `make` for common workflow operations:
+
+| Command | Action |
+| :--- | :--- |
+| `make lab-up` | Launch Containerlab topology |
+| `make check` | Run Ansible in dry-run mode with candidate diffs |
+| `make deploy` | Deploy configuration across routers |
+| `make canary-deploy` | Deploy in rolling batches of 1 router |
+| `make snapshot` | Capture operational state snapshot in JSON |
+| `make test-pre` | Capture pyATS baseline state |
+| `make test-post` | Capture pyATS post-change state and generate HTML drift report |
+| `make validate` | Validate Jinja2 templates, Python syntax, and schemas |
+| `make lint` | Run pre-flight checks and `ansible-lint` |
+| `make lab-down` | Destroy Containerlab topology |
+| `make clean` | Clean temporary artifacts and test caches |
+
+---
+
+## Contribution Guidelines
+
+### 1. Architectural Principles
+- **Native YANG Data Models**: Variables in `host_vars/`, `group_vars/`, and `examples/data_models/` must reflect native Nokia SR OS YANG hierarchies. Avoid artificial nesting or custom abstractions.
+- **Atomic NETCONF Transactions**: Tasks in `deploy.yml` should stage candidate XML without committing until task `09_commit.yml` executes the atomic commit.
+- **Idempotency & Safe Rollbacks**: All tasks must be safe to re-run. In case of staging failures, the candidate store must be cleanly discarded via `<discard-changes/>`.
+- **Line Length**: Keep line lengths reasonable (recommended $\le 160$ characters).
+
+### 2. Pre-Flight CI Validation
+Before opening a pull request, run:
+```bash
+make validate
+make lint
+```
+All 23 Jinja2 templates must parse valid XML when rendered synthetically against sample data models.
+
+### 3. Commit Message Convention
+We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
+- `feat:` New automation features, templates, or playbooks
+- `fix:` Bug fixes in templates, schemas, or tasks
+- `docs:` Documentation improvements or updates
+- `refactor:` Code reorganization without behavioral change
+- `test:` Test suite additions or enhancements
+- `ci:` Changes to GitHub Actions workflows or pre-commit hooks
+
+---
+
+## Pull Request Process
+
+1. Create a feature branch from `main`:
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+2. Commit your changes following conventional commit syntax.
+3. Push to your fork and submit a Pull Request to `main`.
+4. Ensure all GitHub Actions CI checks pass.
+5. Provide a clear description of the change, test results, and any relevant MD-CLI verification outputs.
+
+---
+
+## Reporting Issues
+
+If you find a bug or have a feature request:
+- Open an issue on GitHub with a clear description.
+- Include router software version (e.g. SR OS 25.7.R1), Python/Ansible versions, and relevant logs.
+- Do **not** post proprietary license keys or production network secrets in issues.

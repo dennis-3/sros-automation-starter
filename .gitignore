@@ -6,6 +6,7 @@
 
 .env
 *.env
+!.env.example
 
 # Nokia SR OS License keys (do not commit actual license files)
 license/*.txt

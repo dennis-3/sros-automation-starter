@@ -1,0 +1,13 @@
+# Gitleaks Configuration
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist lab simulation default secrets and documentation examples"
+paths = [
+  '''^\.env\.example$''',
+  '''^tac_plus\.conf$''',
+  '''^license/.*\.example$''',
+  '''^README\.md$''',
+  '''^ansible/group_vars/.*\.yml$''',
+]

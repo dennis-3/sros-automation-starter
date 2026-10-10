@@ -1,11 +1,56 @@
 # SROS Automation Starter
 
+[![CI](https://github.com/dennis-3/sros-automation-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/dennis-3/sros-automation-starter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+[![Nokia SR OS](https://img.shields.io/badge/Nokia%20SR%20OS-25.7.R1-red.svg)](https://www.nokia.com)
+[![Containerlab](https://img.shields.io/badge/Containerlab-srsim-teal.svg)](https://containerlab.dev)
+
 Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS. Contains Jinja2 NETCONF templates, playbooks, Containerlab topology integration, and automated state-drift testing.
+
+## System Architecture
+
+```mermaid
+flowchart TD
+  subgraph Automation ["Automation & Verification"]
+    Ansible["Ansible Controller\n(Atomic NETCONF Candidate)"]
+    PyATS["pyATS Test Suite\n(Snapshot & State Drift)"]
+    CI["GitHub Actions CI/CD\n(Validation & Deployment)"]
+  end
+
+  subgraph Lab ["Containerlab Topology (sros-lab)"]
+    R1["R1 (Edge PE)\n172.20.20.9"]
+    R2["R2 (Edge PE)\n172.20.20.2"]
+    R1 ---|"Port 1/1/c2/1"| R2
+  end
+
+  subgraph TelemetryStack ["Telemetry & AAA Stack"]
+    TACACS["TACACS+ AAA\n172.20.20.100:49"]
+    Telegraf["Telegraf (gNMI)\n172.20.20.101:57400"]
+    Prometheus["Prometheus TSDB\n172.20.20.102:9090"]
+    Grafana["Grafana Dashboards\n172.20.20.103:3000"]
+
+    R1 -.->|"gNMI Port / CPU Stats"| Telegraf
+    R2 -.->|"gNMI Port / CPU Stats"| Telegraf
+    Telegraf -->|"Prometheus Scrape (:9273)"| Prometheus
+    Prometheus -->|"Datasource Query"| Grafana
+    R1 -.->|"AAA Auth"| TACACS
+    R2 -.->|"AAA Auth"| TACACS
+  end
+
+  Ansible ==>|"NETCONF XML (:830)"| R1
+  Ansible ==>|"NETCONF XML (:830)"| R2
+  PyATS -.->|"SSH & State Extraction"| R1
+  PyATS -.->|"SSH & State Extraction"| R2
+```
 
 ## Directory Structure
 
 ```text
 sros-automation-starter/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                # CI test, schema validation, and security scan workflow
+│       └── deploy.yml            # Automated lab deployment & verification workflow
 ├── ansible.cfg                   # Tuned Ansible settings (forks, timeouts, default inventory)
 ├── ansible/
 │   ├── group_vars/
@@ -39,6 +84,14 @@ sros-automation-starter/
 ├── grafana_datasource.yaml       # Grafana automated datasource provisioning
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
+├── .env.example                  # Centralized environment variable template
+├── .editorconfig                 # Cross-editor formatting specifications
+├── .pre-commit-config.yaml       # Git hooks (YAML, formatting, ansible-lint)
+├── .gitleaks.toml                # Security scanning configuration
+├── CHANGELOG.md                  # Release version history
+├── CONTRIBUTING.md               # Community contribution guidelines
+├── CODE_OF_CONDUCT.md            # Contributor Covenant v2.1 code of conduct
+├── LICENSE.md                    # MIT Open Source License
 ├── Makefile                      # Standardized workflow task runner
 ├── requirements.txt              # Python dependencies
 └── README.md

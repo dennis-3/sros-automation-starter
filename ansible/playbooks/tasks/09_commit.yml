@@ -3,45 +3,80 @@
 # 09. ATOMIC TRANSACTION COMMIT & VALIDATION
 # ==============================================================================
 
-# Preview staged candidate changes before commit when running in check mode or when sros_show_diff=true
-- name: Preview staged candidate delta via md-compare
-  when: (sros_show_diff | default(false)) or ansible_check_mode
+# Query Nokia md-compare RPC to detect staged candidate modifications
+- name: Query Nokia md-compare RPC for candidate delta
+  ansible.netcommon.netconf_rpc:
+    rpc: action
+    xmlns: "urn:ietf:params:xml:ns:yang:1"
+    content: |
+      <global-operations xmlns="urn:nokia.com:sros:ns:yang:sr:oper-global">
+        <md-compare>
+          <format>md-cli</format>
+        </md-compare>
+      </global-operations>
+  check_mode: false
+  register: netconf_candidate_diff
+  failed_when: false
   tags:
     - always
     - diff
-  block:
-    - name: Query Nokia md-compare RPC
-      ansible.netcommon.netconf_rpc:
-        rpc: action
-        xmlns: "urn:ietf:params:xml:ns:yang:1"
-        content: |
-          <global-operations xmlns="urn:nokia.com:sros:ns:yang:sr:oper-global">
-            <md-compare>
-              <format>md-cli</format>
-            </md-compare>
-          </global-operations>
-      check_mode: false
-      register: netconf_candidate_diff
-      failed_when: false
+    - check
+    - commit
 
-    - name: Extract and display candidate diff output
-      community.general.xml:
-        xmlstring: "{{ netconf_candidate_diff.stdout }}"
-        content: text
-        xpath: /x:rpc-reply/nokiaoper:results/nokiaoper:md-compare-output
-        namespaces:
-          x: urn:ietf:params:xml:ns:netconf:base:1.0
-          nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
-      delegate_to: localhost
-      check_mode: false
-      register: candidate_diff_parsed
-      when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
-      failed_when: false
+- name: Parse candidate delta from md-compare
+  community.general.xml:
+    xmlstring: "{{ netconf_candidate_diff.stdout }}"
+    content: text
+    xpath: /x:rpc-reply/nokiaoper:results/nokiaoper:md-compare-output
+    namespaces:
+      x: urn:ietf:params:xml:ns:netconf:base:1.0
+      nokiaoper: urn:nokia.com:sros:ns:yang:sr:oper-global
+  delegate_to: localhost
+  check_mode: false
+  register: candidate_diff_parsed
+  when: netconf_candidate_diff is not failed and netconf_candidate_diff.stdout is defined
+  failed_when: false
+  tags:
+    - always
+    - diff
+    - check
+    - commit
 
-    - name: Display candidate configuration changes
-      ansible.builtin.debug:
-        msg: "{{ (candidate_diff_parsed.matches[0].values() | first) | default('No staged candidate changes.') }}"
-      when: candidate_diff_parsed is not skipped and candidate_diff_parsed.matches is defined and (candidate_diff_parsed.matches | length > 0)
+- name: Determine if candidate datastore has staged changes
+  ansible.builtin.set_fact:
+    sros_has_staged_changes: >-
+      {{
+        (candidate_diff_parsed is not skipped and
+         candidate_diff_parsed.matches is defined and
+         (candidate_diff_parsed.matches | length > 0) and
+         ((candidate_diff_parsed.matches[0].values() | first) | trim | length > 0)) |
+        default(true)
+      }}
+  tags:
+    - always
+    - diff
+    - check
+    - commit
+
+- name: Display candidate configuration changes
+  ansible.builtin.debug:
+    msg: "{{ (candidate_diff_parsed.matches[0].values() | first) | default('No staged candidate changes.') }}"
+  when:
+    - (sros_show_diff | default(false)) or ansible_check_mode
+    - candidate_diff_parsed is not skipped and candidate_diff_parsed.matches is defined and (candidate_diff_parsed.matches | length > 0)
+  tags:
+    - always
+    - diff
+
+- name: Report idempotent state when no changes staged
+  ansible.builtin.debug:
+    msg: "Candidate datastore on {{ inventory_hostname }} matches running configuration exactly. No commit required."
+  when:
+    - not sros_has_staged_changes
+    - not ansible_check_mode
+  tags:
+    - always
+    - commit
 
 # In check mode (dry run), discard staged candidate changes so the router's
 # candidate datastore is left clean with zero residual configuration drift.
@@ -69,9 +104,11 @@
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
     - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
   tags:
     - always
+    - commit
 
 # Post-commit reachability probe: verifies management plane and state responsiveness
 # prior to confirming. If this check fails, the transaction aborts and auto-reverts.
@@ -94,9 +131,11 @@
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
     - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
   tags:
     - always
+    - commit
 
 - name: Confirm Previous Commit
   ansible.netcommon.netconf_config:
@@ -104,9 +143,11 @@
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
     - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
   tags:
     - always
+    - commit
 
 # Validates and commits all staged candidate edits in standard atomic mode
 - name: Validate and Commit All Staged Candidate Changes (Standard Commit)
@@ -118,6 +159,8 @@
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
     - sros_confirm_timeout is not defined or (sros_confirm_timeout | int == 0)
   tags:
     - always
+    - commit

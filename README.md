@@ -22,7 +22,7 @@ sros-automation-starter/
 │   │   ├── tasks/                # Modular deployment pipeline tasks (01_preflight to 09_commit)
 │   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
 │   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
-│   ├── templates/                # 22 Jinja2 NETCONF XML templates
+│   ├── templates/                # 23 Jinja2 NETCONF XML templates
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
 ├── examples/
@@ -30,7 +30,13 @@ sros-automation-starter/
 ├── license/
 │   ├── README.md                 # License instructions & Containerlab integration
 │   └── license.txt.example       # Example template for Nokia TiMOS license
+├── tests/
+│   └── validate_templates.py     # Pre-flight template rendering & XML schema validator
 ├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
+├── tac_plus.conf                 # TACACS+ server configuration (AAA container)
+├── telegraf.conf                 # Telegraf gNMI telemetry collector configuration
+├── prometheus.yml                # Prometheus metrics scraper configuration
+├── grafana_datasource.yaml       # Grafana automated datasource provisioning
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
 ├── Makefile                      # Standardized workflow task runner
@@ -41,13 +47,26 @@ sros-automation-starter/
 ## Quick Start (Make)
 
 ```bash
-make install     # Install Python dependencies and Ansible collections
-make lab-up      # Spin up Containerlab topology (r1, r2, AAA, telemetry)
-make check       # Dry-run Ansible deployment with candidate diff preview
-make deploy      # Deploy configuration to all routers
-make test-pre    # Capture pre-change network state via pyATS
-make test-post   # Verify post-change state and generate HTML drift report
-make lab-down    # Destroy Containerlab topology
+# Setup & Lab Lifecycle
+make install         # Install Python dependencies, Ansible collections & pre-commit hooks
+make lab-up          # Spin up Containerlab topology (r1, r2, AAA, telemetry)
+make lab-down        # Destroy Containerlab topology
+
+# Deployment & Staging
+make check           # Dry-run Ansible deployment with candidate diff preview
+make deploy          # Deploy configuration to all routers
+make canary-deploy   # Deploy configuration in rolling canary batches (1 router/batch)
+make snapshot        # Retrieve operational state snapshot in JSON via Ansible
+
+# Testing & Verification
+make test-pre        # Capture pre-change baseline network state via pyATS
+make test-post       # Verify post-change state and generate HTML drift report
+make validate        # Validate Jinja2 templates, Python syntax, and schemas
+make lint            # Run pre-flight validations and ansible-lint
+
+# Containerized Execution & Maintenance
+make build-ee        # Build containerized Execution Environment (sros-ee:latest)
+make clean           # Clean up test snapshots, cache directories, and temporary files
 ```
 
 ## Setup
@@ -277,6 +296,23 @@ The pyATS test pipeline automatically runs:
 7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles and HTML delta report generation.
 
 The drift report is saved to `snapshots/network_drift_report.html`.
+
+## Telemetry & Observability Stack
+
+When the lab is launched (`make lab-up`), Containerlab spins up an integrated telemetry and AAA stack alongside the routers:
+
+- **Grafana (`http://localhost:3000`)**:
+  - Automatically provisioned with Prometheus datasource via [`grafana_datasource.yaml`](grafana_datasource.yaml).
+  - Anonymous Admin access enabled for instant dashboard exploration without login prompts.
+- **Prometheus (`http://localhost:9090`)**:
+  - Metric time-series database configured via [`prometheus.yml`](prometheus.yml), scraping Telegraf on port `9273`.
+- **Telegraf (gNMI Streaming Collector)**:
+  - Configured via [`telegraf.conf`](telegraf.conf) to subscribe to native Nokia SR OS gNMI sensor paths on port `57400`:
+    - CPU utilization: `/state/system/cpu/iom/cpu-usage`
+    - Port packet statistics: `/state/port/statistics`
+- **TACACS+ AAA Server (`172.20.20.100:49`)**:
+  - Configured via [`tac_plus.conf`](tac_plus.conf) with shared secret `lab_secret_2026`.
+  - Pre-seeded accounts: `dennis-admin` (privilege level 15) and `junior-tech` (monitor group).
 
 ## CI/CD Deployment Pipeline (GitHub Actions)
 

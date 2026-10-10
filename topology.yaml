@@ -1,21 +1,22 @@
 name: sros-lab
 
 topology:
+  defaults:
+    kind: nokia_srsim
+
+  kinds:
+    nokia_srsim:
+      image: localhost/nokia/srsim:25.7.R1
+      type: sr-1
+      license: license/license.txt
+
   nodes:
     # --- SR OS Router Nodes ---
     r1:
-      kind: nokia_srsim
-      image: localhost/nokia/srsim:25.7.R1
-      type: sr-1
-      license: license/license.txt
       mgmt-ipv4: 172.20.20.9
 
     r2:
-      kind: nokia_srsim
-      image: localhost/nokia/srsim:25.7.R1
-      type: sr-1
-      license: license/license.txt
-      mgmt-ipv4: 172.20.20.10
+      mgmt-ipv4: 172.20.20.2
 
     # --- AAA Server ---
     aaa-server:

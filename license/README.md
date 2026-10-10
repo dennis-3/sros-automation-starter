@@ -31,16 +31,24 @@ Actual license keys issued by Nokia are proprietary and confidential. To adhere 
 
 ## Topology Integration
 
-In [`topology.yaml`](../topology.yaml), each router node mounts the license via:
+In [`topology.yaml`](../topology.yaml), the license is declared centrally under `topology.kinds.nokia_srsim`:
 
 ```yaml
 topology:
-  nodes:
-    r1:
-      kind: nokia_srsim
+  defaults:
+    kind: nokia_srsim
+
+  kinds:
+    nokia_srsim:
       image: localhost/nokia/srsim:25.7.R1
       type: sr-1
       license: license/license.txt
+
+  nodes:
+    r1:
+      mgmt-ipv4: 172.20.20.9
+    r2:
+      mgmt-ipv4: 172.20.20.2
 ```
 
 When you execute `make lab-up` (or `clab deploy -t topology.yaml`), Containerlab will automatically mount `license/license.txt` into each simulated router instance.

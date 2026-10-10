@@ -24,7 +24,7 @@ devices:
         class: unicon.Unicon
       cli:
         protocol: ssh
-        ip: 172.20.20.10
+        ip: 172.20.20.2
     credentials:
       default:
         username: "%ENV{SROS_USER:-admin}"
@@ -38,7 +38,7 @@ devices:
   #       class: unicon.Unicon
   #     cli:
   #       protocol: ssh
-  #       ip: 172.20.20.11
+  #       ip: 172.20.20.3
   #   credentials:
   #     default:
   #       username: "%ENV{SROS_USER:-admin}"

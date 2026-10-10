@@ -232,7 +232,7 @@ ansible-playbook ansible/playbooks/deploy.yml --tags vprn
 ```
 
 Available tags:
-`system`, `hardware`, `filters`, `acl`, `interfaces`, `ip`, `mpls_labels`, `bier`, `isis`, `ospf`, `routing`, `policy_options`, `bgp`, `mpls`, `rsvp`, `ldp`, `sdp`, `pw_templates`, `epipe`, `vpls`, `vprn`, `ies`, `services`, `qos`, `igmp`, `pim`, `multicast`, `mirror_destination`, `mirror_source`, `telemetry`.
+`system`, `hardware`, `filters`, `acl`, `interfaces`, `base-routing`, `underlay`, `routing`, `isis`, `ospf`, `mpls`, `ldp`, `rsvp`, `bier`, `mpls-labels`, `policy-options`, `bgp`, `overlay`, `services`, `epipe`, `vpls`, `vprn`, `ies`, `sdp`, `pw-templates`, `qos`, `igmp`, `pim`, `multicast`, `mirror`, `telemetry`. Both kebab-case and snake_case alias variants are supported.
 
 ### Candidate Datastore & Atomic Commits
 By default, `deploy.yml` operates in atomic mode:
@@ -344,7 +344,7 @@ Optional flags:
 - `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml`, `testbed.yml`, or synthesizes from `ansible/inventory.yml`).
 - `--paths`: Comma-separated YANG state paths for targeted operational state capture (defaults to `/nokia-state:state`). Example: `--paths "/nokia-state:state/router[router-name='Base']/interface,/nokia-state:state/service"`.
 - `--max-workers`: Number of concurrent worker threads for parallel multi-router state collection (defaults to `10`).
-- `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `60`).
+- `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `180`).
 
 The pyATS test pipeline automatically runs:
 1. `ConnectivityTest`: SSH reachability and Nokia SR OS TiMOS validation.
@@ -380,8 +380,8 @@ The repository includes enterprise-grade GitHub Actions workflows:
 - **Continuous Integration (`.github/workflows/ci.yml`)**: Executes Gitleaks secret scanning, template syntax and XML schema validation (`validate_templates.py`),
   pre-commit hooks, and Ansible lint checks on every pull request and push.
 - **Deployment & Verification (`.github/workflows/deploy.yml`)**:
-  - Triggers automatically on `push` to `main`, and dry-runs on `pull_request`.
-  - Supports manual execution via `workflow_dispatch` with parameter overrides:
+  - Designed for self-hosted runners connected to lab or hardware environments.
+  - Executed on-demand via `workflow_dispatch` with parameter overrides (can be configured for automated `push`/`pull_request` execution by uncommenting triggers):
     - `dry_run`: Run in check mode (`--check -e sros_show_diff=true`).
     - `limit`: Restrict deployment and pyATS testing scope to specific hosts/groups (e.g., `edge_pe`, `r1`).
     - `tags`: Run specific configuration tags (e.g., `interfaces`, `bgp`).

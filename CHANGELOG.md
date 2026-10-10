@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Two-tier local verification architecture: fast pre-flight check (`make validate`) and comprehensive linting (`make lint`).
+- Synthetic Jinja2 rendering against data models with XML `ElementTree` schema validation across all 23 templates.
+- Automated secret and credential scanning with Gitleaks in GitHub Actions CI workflow.
+- Candidate datastore diff detection via Nokia native `md-compare` RPC to guarantee commit idempotency and skip no-op transactions.
+- Developer code quality dependencies (`pre-commit>=4.0.0`, `ruff>=0.8.4`) in `requirements.txt`.
+- Dynamic environment variable substitution (`SROS_IMAGE`, `SROS_LICENSE`) in Containerlab `topology.yaml`.
+- Meta-tag `routing` and snake_case alias tags in `deploy.yml`.
+
+### Changed
+- Decoupled `ansible-lint` from `.pre-commit-config.yaml` to ensure clean commits on native Windows systems without WSL requirement.
+- Updated `make install` help description and `CONTRIBUTING.md` task table to include all Makefile targets.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

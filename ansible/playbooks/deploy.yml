@@ -38,6 +38,7 @@
           ansible.builtin.import_tasks: tasks/04_underlay.yml
           tags:
             - underlay
+            - routing
             - isis
             - ospf
             - mpls
@@ -45,17 +46,22 @@
             - rsvp
             - bier
             - segment-routing
+            - mpls-labels
+            - mpls_labels
 
         - name: Routing policies and prefix lists
           ansible.builtin.import_tasks: tasks/05_policies.yml
           tags:
+            - routing
             - policy-options
+            - policy_options
             - routing-policy
             - prefix-lists
 
         - name: BGP peering and multiprotocol overlay
           ansible.builtin.import_tasks: tasks/06_bgp.yml
           tags:
+            - routing
             - bgp
             - overlay
             - peering
@@ -70,6 +76,7 @@
             - ies
             - sdp
             - pw-templates
+            - pw_templates
 
         - name: Operations, QoS & Multicast
           ansible.builtin.import_tasks: tasks/08_operations.yml
@@ -79,8 +86,11 @@
             - igmp
             - pim
             - multicast
+            - mirror
             - mirror-destinations
+            - mirror_destinations
             - mirror-sources
+            - mirror_sources
             - telemetry
 
         - name: Atomic candidate commit & verification

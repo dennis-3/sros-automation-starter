@@ -236,21 +236,19 @@
                         <as-override>true</as-override>
                         {% endif %}
 
+                        {% if group.family is defined and group.family %}
                         <family>
-                            {% if group.family is defined and group.family is mapping %}
+                            {% if group.family is mapping %}
                             {% for fam, state in group.family.items() %}
                             <{{ fam | replace('_', '-') }}>{{ 'true' if state else 'false' }}</{{ fam | replace('_', '-') }}>
                             {% endfor %}
-                            {% elif group.family is defined and (group.family is iterable and group.family is not string) %}
+                            {% elif group.family is iterable and group.family is not string %}
                             {% for fam in group.family %}
                             <{{ fam | replace('_', '-') }}>true</{{ fam | replace('_', '-') }}>
                             {% endfor %}
-                            {% else %}
-                            {# Fallback for legacy boolean flags #}
-                            {% if group.family_ipv4 is defined %}<ipv4>{{ 'true' if group.family_ipv4 else 'false' }}</ipv4>{% endif %}
-                            {% if group.family_ipv6 | default(false) %}<ipv6>true</ipv6>{% endif %}
                             {% endif %}
                         </family>
+                        {% endif %}
 
                         {# Policy Handling #}
                         {% if group.export_policy is defined and group.export_policy %}
@@ -308,7 +306,7 @@
                     <ipv4>
                         <primary>
                             <address>{{ interface.address }}</address>
-                            <prefix-length>{{ interface.mask | default(interface.prefix_length | default(24)) }}</prefix-length>
+                            <prefix-length>{{ interface.prefix_length | default(24) }}</prefix-length>
                         </primary>
                     </ipv4>
                     {% endif %}
@@ -317,7 +315,7 @@
                     <ipv6>
                         <address>
                             <ipv6-address>{{ interface.ipv6.address }}</ipv6-address>
-                            <prefix-length>{{ interface.ipv6.prefix_length | default(interface.ipv6.mask | default(128)) }}</prefix-length>
+                            <prefix-length>{{ interface.ipv6.prefix_length | default(128) }}</prefix-length>
                         </address>
                     </ipv6>
                     {% endif %}

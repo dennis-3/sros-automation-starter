@@ -69,7 +69,7 @@
                     {% if intf is mapping and intf.levels is defined %}
                     {% for lvl in intf.levels %}
                     <level>
-                        <level-number>{{ lvl.level_number | default(lvl.number | default(isis.level_capability | default(2))) }}</level-number>
+                        <level-number>{{ lvl.level_number | default(isis.level_capability | default(2)) }}</level-number>
                         {% if lvl.metric is defined %}
                         <metric>{{ lvl.metric }}</metric>
                         {% endif %}

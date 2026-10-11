@@ -12,13 +12,13 @@
         {% if cards is defined %}
         {% for card in cards %}
         <card>
-            <slot-number>{{ card.slot | default(card.slot_number) }}</slot-number>
-            <card-type>{{ card.type | default(card.card_type) }}</card-type>
+            <slot-number>{{ card.slot }}</slot-number>
+            <card-type>{{ card.type }}</card-type>
             <admin-state>{{ card.admin_state | default('enable') }}</admin-state>
             {% for mda in card.mdas | default([]) %}
             <mda>
-                <mda-slot>{{ mda.slot | default(mda.mda_slot) }}</mda-slot>
-                <mda-type>{{ mda.type | default(mda.mda_type) }}</mda-type>
+                <mda-slot>{{ mda.slot }}</mda-slot>
+                <mda-type>{{ mda.type }}</mda-type>
                 <admin-state>{{ mda.admin_state | default('enable') }}</admin-state>
             </mda>
             {% endfor %}
@@ -30,51 +30,34 @@
         {% if ports is defined %}
         {% for port in ports %}
         <port>
-            <port-id>{{ port.id | default(port.port_id) }}</port-id>
+            <port-id>{{ port.id }}</port-id>
             <admin-state>{{ port.admin_state | default('enable') }}</admin-state>
             {% if port.description is defined %}
             <description>{{ port.description }}</description>
             {% endif %}
 
             {# Connector Breakout #}
-            {% if port.connector is defined or port.breakout is defined %}
-            {% if port.connector is mapping and port.connector.breakout is defined %}
-            {% set c_breakout = port.connector.breakout %}
-            {% else %}
-            {% set c_breakout = port.breakout | default(port.connector) %}
-            {% endif %}
+            {% if port.connector is defined and port.connector.breakout is defined %}
             <connector>
-                <breakout>{{ c_breakout }}</breakout>
+                <breakout>{{ port.connector.breakout }}</breakout>
             </connector>
             {% endif %}
 
             {# Ethernet Port Configuration #}
-            {% if port.ethernet is defined or port.mode is defined or port.encap_type is defined %}
-            {% if port.ethernet is mapping and port.ethernet.mode is defined %}
-            {% set eth_mode = port.ethernet.mode %}
-            {% else %}
-            {% set eth_mode = port.mode | default('hybrid') %}
-            {% endif %}
-            {% if port.ethernet is mapping and port.ethernet.encap_type is defined %}
-            {% set eth_encap = port.ethernet.encap_type %}
-            {% else %}
-            {% set eth_encap = port.encap_type | default('dot1q') %}
-            {% endif %}
+            {% if port.ethernet is defined %}
             <ethernet>
-                <mode>{{ eth_mode }}</mode>
-                <encap-type>{{ eth_encap }}</encap-type>
-                {% if port.ethernet is mapping and port.ethernet.mtu is defined %}
+                <mode>{{ port.ethernet.mode | default('hybrid') }}</mode>
+                <encap-type>{{ port.ethernet.encap_type | default('dot1q') }}</encap-type>
+                {% if port.ethernet.mtu is defined %}
                 <mtu>{{ port.ethernet.mtu }}</mtu>
-                {% elif port.mtu is defined %}
-                <mtu>{{ port.mtu }}</mtu>
                 {% endif %}
             </ethernet>
             {% endif %}
         </port>
 
         {# Grouped Sub-Ports under Connector (if specified hierarchically) #}
-        {% if port.channels is defined or port.sub_ports is defined %}
-        {% for sub in (port.channels | default(port.sub_ports)) %}
+        {% if port.channels is defined %}
+        {% for sub in port.channels %}
         <port>
             <port-id>{{ sub.id if sub is mapping else sub }}</port-id>
             <admin-state>{{ (sub.admin_state | default('enable')) if sub is mapping else 'enable' }}</admin-state>

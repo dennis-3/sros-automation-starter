@@ -28,11 +28,11 @@
                 {% for sap in epipe.saps %}
                 {% if sap.state | default('present') == 'absent' %}
                 <sap operation="remove">
-                    <sap-id>{{ sap.sap_id | default(sap.id) }}</sap-id>
+                    <sap-id>{{ sap.sap_id }}</sap-id>
                 </sap>
                 {% else %}
                 <sap>
-                    <sap-id>{{ sap.sap_id | default(sap.id) }}</sap-id>
+                    <sap-id>{{ sap.sap_id }}</sap-id>
                     <admin-state>{{ sap.admin_state | default('enable') }}</admin-state>
 
                     {# Ingress QoS Logic #}

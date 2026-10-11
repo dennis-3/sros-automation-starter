@@ -6,9 +6,9 @@
                 <admin-state>{{ ldp.admin_state | default('enable') }}</admin-state>
 
                 {# Targeted LDP Sessions (for T-LDP Pseudowires & BGP-AD) #}
-                {% if ldp.targeted_sessions is defined or ldp.targeted_peers is defined %}
+                {% if ldp.targeted_sessions is defined %}
                 <targeted-session>
-                    {% for peer in (ldp.targeted_sessions | default(ldp.targeted_peers)) %}
+                    {% for peer in ldp.targeted_sessions %}
                     {% set peer_ip = peer.ip if peer is mapping else peer %}
                     {% set peer_state = peer.state | default('present') if peer is mapping else 'present' %}
                     {% if peer_state == 'absent' %}

@@ -31,11 +31,11 @@
                 {% for entry in filter.entries | default([]) %}
                 {% if entry.state | default('present') == 'absent' %}
                 <entry operation="remove">
-                    <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
+                    <entry-id>{{ entry.entry_id }}</entry-id>
                 </entry>
                 {% else %}
                 <entry>
-                    <entry-id>{{ entry.entry_id | default(entry.id) }}</entry-id>
+                    <entry-id>{{ entry.entry_id }}</entry-id>
                     {% if entry.description is defined %}
                     <description>{{ entry.description }}</description>
                     {% endif %}
@@ -43,9 +43,9 @@
                     <log>{{ entry.log_id | default(filter.log_id) }}</log>
                     {% endif %}
 
-                    {% set match_proto = entry.protocol | default(entry.match_protocol | default(none)) %}
-                    {% set match_dport = entry.dst_port | default(entry.match_dst_port | default(none)) %}
-                    {% set match_sport = entry.src_port | default(entry.match_src_port | default(none)) %}
+                    {% set match_proto = entry.protocol | default(none) %}
+                    {% set match_dport = entry.dst_port | default(none) %}
+                    {% set match_sport = entry.src_port | default(none) %}
                     {% if match_proto or entry.src_ip is defined or entry.dst_ip is defined or match_dport or match_sport %}
                     <match>
                         {% if match_proto %}
@@ -54,16 +54,16 @@
                         {% if entry.src_ip is defined %}
                         <src-ip>
                             <address>{{ entry.src_ip.address if entry.src_ip is mapping else entry.src_ip }}</address>
-                            {% if entry.src_ip is mapping and (entry.src_ip.prefix_length is defined or entry.src_ip.mask is defined) %}
-                            <prefix-length>{{ entry.src_ip.prefix_length | default(entry.src_ip.mask) }}</prefix-length>
+                            {% if entry.src_ip is mapping and entry.src_ip.prefix_length is defined %}
+                            <prefix-length>{{ entry.src_ip.prefix_length }}</prefix-length>
                             {% endif %}
                         </src-ip>
                         {% endif %}
                         {% if entry.dst_ip is defined %}
                         <dst-ip>
                             <address>{{ entry.dst_ip.address if entry.dst_ip is mapping else entry.dst_ip }}</address>
-                            {% if entry.dst_ip is mapping and (entry.dst_ip.prefix_length is defined or entry.dst_ip.mask is defined) %}
-                            <prefix-length>{{ entry.dst_ip.prefix_length | default(entry.dst_ip.mask) }}</prefix-length>
+                            {% if entry.dst_ip is mapping and entry.dst_ip.prefix_length is defined %}
+                            <prefix-length>{{ entry.dst_ip.prefix_length }}</prefix-length>
                             {% endif %}
                         </dst-ip>
                         {% endif %}

@@ -13,7 +13,7 @@
                 <name>{{ pl.name }}</name>
                 {% for entry in pl.prefixes | default([]) %}
                 <prefix>
-                    <ip-prefix>{{ entry.ip | default(entry.prefix) }}</ip-prefix>
+                    <ip-prefix>{{ entry.ip }}</ip-prefix>
                     <type>{{ entry.type }}</type>
                 </prefix>
                 {% endfor %}
@@ -61,17 +61,17 @@
                 {% if policy.entries is defined %}
                 {% for entry in policy.entries %}
                 <entry>
-                    <entry-id>{{ entry.id | default(entry.entry_id) }}</entry-id>
+                    <entry-id>{{ entry.id }}</entry-id>
                     {% if entry.description is defined %}
                     <description>{{ entry.description }}</description>
                     {% endif %}
 
                     {# Match Criteria: <from> #}
-                    {% set from_ctx = entry.from if (entry.from is defined and entry.from is mapping) else entry %}
-                    {% set pl_list = from_ctx.prefix_list | default(entry.from_prefix_list | default([])) %}
-                    {% set pl_entries = pl_list if (pl_list is iterable and pl_list is not string) else ([pl_list] if pl_list else []) %}
-                    {% set proto_from = from_ctx.protocol | default(entry.from_protocol | default(none)) %}
-                    {% set comm_from = from_ctx.community | default(entry.from_community | default(none)) %}
+                    {% if entry.from is defined %}
+                    {% set from_ctx = entry.from %}
+                    {% set pl_entries = from_ctx.prefix_list if (from_ctx.prefix_list is defined and from_ctx.prefix_list is iterable and from_ctx.prefix_list is not string) else ([from_ctx.prefix_list] if (from_ctx.prefix_list is defined and from_ctx.prefix_list) else []) %}
+                    {% set proto_from = from_ctx.protocol | default(none) %}
+                    {% set comm_from = from_ctx.community | default(none) %}
 
                     {% if pl_entries or proto_from or comm_from %}
                     <from>
@@ -88,21 +88,20 @@
                         {% endif %}
                     </from>
                     {% endif %}
+                    {% endif %}
 
                     {# Target Criteria: <to> (Sibling to <from> in SR OS YANG) #}
-                    {% set to_ctx = entry.to if (entry.to is defined and entry.to is mapping) else entry %}
-                    {% set proto_to = to_ctx.protocol | default(entry.to_protocol | default(none)) %}
-                    {% if proto_to %}
+                    {% if entry.to is defined and entry.to.protocol is defined %}
                     <to>
                         <protocol>
-                            <name>{{ proto_to }}</name>
+                            <name>{{ entry.to.protocol }}</name>
                         </protocol>
                     </to>
                     {% endif %}
 
                     {# Action #}
                     <action>
-                        <action-type>{{ entry.action | default(entry.action_type | default('accept')) }}</action-type>
+                        <action-type>{{ entry.action | default('accept') }}</action-type>
                         {% if entry.add_communities is defined %}
                         {% for comm_name in entry.add_communities %}
                         <community>

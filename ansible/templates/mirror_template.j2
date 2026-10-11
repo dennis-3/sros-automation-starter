@@ -2,7 +2,7 @@
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <mirror>
             {# Mirror Destinations #}
-            {% set dests = mirror.destinations if (mirror is defined and mirror.destinations is defined) else (mirror_destinations | default([])) %}
+            {% set dests = mirror.destinations if (mirror is defined and mirror.destinations is defined) else [] %}
             {% for dest in dests %}
             {% if dest.state | default('present') == 'absent' %}
             <mirror-dest operation="remove">
@@ -17,9 +17,9 @@
                 {% if dest.description is defined %}
                 <description>{{ dest.description }}</description>
                 {% endif %}
-                {% if dest.sap_id is defined or dest.sap is defined %}
+                {% if dest.sap_id is defined %}
                 <sap>
-                    <sap-id>{{ dest.sap_id | default(dest.sap) }}</sap-id>
+                    <sap-id>{{ dest.sap_id }}</sap-id>
                 </sap>
                 {% endif %}
                 <admin-state>{{ dest.admin_state | default('enable') }}</admin-state>
@@ -28,7 +28,7 @@
             {% endfor %}
 
             {# Mirror Sources #}
-            {% set srcs = mirror.sources if (mirror is defined and mirror.sources is defined) else (mirror_sources | default([])) %}
+            {% set srcs = mirror.sources if (mirror is defined and mirror.sources is defined) else [] %}
             {% for src in srcs %}
             {% if src.state | default('present') == 'absent' %}
             <mirror-source operation="remove">
@@ -44,14 +44,14 @@
                 {% if src.ports is defined %}
                 {% for p in src.ports %}
                 <port>
-                    <port-id>{{ p.port_id | default(p.id | default(p)) }}</port-id>
+                    <port-id>{{ p.port_id }}</port-id>
                     <ingress>{{ 'true' if (p.ingress | default(true)) else 'false' }}</ingress>
                     <egress>{{ 'true' if (p.egress | default(true)) else 'false' }}</egress>
                 </port>
                 {% endfor %}
-                {% elif src.port_id is defined or src.monitor_port is defined %}
+                {% elif src.port_id is defined %}
                 <port>
-                    <port-id>{{ src.port_id | default(src.monitor_port) }}</port-id>
+                    <port-id>{{ src.port_id }}</port-id>
                     <ingress>{{ 'true' if (src.ingress | default(true)) else 'false' }}</ingress>
                     <egress>{{ 'true' if (src.egress | default(true)) else 'false' }}</egress>
                 </port>

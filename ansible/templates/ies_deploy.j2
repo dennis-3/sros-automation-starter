@@ -15,15 +15,14 @@
                 <description>{{ ies.description }}</description>
                 {% endif %}
 
-                {% set ifaces = ies.interfaces if ies.interfaces is defined else ([ies] if (ies.interface_name is defined or ies.address is defined) else []) %}
-                {% for iface in ifaces %}
+                {% for iface in ies.interfaces | default([]) %}
                 {% if iface.state | default('present') == 'absent' %}
                 <interface operation="remove">
-                    <interface-name>{{ iface.name | default(iface.interface_name) }}</interface-name>
+                    <interface-name>{{ iface.name }}</interface-name>
                 </interface>
                 {% else %}
                 <interface>
-                    <interface-name>{{ iface.name | default(iface.interface_name) }}</interface-name>
+                    <interface-name>{{ iface.name }}</interface-name>
                     {% if iface.description is defined %}
                     <description>{{ iface.description }}</description>
                     {% endif %}
@@ -32,7 +31,7 @@
                     <ipv4>
                         <primary>
                             <address>{{ iface.address }}</address>
-                            <prefix-length>{{ iface.prefix_length | default(iface.prefix | default(iface.mask | default(24))) }}</prefix-length>
+                            <prefix-length>{{ iface.prefix_length | default(24) }}</prefix-length>
                         </primary>
                     </ipv4>
                     {% endif %}
@@ -41,7 +40,7 @@
                     <ipv6>
                         <address>
                             <ipv6-address>{{ iface.ipv6.address }}</ipv6-address>
-                            <prefix-length>{{ iface.ipv6.prefix_length | default(iface.ipv6.mask | default(128)) }}</prefix-length>
+                            <prefix-length>{{ iface.ipv6.prefix_length | default(128) }}</prefix-length>
                         </address>
                     </ipv6>
                     {% endif %}
@@ -50,9 +49,9 @@
                     <mac>{{ iface.mac }}</mac>
                     {% endif %}
 
-                    {% if iface.sap_id is defined or iface.sap is defined %}
+                    {% if iface.sap_id is defined %}
                     <sap>
-                        <sap-id>{{ iface.sap_id | default(iface.sap) }}</sap-id>
+                        <sap-id>{{ iface.sap_id }}</sap-id>
                         <admin-state>{{ iface.sap_admin_state | default('enable') }}</admin-state>
                     </sap>
                     {% endif %}

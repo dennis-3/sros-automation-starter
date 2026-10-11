@@ -20,7 +20,7 @@
                 <ipv4>
                     <primary>
                         <address>{{ intf.address }}</address>
-                        <prefix-length>{{ intf.prefix_length | default(intf.mask) }}</prefix-length>
+                        <prefix-length>{{ intf.prefix_length }}</prefix-length>
                     </primary>
                 </ipv4>
                 {% endif %}
@@ -29,7 +29,7 @@
                 <ipv6>
                     <address>
                         <ipv6-address>{{ intf.ipv6.address }}</ipv6-address>
-                        <prefix-length>{{ intf.ipv6.prefix_length | default(intf.ipv6.mask | default(128)) }}</prefix-length>
+                        <prefix-length>{{ intf.ipv6.prefix_length | default(128) }}</prefix-length>
                     </address>
                 </ipv6>
                 {% endif %}

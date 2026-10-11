@@ -17,7 +17,6 @@
                 {% else %}
                 <aggregate>
                     <ip-prefix>{{ agg.prefix }}</ip-prefix>
-                    {# <summary-only>true</summary-only> #}
                 </aggregate>
                 {% endif %}
                 {% endfor %}
@@ -89,30 +88,19 @@
                     <multihop>{{ group.multihop }}</multihop>
                     {% endif %}
 
+                    {% if group.family is defined and group.family %}
                     <family>
-                        {% if group.family is defined and group.family is mapping %}
+                        {% if group.family is mapping %}
                         {% for fam, state in group.family.items() %}
                         <{{ fam | replace('_', '-') }}>{{ 'true' if state else 'false' }}</{{ fam | replace('_', '-') }}>
                         {% endfor %}
-                        {% elif group.family is defined and (group.family is iterable and group.family is not string) %}
+                        {% elif group.family is iterable and group.family is not string %}
                         {% for fam in group.family %}
                         <{{ fam | replace('_', '-') }}>true</{{ fam | replace('_', '-') }}>
                         {% endfor %}
-                        {% else %}
-                        {# Backward compatibility fallback for legacy boolean flags #}
-                        {% if group.family_ipv4 is defined %}<ipv4>{{ 'true' if group.family_ipv4 else 'false' }}</ipv4>{% endif %}
-                        {% if group.family_ipv6 | default(false) %}<ipv6>true</ipv6>{% endif %}
-                        {% if group.family_l2vpn is defined %}<l2-vpn>{{ 'true' if group.family_l2vpn else 'false' }}</l2-vpn>{% endif %}
-                        {% if group.family_vpn_ipv4 is defined %}<vpn-ipv4>{{ 'true' if group.family_vpn_ipv4 else 'false' }}</vpn-ipv4>{% endif %}
-                        {% if group.family_vpn_ipv6 | default(false) %}<vpn-ipv6>true</vpn-ipv6>{% endif %}
-                        {% if group.family_evpn | default(false) %}<evpn>true</evpn>{% endif %}
-                        {% if group.family_mvpn_ipv4 is defined %}<mvpn-ipv4>{{ 'true' if group.family_mvpn_ipv4 else 'false' }}</mvpn-ipv4>{% endif %}
-                        {% if group.family_mvpn_ipv6 | default(false) %}<mvpn-ipv6>true</mvpn-ipv6>{% endif %}
-                        {% if group.family_label_ipv4 is defined %}<label-ipv4>{{ 'true' if group.family_label_ipv4 else 'false' }}</label-ipv4>{% endif %}
-                        {% if group.family_label_ipv6 | default(false) %}<label-ipv6>true</label-ipv6>{% endif %}
-                        {% if group.family_route_target | default(false) %}<route-target>true</route-target>{% endif %}
                         {% endif %}
                     </family>
+                    {% endif %}
 
                     {# Authentication & Timers #}
                     {% if group.authentication_key is defined %}

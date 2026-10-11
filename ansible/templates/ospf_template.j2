@@ -10,10 +10,9 @@
                 <router-id>{{ ospf.router_id }}</router-id>
                 {% endif %}
 
-                {# Native Areas Context: supports either ospf.areas list or single ospf.area #}
-                {% set area_list = ospf.areas if ospf.areas is defined else [{'id': ospf.area | default('0.0.0.0'), 'interfaces': ospf.interfaces | default([])}] %}
-                {% for area in area_list %}
-                {% set area_id = area.id if area.id is defined else (area.area_id if area.area_id is defined else area) %}
+                {# Native Areas Context #}
+                {% for area in ospf.areas | default([]) %}
+                {% set area_id = area.id if area is mapping else area %}
                 {% set area_state = area.state | default('present') if area is mapping else 'present' %}
                 {% if area_state == 'absent' %}
                 <area operation="remove">
@@ -43,8 +42,6 @@
                         <metric>{{ iface.metric }}</metric>
                         {% elif area is mapping and area.metric is defined %}
                         <metric>{{ area.metric }}</metric>
-                        {% elif ospf.metric is defined %}
-                        <metric>{{ ospf.metric }}</metric>
                         {% endif %}
                         {% if iface is mapping and iface.priority is defined %}
                         <priority>{{ iface.priority }}</priority>

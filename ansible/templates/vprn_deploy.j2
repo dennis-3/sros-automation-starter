@@ -164,15 +164,27 @@
                         </vrf-target>
                         {% endif %}
 
-                        {% if vprn.bgp_ipvpn.export_policy is defined %}
+                        {% if vprn.bgp_ipvpn.export_policy is defined and vprn.bgp_ipvpn.export_policy %}
                         <vrf-export>
+                            {% if vprn.bgp_ipvpn.export_policy is iterable and vprn.bgp_ipvpn.export_policy is not string %}
+                            {% for pol in vprn.bgp_ipvpn.export_policy %}
+                            <policy>{{ pol }}</policy>
+                            {% endfor %}
+                            {% else %}
                             <policy>{{ vprn.bgp_ipvpn.export_policy }}</policy>
+                            {% endif %}
                         </vrf-export>
                         {% endif %}
 
-                        {% if vprn.bgp_ipvpn.import_policy is defined %}
+                        {% if vprn.bgp_ipvpn.import_policy is defined and vprn.bgp_ipvpn.import_policy %}
                         <vrf-import>
+                            {% if vprn.bgp_ipvpn.import_policy is iterable and vprn.bgp_ipvpn.import_policy is not string %}
+                            {% for pol in vprn.bgp_ipvpn.import_policy %}
+                            <policy>{{ pol }}</policy>
+                            {% endfor %}
+                            {% else %}
                             <policy>{{ vprn.bgp_ipvpn.import_policy }}</policy>
+                            {% endif %}
                         </vrf-import>
                         {% endif %}
 
@@ -241,20 +253,20 @@
                         </family>
 
                         {# Policy Handling #}
-                        {% if group.export_policy is defined %}
-                        {% for policy in group.export_policy %}
+                        {% if group.export_policy is defined and group.export_policy %}
                         <export>
+                            {% for policy in group.export_policy %}
                             <policy>{{ policy }}</policy>
+                            {% endfor %}
                         </export>
-                        {% endfor %}
                         {% endif %}
 
-                        {% if group.import_policy is defined %}
-                        {% for policy in group.import_policy %}
+                        {% if group.import_policy is defined and group.import_policy %}
                         <import>
+                            {% for policy in group.import_policy %}
                             <policy>{{ policy }}</policy>
+                            {% endfor %}
                         </import>
-                        {% endfor %}
                         {% endif %}
                     </group>
 

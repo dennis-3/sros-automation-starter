@@ -40,3 +40,6 @@ snapshots/
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+# Ignore local YANG models cache
+.yang/

@@ -1,4 +1,4 @@
-.PHONY: help install lab-up lab-down deploy canary-deploy check snapshot test-pre test-post build-ee validate lint clean
+.PHONY: help install lab-up lab-down deploy canary-deploy check snapshot test-pre test-post build-ee validate lint sync-yang clean
 
 help:
 	@echo "Available commands in sros-automation-starter:"
@@ -14,12 +14,16 @@ help:
 	@echo "  make build-ee      - Build containerized Execution Environment (sros-ee:latest)"
 	@echo "  make validate      - Fast pre-flight check: Jinja2 templates, XML render, and schemas"
 	@echo "  make lint          - Full static analysis: validate, pre-commit hooks, and ansible-lint"
+	@echo "  make sync-yang     - Sync official Nokia SR OS 25.7 YANG models to .yang/sros_25.7"
 	@echo "  make clean         - Remove cached files, pyATS snapshots, and artifacts"
 
 install:
 	pip install -r requirements.txt
 	ansible-galaxy collection install -r ansible/requirements.yml
 	pre-commit install
+
+sync-yang:
+	@git clone -b sros_25.7 --depth 1 https://github.com/nokia/7x50_YangModels.git .yang/sros_25.7 || (cd .yang/sros_25.7 && git pull)
 
 lab-up:
 	sudo containerlab deploy -t topology.yaml

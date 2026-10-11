@@ -7,9 +7,9 @@
             <autonomous-system>{{ bgp.asn }}</autonomous-system>
 
             {# Global Aggregates (Summary Routes) #}
-            {% if bgp.aggregates is defined %}
-            {% for agg in bgp.aggregates %}
+            {% if bgp.aggregates is defined and bgp.aggregates %}
             <aggregates>
+                {% for agg in bgp.aggregates %}
                 {% if agg.state | default('present') == 'absent' %}
                 <aggregate operation="remove">
                     <ip-prefix>{{ agg.prefix }}</ip-prefix>
@@ -20,8 +20,8 @@
                     {# <summary-only>true</summary-only> #}
                 </aggregate>
                 {% endif %}
+                {% endfor %}
             </aggregates>
-            {% endfor %}
             {% endif %}
 
             <bgp>
@@ -128,20 +128,20 @@
                     {% endif %}
 
                     {# Policy Handling #}
-                    {% if group.export_policy is defined %}
-                    {% for policy in group.export_policy %}
+                    {% if group.export_policy is defined and group.export_policy %}
                     <export>
+                        {% for policy in group.export_policy %}
                         <policy>{{ policy }}</policy>
+                        {% endfor %}
                     </export>
-                    {% endfor %}
                     {% endif %}
 
-                    {% if group.import_policy is defined %}
-                    {% for policy in group.import_policy %}
+                    {% if group.import_policy is defined and group.import_policy %}
                     <import>
+                        {% for policy in group.import_policy %}
                         <policy>{{ policy }}</policy>
+                        {% endfor %}
                     </import>
-                    {% endfor %}
                     {% endif %}
                 </group>
                 {% endif %}
@@ -171,19 +171,19 @@
                     {% if neighbor.authentication_key is defined %}
                     <authentication-key>{{ neighbor.authentication_key }}</authentication-key>
                     {% endif %}
-                    {% if neighbor.export_policy is defined %}
-                    {% for policy in neighbor.export_policy %}
+                    {% if neighbor.export_policy is defined and neighbor.export_policy %}
                     <export>
+                        {% for policy in neighbor.export_policy %}
                         <policy>{{ policy }}</policy>
+                        {% endfor %}
                     </export>
-                    {% endfor %}
                     {% endif %}
-                    {% if neighbor.import_policy is defined %}
-                    {% for policy in neighbor.import_policy %}
+                    {% if neighbor.import_policy is defined and neighbor.import_policy %}
                     <import>
+                        {% for policy in neighbor.import_policy %}
                         <policy>{{ policy }}</policy>
+                        {% endfor %}
                     </import>
-                    {% endfor %}
                     {% endif %}
                 </neighbor>
                 {% endif %}

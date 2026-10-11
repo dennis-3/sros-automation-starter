@@ -101,6 +101,7 @@ EXCLUDED_PATTERNS = (
     ".cache",
     ".venv",
     "venv",
+    ".yang",
     "__pycache__",
     "collections",
     "ansible_collections",

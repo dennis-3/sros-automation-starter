@@ -100,50 +100,67 @@ make clean           # Clean up test snapshots, cache directories, and temporary
 
 ## Setup
 
+### 1. Environment & Dependencies
+
+#### Linux / macOS
+
 ```bash
-# Linux / macOS:
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Windows (PowerShell):
-# python -m venv .venv
-# .venv\Scripts\Activate.ps1
-
-make install  # Installs Python dependencies, Ansible collections, and pre-commit hooks
-
-# Or install manually without Make:
-# pip install -r requirements.txt
-# ansible-galaxy collection install -r ansible/requirements.yml
-# pre-commit install
+make install
 ```
 
-### Nokia SR OS License Setup
+#### Windows (PowerShell)
 
-Before launching the Containerlab topology, provide your Nokia SR OS (TiMOS) simulation license file:
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+ansible-galaxy collection install -r ansible/requirements.yml
+pre-commit install
+```
+
+### 2. Nokia SR OS License Setup
+
+Before launching Containerlab, copy your Nokia SR OS (TiMOS) simulation license file:
 
 ```bash
-# Copy your license into the license/ directory
 cp /path/to/your/timos_license.txt license/license.txt
 ```
 
-> **Note**: `license/license.txt` is untracked by Git to protect proprietary license keys. See [`license/README.md`](license/README.md) for format details and `license/license.txt.example` for reference.
+> **Note**: `license/license.txt` is untracked by Git. See [`license/README.md`](license/README.md) for details and `license/license.txt.example` for reference.
 
-### Environment Variables & Credentials
+### 3. Environment Variables (`.env`)
 
-Credentials can be injected dynamically via environment variables for Ansible and pyATS (falling back to lab defaults if unset):
-
-```bash
-export SROS_USER="admin"
-export SROS_PASSWORD="your_secure_password"
-export SROS_PORT="830"
-```
-
-If using NetBox dynamic inventory:
+Copy the template to create your `.env` file:
 
 ```bash
-export NETBOX_URL="http://172.17.0.1:8000"  # NetBox API endpoint
-export NETBOX_TOKEN="your_token"           # NetBox REST API token
+cp .env.example .env
 ```
+
+Key variables configured in `.env` (defaults match lab topology):
+
+- `SROS_USER` / `SROS_PASSWORD`: Device credentials for NETCONF and pyATS (default: `admin` / `NokiaSros1!`)
+- `SROS_PORT`: NETCONF management port (default: `830`)
+- `SROS_IMAGE`: Containerlab SR OS image tag (default: `localhost/nokia/srsim:25.7.R1`)
+- `SROS_LICENSE`: Path to license key (default: `license/license.txt`)
+- `NETBOX_URL` / `NETBOX_TOKEN`: Dynamic inventory endpoint and API token (optional)
+
+Load variables into your shell session:
+
+- **Linux / macOS**:
+
+  ```bash
+  set -a && source .env && set +a
+  ```
+
+- **Windows (PowerShell)**:
+
+  ```powershell
+  Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=]+)=(.*)$') { [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim()) } }
+  ```
+
+> **Note**: `.env` is ignored by Git to protect credentials.
 
 ## Running Ansible
 

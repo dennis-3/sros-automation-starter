@@ -20,28 +20,40 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
    ```
 
 2. **Environment Setup**:
-   Create a virtual environment and run `make install` (which installs Python dependencies, Ansible collections, and registers pre-commit Git hooks):
 
-   ```bash
-   # Linux / macOS:
-   python3 -m venv .venv
-   source .venv/bin/activate
+   - **Linux / macOS**:
 
-   # Windows (PowerShell):
-   # python -m venv .venv
-   # .venv\Scripts\Activate.ps1
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     make install
+     ```
 
-   make install
-   ```
+   - **Windows (PowerShell)**:
 
-3. **License File**:
-   Ensure you have provided your Nokia SR OS (TiMOS) simulation license file:
+     ```powershell
+     python -m venv .venv
+     .venv\Scripts\Activate.ps1
+     pip install -r requirements.txt
+     ansible-galaxy collection install -r ansible/requirements.yml
+     pre-commit install
+     ```
 
-   ```bash
-   cp /path/to/your/timos_license.txt license/license.txt
-   ```
+3. **License File & Environment Variables**:
 
-   > See [`license/README.md`](license/README.md) for details.
+   - Copy your Nokia SR OS simulation license:
+
+     ```bash
+     cp /path/to/your/timos_license.txt license/license.txt
+     ```
+
+   - Initialize environment variables:
+
+     ```bash
+     cp .env.example .env
+     ```
+
+   > See [`license/README.md`](license/README.md) for license details.
 
 ---
 

@@ -9,39 +9,7 @@ Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS.
 
 ## System Architecture
 
-```mermaid
-flowchart TD
-  subgraph Automation ["Automation & Verification"]
-    Ansible["Ansible Controller\n(Atomic NETCONF Candidate)"]
-    PyATS["pyATS Test Suite\n(Snapshot & State Drift)"]
-    CI["GitHub Actions CI/CD\n(Validation & Deployment)"]
-  end
-
-  subgraph Lab ["Containerlab Topology (sros-lab)"]
-    R1["R1 (Edge PE)\n172.20.20.9"]
-    R2["R2 (Edge PE)\n172.20.20.2"]
-    R1 ---|"Port 1/1/c2/1"| R2
-  end
-
-  subgraph TelemetryStack ["Telemetry & AAA Stack"]
-    TACACS["TACACS+ AAA\n172.20.20.100:49"]
-    Telegraf["Telegraf (gNMI)\n172.20.20.101:57400"]
-    Prometheus["Prometheus TSDB\n172.20.20.102:9090"]
-    Grafana["Grafana Dashboards\n172.20.20.103:3000"]
-
-    R1 -.->|"gNMI Port / CPU Stats"| Telegraf
-    R2 -.->|"gNMI Port / CPU Stats"| Telegraf
-    Telegraf -->|"Prometheus Scrape (:9273)"| Prometheus
-    Prometheus -->|"Datasource Query"| Grafana
-    R1 -.->|"AAA Auth"| TACACS
-    R2 -.->|"AAA Auth"| TACACS
-  end
-
-  Ansible ==>|"NETCONF XML (:830)"| R1
-  Ansible ==>|"NETCONF XML (:830)"| R2
-  PyATS -.->|"SSH & State Extraction"| R1
-  PyATS -.->|"SSH & State Extraction"| R2
-```
+![SROS System Architecture](docs/architecture.png)
 
 ## Directory Structure
 

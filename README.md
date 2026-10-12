@@ -9,7 +9,7 @@ Starter repository for automating Nokia SR OS using Ansible, NETCONF, and pyATS.
 
 ## System Architecture
 
-![SROS System Architecture](docs/architecture.png)
+![SROS System Architecture](docs/architecture.svg)
 
 ## Directory Structure
 

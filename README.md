@@ -127,6 +127,7 @@ export SROS_PORT="830"
 ```
 
 If using NetBox dynamic inventory:
+
 ```bash
 export NETBOX_URL="http://172.17.0.1:8000"  # NetBox API endpoint
 export NETBOX_TOKEN="your_token"           # NetBox REST API token
@@ -137,24 +138,31 @@ export NETBOX_TOKEN="your_token"           # NetBox REST API token
 The repository includes a root `ansible.cfg` configured with `forks = 20`, persistent connection timeouts (`connect_timeout = 60s`, `command_timeout = 180s`), and default inventory pointing to `ansible/inventory.yml`.
 
 ### Full Deployment
+
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml
 ```
 
 ### Dry Run with Candidate Delta Preview (Check Mode)
+
 Run check mode to stage configuration, preview the rendered candidate changes via Nokia MD-CLI `md-compare`, and automatically discard changes to leave the candidate datastore pristine:
+
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
 ```
 
 ### Confirmed Commit with Auto-Rollback
+
 Deploy core changes with a confirmed commit window (in seconds). If connectivity fails or confirming commit is not received, SR OS automatically rolls back:
+
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
 ```
 
 ### Canary Rollouts (Rolling Batches)
+
 Deploy changes in rolling batches with failure thresholds:
+
 ```bash
 # Canary deployment: 1 router at a time
 ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=1
@@ -164,24 +172,30 @@ ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=20% -e sros_m
 ```
 
 ### Target Specific Device Roles
+
 The inventory defines role groups (`edge_pe`, `core_p`, `access_ce`). Use `--limit` to target specific tiers:
+
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml --limit edge_pe
 ansible-playbook ansible/playbooks/deploy.yml --limit core_p
 ```
 
 ### Running with Containerized Execution Environment (EE)
+
 To build the execution environment image locally using `ansible-builder`:
+
 ```bash
 ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest
 ```
 
 Run playbooks via `ansible-navigator` (auto-detects Podman or Docker):
+
 ```bash
 ansible-navigator run ansible/playbooks/deploy.yml --mode stdout
 ```
 
 ### Running Specific Tasks by Tag
+
 You do not need to supply all tags. Provide any single tag to run matching tasks:
 
 ```bash
@@ -204,18 +218,23 @@ Available tags:
 `system`, `hardware`, `filters`, `acl`, `interfaces`, `base-routing`, `underlay`, `routing`, `isis`, `ospf`, `mpls`, `ldp`, `rsvp`, `bier`, `mpls-labels`, `policy-options`, `bgp`, `overlay`, `services`, `epipe`, `vpls`, `vprn`, `ies`, `sdp`, `pw-templates`, `qos`, `igmp`, `pim`, `multicast`, `mirror`, `telemetry`. Both kebab-case and snake_case alias variants are supported.
 
 ### Candidate Datastore & Atomic Commits
+
 By default, `deploy.yml` operates in atomic mode:
+
 - All configuration tasks stage changes to the Nokia SR OS candidate datastore without committing (`commit: false`).
 - In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the exact CLI changes before committing.
 - A final commit task tagged `always` locks the candidate store, verifies, and executes a single atomic commit.
 - If any staging task or validation fails, an automated `rescue` block triggers `<discard-changes/>` via NETCONF RPC, rolling back the candidate buffer to prevent dirty state accumulation.
 - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
+
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml --tags interfaces -e sros_commit_per_task=true
 ```
 
 ### Operational State & Configuration Snapshots
+
 Capture running configuration or operational state snapshots in JSON, YAML, or XML:
+
 ```bash
 # Snapshot operational state in JSON
 ansible-playbook ansible/playbooks/snapshot.yml --tags state-json
@@ -229,7 +248,9 @@ ansible-playbook ansible/playbooks/snapshot.yml --tags state-json \
 ```
 
 ### Reference Data Model Catalog
+
 Reference data schemas for supported Nokia SR OS features are located in `examples/data_models/`:
+
 - `01_underlay_routing.yml`: IS-IS, OSPF, Segment Routing (SRGB), BIER
 - `02_mpls_signaling.yml`: MPLS, RSVP-TE CSPF LSPs, LDP, SDP transport tunnels, Pseudowire templates
 - `03_bgp_and_policies.yml`: Prefix lists, route policy statements, iBGP/eBGP peering, MP-BGP
@@ -239,12 +260,15 @@ Reference data schemas for supported Nokia SR OS features are located in `exampl
 - `07_multicast_and_mirror.yml`: IGMP, PIM (Sparse Mode, SSM, Anycast RP), Port Mirroring
 
 ### Pre-Flight Validation & Code Quality
+
 Run fast pre-flight validation (Jinja2 AST, XML schema rendering, Python syntax, and YAML schemas):
+
 ```bash
 make validate
 ```
 
 Or run the full static analysis suite (includes `validate`, all pre-commit formatting/Ruff checks, and `ansible-lint`):
+
 ```bash
 make lint
 ```
@@ -305,6 +329,7 @@ python pyats_test_suite.py --testbed pyats_testbed.yml --mode post
 ```
 
 Optional flags:
+
 - `--limit`: Comma-separated router names or patterns to restrict verification scope during targeted changes (e.g., `--limit r1` or `--limit edge_pe`).
 - `--inventory`: Path to Ansible inventory YAML file (`ansible/inventory.yml`) to dynamically synthesize pyATS testbed definitions on-the-fly, eliminating duplicate testbed drift.
 - `--testbed`: Testbed YAML path (auto-detects `pyats_testbed.yml`, `testbed.yml`, or synthesizes from `ansible/inventory.yml`).
@@ -313,6 +338,7 @@ Optional flags:
 - `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `180`).
 
 The pyATS test pipeline automatically runs:
+
 1. `ConnectivityTest`: SSH reachability and Nokia SR OS TiMOS validation.
 2. `InterfaceStateTest`: Asserts all administratively enabled IP interfaces (`adm == Up`) are operationally `Up/Up`.
 3. `ISISTest`: Asserts configured ISIS interfaces are operationally `Up` (skips gracefully if ISIS is unconfigured).
@@ -343,6 +369,7 @@ When the lab is launched (`make lab-up`), Containerlab spins up an integrated te
 ## CI/CD Deployment Pipeline (GitHub Actions)
 
 The repository includes two GitHub Actions workflows:
+
 - **Continuous Integration (`.github/workflows/ci.yml`)**: Executes Gitleaks secret scanning, template syntax and XML schema validation (`validate_templates.py`),
   pre-commit hooks, and Ansible lint checks on every pull request and push.
 - **Deployment & Verification (`.github/workflows/deploy.yml`)**:

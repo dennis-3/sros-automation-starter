@@ -17,12 +17,14 @@ Actual license keys issued by Nokia are proprietary and confidential. To adhere 
 
 2. **Place the File:**
    Copy your license file into this directory and name it `license.txt`:
+
    ```bash
    cp /path/to/your/timos_license.txt license/license.txt
    ```
 
 3. **Verify Format:**
    Ensure the file contains the standard TiMOS single-line license key string:
+
    ```text
    00000000-0000-0000-0000-000000000000 <BASE64_KEY> # NOKIA BELL NV(TiMOS-[BC]-25.*)
    ```

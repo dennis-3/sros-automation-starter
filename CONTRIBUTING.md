@@ -13,6 +13,7 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
 ## Getting Started
 
 1. **Fork and Clone**:
+
    ```bash
    git clone https://github.com/dennis-3/sros-automation-starter.git
    cd sros-automation-starter
@@ -20,6 +21,7 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
 
 2. **Environment Setup**:
    Create a virtual environment and run `make install` (which installs Python dependencies, Ansible collections, and registers pre-commit Git hooks):
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # Linux/macOS
@@ -30,9 +32,11 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
 
 3. **License File**:
    Ensure you have provided your Nokia SR OS (TiMOS) simulation license file:
+
    ```bash
    cp /path/to/your/timos_license.txt license/license.txt
    ```
+
    > See [`license/README.md`](license/README.md) for details.
 
 ---
@@ -64,6 +68,7 @@ We use `make` for common workflow operations:
 ## Contribution Guidelines
 
 ### 1. Architectural Principles
+
 - **Native YANG Data Models**: Variables in `host_vars/`, `group_vars/`, and `examples/data_models/` must reflect native Nokia SR OS YANG hierarchies. Avoid artificial nesting or custom abstractions.
 - **Atomic NETCONF Transactions**: Tasks in `deploy.yml` should stage candidate XML without committing until task `09_commit.yml` executes the atomic commit.
 - **Idempotency & Safe Rollbacks**: All tasks must be safe to re-run. In case of staging failures, the candidate store must be cleanly discarded via `<discard-changes/>`.
@@ -74,7 +79,9 @@ We use `make` for common workflow operations:
 All pull requests must pass our automated CI pipeline before merging. We provide a two-tier verification workflow to catch issues locally before pushing:
 
 #### Tier 1: Fast Pre-Flight Validation (`make validate`)
+
 Executes [`tests/validate_templates.py`](tests/validate_templates.py) in $< 2$ seconds on any operating system:
+
 - **Jinja2 AST & Delimiter Balance**: Parses template syntax trees and ensures all statements (`{% if %}`, `{% for %}`) and delimiters (`{{ }}`, `{# #}`) are balanced.
 - **Synthetic XML Rendering & Parsing**: Dynamically renders all 23 Jinja2 templates using test context from [`examples/data_models/`](examples/data_models/) and [`ansible/host_vars/`](ansible/host_vars/), parsing the resulting XML with `xml.etree.ElementTree` to verify schema validity.
 - **Syntax Verification**: Validates Python compilation across all `.py` files and YAML document structure across playbooks, inventories, and topologies.
@@ -84,7 +91,9 @@ make validate
 ```
 
 #### Tier 2: Full Static Analysis (`make lint`)
+
 Runs the full local linting pipeline prior to submitting a PR:
+
 - Runs `make validate` first.
 - Executes all pre-commit hooks (`pre-commit run --all-files`) for Python code formatting (Ruff), code quality checks, trailing whitespace, end-of-file fixers, and merge conflict markers.
 - Executes `ansible-lint` to ensure playbook standards and Ansible best practices (gracefully skips if running natively on Windows where `ansible-lint` is unsupported; run inside WSL or Docker for local Ansible linting).
@@ -94,7 +103,9 @@ make lint
 ```
 
 #### Continuous Integration Pipeline (GitHub Actions)
+
 When you open a Pull Request, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) automatically validates:
+
 1. **Security & Secret Scanning**: Scans all commits using `gitleaks` to prevent accidental credential or private key exposure.
 2. **Template & Schema Integrity**: Runs `tests/validate_templates.py`.
 3. **Formatting & Style**: Runs `pre-commit run --all-files`.
@@ -104,7 +115,9 @@ When you open a Pull Request, [`.github/workflows/ci.yml`](.github/workflows/ci.
 > If `make lint` fails due to Python formatting, run `ruff format .` to format your code automatically before committing.
 
 ### 3. Commit Message Convention
+
 We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
+
 - `feat:` New automation features, templates, or playbooks
 - `fix:` Bug fixes in templates, schemas, or tasks
 - `docs:` Documentation improvements or updates
@@ -117,9 +130,11 @@ We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
 ## Pull Request Process
 
 1. Create a feature branch from `main`:
+
    ```bash
    git checkout -b feat/your-feature-name
    ```
+
 2. Commit your changes following conventional commit syntax.
 3. Push to your fork and submit a Pull Request to `main`.
 4. Ensure all GitHub Actions CI checks pass.
@@ -130,6 +145,7 @@ We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
 ## Reporting Issues
 
 If you find a bug or have a feature request:
+
 - Open an issue on GitHub with a clear description.
 - Include router software version (e.g. SR OS 25.7.R1), Python/Ansible versions, and relevant logs.
 - Do **not** post proprietary license keys or production network secrets in issues.

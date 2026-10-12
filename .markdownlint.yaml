@@ -1,0 +1,17 @@
+# markdownlint configuration
+# https://github.com/DavidAnson/markdownlint
+
+default: true
+
+# Disable line length rule (enforcing 80 characters creates excessive diff churn)
+MD013: false
+
+# Allow inline HTML for badges, details/summary, or images
+MD033: false
+
+# Disable first-line-heading requirement for files like LICENSE.md
+MD041: false
+
+# Allow identical headings if they belong to different parent headings
+MD024:
+  siblings_only: true

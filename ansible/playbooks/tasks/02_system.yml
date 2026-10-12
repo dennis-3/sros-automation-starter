@@ -3,15 +3,28 @@
 # 02. SYSTEM IDENTITY, HARDWARE & MANAGEMENT SERVICES
 # ==============================================================================
 
-- name: Configure hardware and system names on all routers
+- name: Provision hardware chassis, cards, and connector breakouts
+  ansible.netcommon.netconf_config:
+    target: candidate
+    validate: true
+    commit: true
+    lock: always
+    default_operation: merge
+    content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2', template_vars=dict(hardware_stage='connectors')) }}"
+  when: system_name is defined or cards is defined or (ports | default([]) | selectattr('connector', 'defined') | list | length > 0)
+  tags:
+    - system
+    - hardware
+
+- name: Configure child Ethernet ports
   ansible.netcommon.netconf_config:
     target: candidate
     validate: "{{ sros_commit_per_task | default(false) }}"
     commit: "{{ sros_commit_per_task | default(false) }}"
     lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
     default_operation: merge
-    content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2') }}"
-  when: system_name is defined or cards is defined or ports is defined
+    content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2', template_vars=dict(hardware_stage='ports')) }}"
+  when: ports | default([]) | selectattr('ethernet', 'defined') | list | length > 0
   tags:
     - system
     - hardware

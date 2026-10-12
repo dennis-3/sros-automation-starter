@@ -2,14 +2,14 @@
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
 
         {# --- System Identity --- #}
-        {% if system_name is defined %}
+        {% if system_name is defined and (hardware_stage | default('all') in ['all', 'connectors']) %}
         <system>
             <name>{{ system_name }}</name>
         </system>
         {% endif %}
 
         {# --- Card & MDA Provisioning --- #}
-        {% if cards is defined %}
+        {% if cards is defined and (hardware_stage | default('all') in ['all', 'connectors']) %}
         {% for card in cards %}
         <card>
             <slot-number>{{ card.slot }}</slot-number>
@@ -29,6 +29,8 @@
         {# --- Port Provisioning (Connectors, Channelized Sub-Ports & Ethernet) --- #}
         {% if ports is defined %}
         {% for port in ports %}
+        {% set is_connector = (port.connector is defined and port.connector.breakout is defined) %}
+        {% if (hardware_stage | default('all') == 'all') or (hardware_stage == 'connectors' and is_connector) or (hardware_stage == 'ports' and not is_connector) %}
         <port>
             <port-id>{{ port.id }}</port-id>
             <admin-state>{{ port.admin_state | default('enable') }}</admin-state>
@@ -37,7 +39,7 @@
             {% endif %}
 
             {# Connector Breakout #}
-            {% if port.connector is defined and port.connector.breakout is defined %}
+            {% if is_connector %}
             <connector>
                 <breakout>{{ port.connector.breakout }}</breakout>
             </connector>
@@ -54,9 +56,10 @@
             </ethernet>
             {% endif %}
         </port>
+        {% endif %}
 
         {# Grouped Sub-Ports under Connector (if specified hierarchically) #}
-        {% if port.channels is defined %}
+        {% if port.channels is defined and (hardware_stage | default('all') in ['all', 'ports']) %}
         {% for sub in port.channels %}
         <port>
             <port-id>{{ sub.id if sub is mapping else sub }}</port-id>

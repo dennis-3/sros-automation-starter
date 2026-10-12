@@ -30,8 +30,8 @@ ports:
       breakout: "c1-100g"
   - id: "1/1/c2/1"
     ethernet:
-      mode: "hybrid"
-      encap_type: "dot1q"
+      mode: "network"
+      encap_type: "null"
 
   - id: "1/1/c3"
     connector:
@@ -53,7 +53,7 @@ interfaces:
   - name: "toR2"
     address: "10.1.2.1"
     prefix_length: 27
-    port: "1/1/c2/1:0"
+    port: "1/1/c2/1"
     ipv6:
       address: "fd50:2026:12::1"
       prefix_length: 64

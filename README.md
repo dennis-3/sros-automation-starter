@@ -36,8 +36,12 @@ sros-automation-starter/
 │   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
 │   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
 │   ├── templates/                # 23 Jinja2 NETCONF XML templates
+│   ├── requirements.yml          # Ansible Galaxy collections requirements
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
+├── docs/
+│   ├── architecture.drawio       # Canonical vector architecture diagram source
+│   └── architecture.svg          # High-resolution vector diagram for README
 ├── examples/
 │   └── data_models/              # Reference data schemas (BGP, VPNs, MPLS, QoS, etc.)
 ├── license/
@@ -52,10 +56,14 @@ sros-automation-starter/
 ├── grafana_datasource.yaml       # Grafana automated datasource provisioning
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
-├── .env.example                  # Centralized environment variable template
+├── .ansible-lint                 # Ansible lint rules & profile configuration
 ├── .editorconfig                 # Cross-editor formatting specifications
-├── .pre-commit-config.yaml       # Git hooks (YAML, formatting, Ruff)
+├── .env.example                  # Centralized environment variable template
+├── .gitignore                    # Git untracked pattern definitions
 ├── .gitleaks.toml                # Security scanning configuration
+├── .markdownlint.yaml            # Markdown linting configuration
+├── .markdownlintignore           # Markdown linting exclusion patterns
+├── .pre-commit-config.yaml       # Git hooks (YAML, formatting, Ruff, markdownlint)
 ├── CHANGELOG.md                  # Release version history
 ├── CONTRIBUTING.md               # Community contribution guidelines
 ├── CODE_OF_CONDUCT.md            # Contributor Covenant v2.1 code of conduct
@@ -267,7 +275,7 @@ Run fast pre-flight validation (Jinja2 AST, XML schema rendering, Python syntax,
 make validate
 ```
 
-Or run the full static analysis suite (includes `validate`, all pre-commit formatting/Ruff checks, and `ansible-lint`):
+Or run the full static analysis suite (includes `validate`, all pre-commit formatting/Ruff/markdownlint checks, and `ansible-lint`):
 
 ```bash
 make lint

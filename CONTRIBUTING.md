@@ -59,7 +59,7 @@ We use `make` for common workflow operations:
 | `make test-post` | Capture pyATS post-change state and generate HTML drift report |
 | `make build-ee` | Build containerized Execution Environment (`sros-ee:latest`) |
 | `make validate` | Fast pre-flight check: Jinja2 AST, XML schema rendering, Python & YAML syntax |
-| `make lint` | Full static analysis: validate, pre-commit hooks (Ruff, YAML), and ansible-lint |
+| `make lint` | Full static analysis: validate, pre-commit hooks (Ruff, YAML, Markdown), and ansible-lint |
 | `make lab-down` | Destroy Containerlab topology |
 | `make clean` | Clean temporary artifacts and test caches |
 
@@ -95,7 +95,7 @@ make validate
 Runs the full local linting pipeline prior to submitting a PR:
 
 - Runs `make validate` first.
-- Executes all pre-commit hooks (`pre-commit run --all-files`) for Python code formatting (Ruff), code quality checks, trailing whitespace, end-of-file fixers, and merge conflict markers.
+- Executes all pre-commit hooks (`pre-commit run --all-files`) for Python code formatting (Ruff), Markdown formatting (markdownlint), code quality checks, trailing whitespace, end-of-file fixers, and merge conflict markers.
 - Executes `ansible-lint` to ensure playbook standards and Ansible best practices (gracefully skips if running natively on Windows where `ansible-lint` is unsupported; run inside WSL or Docker for local Ansible linting).
 
 ```bash

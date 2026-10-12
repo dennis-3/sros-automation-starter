@@ -46,7 +46,6 @@ interfaces:
   - name: "system"
     address: "10.10.10.2"
     prefix_length: 32
-    loopback: true
     ipv6:
       address: "fd50:2026::2"
       prefix_length: 128

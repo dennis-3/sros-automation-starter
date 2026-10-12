@@ -34,11 +34,11 @@
                 </ipv6>
                 {% endif %}
 
-                {% if intf.port is defined %}
+                {% if intf.port is defined and intf.name != 'system' %}
                 <port>{{ intf.port }}</port>
                 {% endif %}
 
-                {% if intf.loopback | default(false) %}
+                {% if (intf.loopback | default(false)) and intf.name != 'system' %}
                 <loopback/>
                 {% endif %}
 
@@ -46,7 +46,7 @@
                 <ip-mtu>{{ intf.mtu }}</ip-mtu>
                 {% endif %}
 
-                {% if intf.ingress_ip_filter is defined %}
+                {% if intf.ingress_ip_filter is defined and intf.name != 'system' %}
                 <ingress>
                   <filter>
                     <ip>{{ intf.ingress_ip_filter }}</ip>
@@ -54,7 +54,7 @@
                 </ingress>
                 {% endif %}
 
-                {% if intf.egress_ip_filter is defined %}
+                {% if intf.egress_ip_filter is defined and intf.name != 'system' %}
                 <egress>
                   <filter>
                     <ip>{{ intf.egress_ip_filter }}</ip>

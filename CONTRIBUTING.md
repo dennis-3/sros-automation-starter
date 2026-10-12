@@ -23,9 +23,13 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
    Create a virtual environment and run `make install` (which installs Python dependencies, Ansible collections, and registers pre-commit Git hooks):
 
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Linux/macOS
-   # .venv\Scripts\Activate.ps1  # Windows PowerShell
+   # Linux / macOS:
+   python3 -m venv .venv
+   source .venv/bin/activate
+
+   # Windows (PowerShell):
+   # python -m venv .venv
+   # .venv\Scripts\Activate.ps1
 
    make install
    ```

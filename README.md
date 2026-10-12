@@ -101,9 +101,13 @@ make clean           # Clean up test snapshots, cache directories, and temporary
 ## Setup
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\Activate.ps1  # Windows PowerShell
+# Linux / macOS:
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Windows (PowerShell):
+# python -m venv .venv
+# .venv\Scripts\Activate.ps1
 
 make install  # Installs Python dependencies, Ansible collections, and pre-commit hooks
 

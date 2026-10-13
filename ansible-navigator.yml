@@ -1,0 +1,16 @@
+# ansible-navigator.yml
+ansible-navigator:
+  execution-environment:
+    container-engine: auto  # Automatically detects podman or docker
+    image: sros-ee:latest
+    container-options:
+      - "--tty"
+    pull:
+      policy: missing
+    enabled: true
+
+  playbook-artifact:
+    enable: false
+    save-as: "{playbook_name}-artifact.json"
+
+  mode: stdout  # Use 'interactive' for the TUI or 'stdout' for traditional look

@@ -20,6 +20,7 @@ sros-automation-starter/
 │       ├── ci.yml                # CI test, schema validation, and security scan workflow
 │       └── deploy.yml            # Automated lab deployment & verification workflow
 ├── ansible.cfg                   # Ansible settings (forks, timeouts, default inventory)
+├── ansible-navigator.yml         # Containerized execution settings (EE image, pull policy, mode)
 ├── ansible/
 │   ├── group_vars/
 │   │   ├── all.yml               # Global credentials, connection parameters, commit toggles

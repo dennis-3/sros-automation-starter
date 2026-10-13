@@ -359,13 +359,17 @@ Capture pre-change and post-change router state, then generate an HTML diff:
 
 ```bash
 # 1. Capture baseline state:
-python pyats_test_suite.py --testbed pyats_testbed.yml --mode pre
+make test-pre
+# Or directly via CLI (python3 on Linux/macOS, python on Windows):
+python3 pyats_test_suite.py --mode pre
 
 # 2. Deploy changes via Ansible:
 ansible-playbook ansible/playbooks/deploy.yml --tags interfaces
 
 # 3. Capture post-change state and compare:
-python pyats_test_suite.py --testbed pyats_testbed.yml --mode post
+make test-post
+# Or directly via CLI (python3 on Linux/macOS, python on Windows):
+python3 pyats_test_suite.py --mode post
 ```
 
 Optional flags:

@@ -43,11 +43,13 @@ check:
 snapshot:
 	ansible-playbook ansible/playbooks/snapshot.yml --tags state-json
 
+PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null || echo python3)
+
 test-pre:
-	python pyats_test_suite.py --mode pre
+	$(PYTHON) pyats_test_suite.py --mode pre
 
 test-post:
-	python pyats_test_suite.py --mode post
+	$(PYTHON) pyats_test_suite.py --mode post
 
 EE_VERBOSITY ?= 3
 
@@ -55,7 +57,7 @@ build-ee:
 	BUILDKIT_PROGRESS=plain ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest -v $(EE_VERBOSITY)
 
 validate:
-	python tests/validate_templates.py
+	$(PYTHON) tests/validate_templates.py
 
 lint: validate
 	pre-commit run --all-files

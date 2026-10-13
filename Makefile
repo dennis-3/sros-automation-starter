@@ -60,4 +60,4 @@ lint: validate
 	@command -v ansible-lint >/dev/null 2>&1 && ansible-lint || echo "[INFO] Skipping ansible-lint (not installed or running on native Windows). Run inside WSL, container, or CI."
 
 clean:
-	rm -rf snapshots/*.json snapshots/*.html .cache/ __pycache__/
+	rm -rf snapshots ansible/playbooks/snapshots .cache/ __pycache__/ tests/__pycache__/

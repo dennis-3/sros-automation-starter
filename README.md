@@ -31,7 +31,7 @@ sros-automation-starter/
 │   ├── inventory.yml             # Role-based inventory (edge_pe, core_p, access_ce)
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
-│   │   ├── deploy.yml            # Main deployment orchestrator (atomic candidate staging)
+│   │   ├── deploy.yml            # Main deployment orchestrator (two-stage candidate staging)
 │   │   ├── tasks/                # Modular deployment pipeline tasks (01_preflight to 09_commit)
 │   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
 │   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
@@ -246,15 +246,22 @@ ansible-playbook ansible/playbooks/deploy.yml --tags vprn
 Available tags:
 `system`, `hardware`, `filters`, `acl`, `interfaces`, `base-routing`, `underlay`, `routing`, `isis`, `ospf`, `mpls`, `ldp`, `rsvp`, `bier`, `mpls-labels`, `policy-options`, `bgp`, `overlay`, `services`, `epipe`, `vpls`, `vprn`, `ies`, `sdp`, `pw-templates`, `qos`, `igmp`, `pim`, `multicast`, `mirror`, `telemetry`. Both kebab-case and snake_case alias variants are supported.
 
-### Candidate Datastore & Atomic Commits
+### Candidate Datastore & Execution Lifecycle
 
-By default, `deploy.yml` operates in atomic mode:
+By default, `deploy.yml` operates with a two-stage transaction lifecycle designed around Nokia SR OS hardware dependencies:
 
-- All configuration tasks stage changes to the Nokia SR OS candidate datastore without committing (`commit: false`).
-- In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the exact CLI changes before committing.
-- A final commit task tagged `always` locks the candidate store, verifies, and executes a single atomic commit.
-- If any staging task or validation fails, an automated `rescue` block triggers `<discard-changes/>` via NETCONF RPC, rolling back the candidate buffer to prevent dirty state accumulation.
-- If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
+1. **Hardware & Connector Breakout Provisioning (Committed)**:
+   - Physical chassis components, cards, MDAs, and connector breakouts (`hardware_stage='connectors'`) are committed immediately (`commit: true`).
+   - In Nokia SR OS, child breakout ports (e.g. `1/1/c2/1`) do not exist in the hardware table until the connector breakout configuration is active in the running datastore. Committing this hardware foundation first allows SR OS to dynamically instantiate child ports before dependent configurations reference them.
+
+2. **Candidate Datastore Staging (Uncommitted)**:
+   - All subsequent configuration tasks—child Ethernet ports (`hardware_stage='ports'`), IP interfaces, underlay routing (IS-IS/OSPF), route policies, BGP, MPLS/LDP, and VPN services (Epipe, VPLS, VPRN, IES)—stage changes to the candidate datastore without committing (`commit: false`).
+
+3. **Atomic Verification & Commit**:
+   - In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the rendered candidate changes before committing.
+   - Task `09_commit.yml` (tagged `always`) locks the candidate store, verifies, and executes a single atomic commit (or confirmed commit with auto-rollback).
+   - If any staging task or validation fails, an automated `rescue` block triggers `<discard-changes/>` via NETCONF RPC, rolling back the candidate buffer to prevent dirty state accumulation.
+   - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
 
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml --tags interfaces -e sros_commit_per_task=true
@@ -415,8 +422,8 @@ The repository includes two GitHub Actions workflows:
 
 Tasks in `deploy.yml` run in this sequence:
 
-1. System name & hardware provisioning (card, MDA, port breakout)
-2. System management (NTP, AAA/TACACS+, DNS)
+1. Hardware chassis, cards, & connector breakouts (`commit: true` - instantiates child breakout ports in hardware)
+2. Child Ethernet ports & system management (NTP, AAA/TACACS+, DNS)
 3. IP filters & ACLs
 4. IP interfaces (IPv4 & IPv6 dual-stack)
 5. MPLS label ranges

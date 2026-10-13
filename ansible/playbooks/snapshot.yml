@@ -2,11 +2,13 @@
 - name: Retrieve Nokia SR OS Operational State and Configuration
   hosts: all
   gather_facts: false
+  vars:
+    snapshot_dir: "{{ sros_snapshot_dir | default(playbook_dir ~ '/../../snapshots') }}"
 
   pre_tasks:
     - name: Ensure snapshots directory exists  # noqa: run-once[task]
       ansible.builtin.file:
-        path: snapshots
+        path: "{{ snapshot_dir }}"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -33,14 +35,14 @@
         - name: Output state info to snapshots directory
           ansible.builtin.copy:
             content: "{{ netconf_facts_state_json.output.data | to_nice_json }}"
-            dest: "snapshots/{{ inventory_hostname }}_state.json"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_state.json"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_state_json.output.data is defined
 
         - name: Log state file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_state.json"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_state.json"
 
     # =========================================================================
     # JSON RUNNING CONFIGURATION
@@ -60,14 +62,14 @@
         - name: Output config info to snapshots directory
           ansible.builtin.copy:
             content: "{{ netconf_facts_config_json.output.data | to_nice_json }}"
-            dest: "snapshots/{{ inventory_hostname }}_config.json"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_config.json"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_config_json.output.data is defined
 
         - name: Log config file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_config.json"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_config.json"
 
     # =========================================================================
     # YAML OPERATIONAL STATE
@@ -87,14 +89,14 @@
         - name: Output state info to YAML file
           ansible.builtin.copy:
             content: "{{ netconf_facts_state_yaml.output.data | to_nice_yaml }}"
-            dest: "snapshots/{{ inventory_hostname }}_state.yaml"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_state.yaml"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_state_yaml.output.data is defined
 
         - name: Log YAML state file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_state.yaml"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_state.yaml"
 
     # =========================================================================
     # YAML RUNNING CONFIGURATION
@@ -114,14 +116,14 @@
         - name: Output config info to YAML file
           ansible.builtin.copy:
             content: "{{ netconf_facts_config_yaml.output.data | to_nice_yaml }}"
-            dest: "snapshots/{{ inventory_hostname }}_config.yaml"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_config.yaml"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_config_yaml.output.data is defined
 
         - name: Log YAML config file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_config.yaml"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_config.yaml"
 
     # =========================================================================
     # XML OPERATIONAL STATE
@@ -141,14 +143,14 @@
         - name: Output raw state XML to file
           ansible.builtin.copy:
             content: "{{ netconf_facts_state_xml.output }}"
-            dest: "snapshots/{{ inventory_hostname }}_state.xml"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_state.xml"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_state_xml.output is defined
 
         - name: Log XML state file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_state.xml"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_state.xml"
 
     # =========================================================================
     # XML RUNNING CONFIGURATION
@@ -168,11 +170,11 @@
         - name: Output raw config XML to file
           ansible.builtin.copy:
             content: "{{ netconf_facts_config_xml.output }}"
-            dest: "snapshots/{{ inventory_hostname }}_config.xml"
+            dest: "{{ snapshot_dir }}/{{ inventory_hostname }}_config.xml"
             mode: '0644'
           delegate_to: localhost
           when: netconf_facts_config_xml.output is defined
 
         - name: Log XML config file creation
           ansible.builtin.debug:
-            msg: "Saved snapshots/{{ inventory_hostname }}_config.xml"
+            msg: "Saved {{ snapshot_dir }}/{{ inventory_hostname }}_config.xml"

@@ -74,7 +74,7 @@
             commit: true
             lock: always
             default_operation: replace
-            content: "{{ lookup('file', config_file | default('snapshots/' ~ inventory_hostname ~ '_config.xml')) }}"
+            content: "{{ lookup('file', config_file | default(playbook_dir ~ '/../../snapshots/' ~ inventory_hostname ~ '_config.xml')) }}"
 
     # =========================================================================
     # XML COMPARE CONFIGURATION (MD-COMPARE DRY-RUN PREVIEW)

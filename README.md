@@ -211,11 +211,15 @@ ansible-playbook ansible/playbooks/deploy.yml --limit core_p
 
 ### Running with Containerized Execution Environment (EE)
 
-To build the execution environment image locally using `ansible-builder`:
+To build the execution environment image with live streaming build progress:
 
 ```bash
-ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest
+make build-ee
+# Or directly via CLI with real-time build streaming:
+BUILDKIT_PROGRESS=plain ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest -v 3
 ```
+
+> **Tip**: Building an EE installs extensive dependencies (`pyats`, `genie`, `ncclient`, system compilers, and Galaxy collections). Setting `BUILDKIT_PROGRESS=plain` and `-v 3` streams every package download, wheel compilation, and container layer build to stdout in real time.
 
 Run playbooks via `ansible-navigator` (auto-detects Podman or Docker):
 

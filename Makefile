@@ -49,8 +49,10 @@ test-pre:
 test-post:
 	python pyats_test_suite.py --mode post
 
+EE_VERBOSITY ?= 3
+
 build-ee:
-	ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest
+	BUILDKIT_PROGRESS=plain ansible-builder build -f ansible/execution-environment.yml -t sros-ee:latest -v $(EE_VERBOSITY)
 
 validate:
 	python tests/validate_templates.py
@@ -60,4 +62,4 @@ lint: validate
 	@command -v ansible-lint >/dev/null 2>&1 && ansible-lint || echo "[INFO] Skipping ansible-lint (not installed or running on native Windows). Run inside WSL, container, or CI."
 
 clean:
-	rm -rf snapshots ansible/playbooks/snapshots .cache/ __pycache__/ tests/__pycache__/
+	rm -rf snapshots ansible/playbooks/snapshots context/ .cache/ __pycache__/ tests/__pycache__/

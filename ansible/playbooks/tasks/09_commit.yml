@@ -93,14 +93,28 @@
     - always
     - check
 
-# Validates and commits all staged candidate edits with confirmed commit and auto-rollback
-- name: Validate and Commit Staged Candidate Changes (Confirmed Commit)
+# Validates candidate datastore before commit
+- name: Validate Staged Candidate Configuration
   ansible.netcommon.netconf_config:
     target: candidate
     validate: true
-    commit: true
-    confirm: "{{ sros_confirm_timeout | int }}"
-    lock: always
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
+  tags:
+    - always
+    - commit
+    - validate
+
+# Commits all staged candidate edits with confirmed commit and auto-rollback
+- name: Validate and Commit Staged Candidate Changes (Confirmed Commit)
+  ansible.netcommon.netconf_rpc:
+    rpc: commit
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+    content: |
+      <confirmed/>
+      <confirm-timeout>{{ sros_confirm_timeout | int }}</confirm-timeout>
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
@@ -138,8 +152,9 @@
     - commit
 
 - name: Confirm Previous Commit
-  ansible.netcommon.netconf_config:
-    confirm_commit: true
+  ansible.netcommon.netconf_rpc:
+    rpc: commit
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
@@ -149,13 +164,11 @@
     - always
     - commit
 
-# Validates and commits all staged candidate edits in standard atomic mode
+# Commits all staged candidate edits in standard atomic mode
 - name: Validate and Commit All Staged Candidate Changes (Standard Commit)
-  ansible.netcommon.netconf_config:
-    target: candidate
-    validate: true
-    commit: true
-    lock: always
+  ansible.netcommon.netconf_rpc:
+    rpc: commit
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode

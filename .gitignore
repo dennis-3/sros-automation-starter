@@ -45,3 +45,6 @@ Thumbs.db
 
 # Ignore local YANG models cache
 .yang/
+
+# ignore google drive sync files
+.tmp.drive*

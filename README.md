@@ -352,7 +352,7 @@ epipe_services:
     state: absent
 ```
 
-Templates render NETCONF `operation="remove"` to delete the target element from the Nokia SR OS datastore during the atomic transaction.
+Templates render NETCONF `nc:operation="remove"` (qualified via `xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"`) to delete the target element from the candidate datastore during the atomic transaction without namespace collisions.
 
 ## Testing & Verification (pyATS)
 

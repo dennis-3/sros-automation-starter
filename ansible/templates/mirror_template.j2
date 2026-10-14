@@ -1,11 +1,11 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <mirror>
             {# Mirror Destinations #}
             {% set dests = mirror.destinations if (mirror is defined and mirror.destinations is defined) else [] %}
             {% for dest in dests %}
             {% if dest.state | default('present') == 'absent' %}
-            <mirror-dest operation="remove">
+            <mirror-dest nc:operation="remove">
                 <service-name>{{ dest.name }}</service-name>
             </mirror-dest>
             {% else %}
@@ -31,7 +31,7 @@
             {% set srcs = mirror.sources if (mirror is defined and mirror.sources is defined) else [] %}
             {% for src in srcs %}
             {% if src.state | default('present') == 'absent' %}
-            <mirror-source operation="remove">
+            <mirror-source nc:operation="remove">
                 <service-name>{{ src.name }}</service-name>
             </mirror-source>
             {% else %}

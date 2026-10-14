@@ -1,4 +1,4 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <system>
             {# ================================================================= #}
@@ -10,7 +10,7 @@
                     <admin-state>{{ ntp.admin_state | default('enable') }}</admin-state>
                     {% for srv in ntp.servers | default([]) %}
                     {% if srv.state | default('present') == 'absent' %}
-                    <server operation="remove">
+                    <server nc:operation="remove">
                         <address>{{ srv.address if srv.address is defined else srv }}</address>
                     </server>
                     {% else %}
@@ -38,7 +38,7 @@
                     <tacplus>
                         {% for srv in tacplus.servers | default([]) %}
                         {% if srv.state | default('present') == 'absent' %}
-                        <server operation="remove">
+                        <server nc:operation="remove">
                             <index>{{ srv.index | default(loop.index) }}</index>
                         </server>
                         {% else %}
@@ -69,7 +69,7 @@
             <dns>
                 {% for srv in dns.servers | default([]) %}
                 {% if srv.state | default('present') == 'absent' %}
-                <server operation="remove">
+                <server nc:operation="remove">
                     <address>{{ srv.address if srv.address is defined else srv }}</address>
                 </server>
                 {% else %}

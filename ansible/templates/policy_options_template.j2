@@ -1,11 +1,11 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <policy-options>
             {# Prefix Lists Configuration #}
             {% if policy_options.prefix_lists is defined %}
             {% for pl in policy_options.prefix_lists %}
             {% if pl.state | default('present') == 'absent' %}
-            <prefix-list operation="remove">
+            <prefix-list nc:operation="remove">
                 <name>{{ pl.name }}</name>
             </prefix-list>
             {% else %}
@@ -26,7 +26,7 @@
             {% if policy_options.communities is defined %}
             {% for comm in policy_options.communities %}
             {% if comm.state | default('present') == 'absent' %}
-            <community operation="remove">
+            <community nc:operation="remove">
                 <name>{{ comm.name }}</name>
             </community>
             {% else %}
@@ -48,7 +48,7 @@
             {# Policy Statements Configuration #}
             {% for policy in policy_options.policy_statements | default([]) %}
             {% if policy.state | default('present') == 'absent' %}
-            <policy-statement operation="remove">
+            <policy-statement nc:operation="remove">
                 <name>{{ policy.name }}</name>
             </policy-statement>
             {% else %}

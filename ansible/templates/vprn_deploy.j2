@@ -1,9 +1,9 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <service>
             {% for vprn in vprn_services %}
             {% if vprn.state | default('present') == 'absent' %}
-            <vprn operation="remove">
+            <vprn nc:operation="remove">
                 <service-name>{{ vprn.name }}</service-name>
             </vprn>
             {% else %}
@@ -286,7 +286,7 @@
                 {# --- INTERFACES SECTION --- #}
                 {% for interface in vprn.interfaces %}
                 {% if interface.state | default('present') == 'absent' %}
-                <interface operation="remove">
+                <interface nc:operation="remove">
                     <interface-name>{{ interface.name }}</interface-name>
                 </interface>
                 {% else %}

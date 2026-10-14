@@ -1,9 +1,9 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <service>
             {% for ies in ies_services %}
             {% if ies.state | default('present') == 'absent' %}
-            <ies operation="remove">
+            <ies nc:operation="remove">
                 <service-name>{{ ies.name }}</service-name>
             </ies>
             {% else %}
@@ -17,7 +17,7 @@
 
                 {% for iface in ies.interfaces | default([]) %}
                 {% if iface.state | default('present') == 'absent' %}
-                <interface operation="remove">
+                <interface nc:operation="remove">
                     <interface-name>{{ iface.name }}</interface-name>
                 </interface>
                 {% else %}

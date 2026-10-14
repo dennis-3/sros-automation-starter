@@ -1,10 +1,10 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
 
         <service>
             {% for vpls in vpls_services %}
             {% if vpls.state | default('present') == 'absent' %}
-            <vpls operation="remove">
+            <vpls nc:operation="remove">
                 <service-name>{{ vpls.name | default(vpls.id) }}</service-name>
             </vpls>
             {% else %}
@@ -65,7 +65,7 @@
                 {% if vpls.saps is defined %}
                 {% for sap in vpls.saps %}
                 {% if sap.state | default('present') == 'absent' %}
-                <sap operation="remove">
+                <sap nc:operation="remove">
                     <sap-id>{{ sap.sap_id }}</sap-id>
                 </sap>
                 {% else %}
@@ -136,7 +136,7 @@
                 {% set sdp_admin = 'enable' %}
                 {% endif %}
                 {% if sdp_state == 'absent' %}
-                <mesh-sdp operation="remove">
+                <mesh-sdp nc:operation="remove">
                     <sdp-bind-id>{{ sdp_bind_id }}</sdp-bind-id>
                 </mesh-sdp>
                 {% else %}
@@ -161,7 +161,7 @@
                 {% set spoke_state = 'present' %}
                 {% endif %}
                 {% if spoke_state == 'absent' %}
-                <spoke-sdp operation="remove">
+                <spoke-sdp nc:operation="remove">
                     <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
                 </spoke-sdp>
                 {% else %}

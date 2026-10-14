@@ -1,4 +1,4 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
@@ -11,7 +11,7 @@
                 {% set iface_name = iface.name if iface is mapping else iface %}
                 {% set iface_state = iface.state | default('present') if iface is mapping else 'present' %}
                 {% if iface_state == 'absent' %}
-                <interface operation="remove">
+                <interface nc:operation="remove">
                     <interface-name>{{ iface_name }}</interface-name>
                 </interface>
                 {% else %}
@@ -26,7 +26,7 @@
                 {% if mpls.paths is defined %}
                 {% for path in mpls.paths %}
                 {% if path.state | default('present') == 'absent' %}
-                <path operation="remove">
+                <path nc:operation="remove">
                     <path-name>{{ path.name }}</path-name>
                 </path>
                 {% else %}
@@ -50,7 +50,7 @@
                 {% if mpls.lsps is defined %}
                 {% for lsp in mpls.lsps %}
                 {% if lsp.state | default('present') == 'absent' %}
-                <lsp operation="remove">
+                <lsp nc:operation="remove">
                     <lsp-name>{{ lsp.name }}</lsp-name>
                 </lsp>
                 {% else %}

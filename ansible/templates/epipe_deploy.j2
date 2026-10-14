@@ -1,10 +1,10 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
 
         <service>
             {% for epipe in epipe_services %}
             {% if epipe.state | default('present') == 'absent' %}
-            <epipe operation="remove">
+            <epipe nc:operation="remove">
                 <service-name>{{ epipe.name | default(epipe.id) }}</service-name>
             </epipe>
             {% else %}
@@ -27,7 +27,7 @@
                 {% if epipe.saps is defined %}
                 {% for sap in epipe.saps %}
                 {% if sap.state | default('present') == 'absent' %}
-                <sap operation="remove">
+                <sap nc:operation="remove">
                     <sap-id>{{ sap.sap_id }}</sap-id>
                 </sap>
                 {% else %}
@@ -66,7 +66,7 @@
                 {% for spoke in epipe.spokes %}
                 {% set spoke_bind_id = spoke.sdp_bind_id | default(spoke.sdp_id ~ ':' ~ spoke.vc_id) %}
                 {% if spoke.state | default('present') == 'absent' %}
-                <spoke-sdp operation="remove">
+                <spoke-sdp nc:operation="remove">
                     <sdp-bind-id>{{ spoke_bind_id }}</sdp-bind-id>
                 </spoke-sdp>
                 {% else %}

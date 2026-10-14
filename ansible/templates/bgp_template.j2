@@ -1,4 +1,4 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
@@ -11,7 +11,7 @@
             <aggregates>
                 {% for agg in bgp.aggregates %}
                 {% if agg.state | default('present') == 'absent' %}
-                <aggregate operation="remove">
+                <aggregate nc:operation="remove">
                     <ip-prefix>{{ agg.prefix }}</ip-prefix>
                 </aggregate>
                 {% else %}
@@ -44,7 +44,7 @@
                 {# Loop through every BGP group (iBGP and eBGP) #}
                 {% for group in bgp.groups %}
                 {% if group.state | default('present') == 'absent' %}
-                <group operation="remove">
+                <group nc:operation="remove">
                     <group-name>{{ group.name }}</group-name>
                 </group>
                 {% else %}
@@ -139,7 +139,7 @@
                 {% for group in bgp.groups %}
                 {% for neighbor in group.neighbors %}
                 {% if neighbor.state | default('present') == 'absent' %}
-                <neighbor operation="remove">
+                <neighbor nc:operation="remove">
                     <ip-address>{{ neighbor.ip }}</ip-address>
                 </neighbor>
                 {% else %}

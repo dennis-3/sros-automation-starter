@@ -1,10 +1,10 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <qos>
             {# --- SAP INGRESS POLICIES --- #}
             {% for policy in qos_policies.sap_ingress | default([]) %}
             {% if policy.state | default('present') == 'absent' %}
-            <sap-ingress operation="remove">
+            <sap-ingress nc:operation="remove">
                 <sap-ingress-policy-name>{{ policy.name }}</sap-ingress-policy-name>
             </sap-ingress>
             {% else %}
@@ -91,7 +91,7 @@
             {# --- SAP EGRESS POLICIES --- #}
             {% for policy in qos_policies.sap_egress | default([]) %}
             {% if policy.state | default('present') == 'absent' %}
-            <sap-egress operation="remove">
+            <sap-egress nc:operation="remove">
                 <sap-egress-policy-name>{{ policy.name }}</sap-egress-policy-name>
             </sap-egress>
             {% else %}

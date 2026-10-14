@@ -1,9 +1,9 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <service>
             {% for sdp in sdp_configs %}
             {% if sdp.state | default('present') == 'absent' %}
-            <sdp operation="remove">
+            <sdp nc:operation="remove">
                 <sdp-id>{{ sdp.id }}</sdp-id>
             </sdp>
             {% else %}

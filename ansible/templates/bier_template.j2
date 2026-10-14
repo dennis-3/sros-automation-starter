@@ -1,4 +1,4 @@
-<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
     <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf">
         <router>
             <router-name>{{ router_instance | default('Base') }}</router-name>
@@ -8,7 +8,7 @@
                 {% if bier.templates is defined %}
                 {% for tmpl in bier.templates %}
                 {% if tmpl.state | default('present') == 'absent' %}
-                <template operation="remove">
+                <template nc:operation="remove">
                     <template-name>{{ tmpl.name }}</template-name>
                 </template>
                 {% else %}

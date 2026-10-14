@@ -46,6 +46,41 @@ def extract_path_value(obj, path_str):
     return curr
 
 
+def prune_excluded(node, current_path="root", exclude_patterns=None):
+    """
+    Recursively strips nested structures whose paths match exclude_patterns,
+    and removes empty dictionary leaves, preventing giant 400+ line JSON dumps
+    for newly added or deleted network elements (e.g., ports, interfaces).
+    """
+    if exclude_patterns is None:
+        exclude_patterns = []
+
+    if isinstance(node, dict):
+        pruned = {}
+        for k, v in node.items():
+            child_path = f"{current_path}['{k}']"
+            if any(re.search(pat, child_path) for pat in exclude_patterns):
+                continue
+            pruned_child = prune_excluded(v, child_path, exclude_patterns)
+            # Drop empty dictionaries left over after nested pruning
+            if (
+                isinstance(pruned_child, dict)
+                and not pruned_child
+                and isinstance(v, dict)
+                and v
+            ):
+                continue
+            pruned[k] = pruned_child
+        return pruned
+    elif isinstance(node, list):
+        return [
+            prune_excluded(item, f"{current_path}[{i}]", exclude_patterns)
+            for i, item in enumerate(node)
+        ]
+    else:
+        return node
+
+
 def nokia_to_dict(data):
     """
     Recursively unwraps Nokia YANG container and leaf structural metadata objects
@@ -568,6 +603,23 @@ class VerifyChanges(aetest.Testcase):
             r"root.*?\['commit-history'\]",  # Checkpoint commit increment files and commit IDs
             # --- Telemetry & Precision Timing Volatiles ---
             r"root.*?\['ptp'\]",  # Precision Time Protocol rolling historical records
+            # --- Interface, Port & Protocol Operational Subtrees ---
+            r"root.*?\['subscriber-management'\]",  # Broadband subscriber zero counters
+            r"root.*?\['queue'\]",  # Queue hardware allocation/counters
+            r"root.*?\['queue-group'\]",  # Queue group shaper/buffer trees
+            r"root.*?\['pool'\]",  # Ingress/egress buffer pool trees
+            r"root.*?\['dot1x'\]",  # 802.1x PAE state and zero counters
+            r"root.*?\['efm-oam'\]",  # 802.3ah OAM telemetry zero counters
+            r"root.*?\['elmi'\]",  # Ethernet LMI zero counters
+            r"root.*?\['ssm'\]",  # SyncE SSM telemetry
+            r"root.*?\['crc-monitor'\]",  # CRC alarm monitor state
+            r"root.*?\['symbol-monitor'\]",  # Symbol error monitor state
+            r"root.*?\['dampening'\]",  # Flap dampening penalty counters
+            r"root.*?\['down-when-looped'\]",  # Loop detection state
+            r"root.*?\['forwarding-engine'\]",  # Internal packet drop reason engines
+            r"root.*?\['icmp'\]",  # ICMP packet counters
+            r"root.*?\['icmp6'\]",  # ICMPv6 packet counters
+            r"root.*?\['dhcp'\]",  # DHCP packet counters
             # --- Protocol Keepalive / Counter Volatiles ---
             r"root.*?\['sequence-number'\]",  # OSPF/ISIS LSA sequence numbers
             r"root.*?\['keepalive'\]",  # Protocol keepalive counters
@@ -658,7 +710,7 @@ class VerifyChanges(aetest.Testcase):
                     th, td { padding: 12px; text-align: left; border: 1px solid #dee2e6;
                              font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.9em; }
                     th { background-color: #f1f3f5; color: #495057; font-family: inherit; font-size: 0.95em; }
-                    pre { margin: 0; white-space: pre-wrap; }
+                    pre { margin: 0; white-space: pre-wrap; max-height: 450px; overflow-y: auto; }
                 </style>
             </head>
             <body>
@@ -713,15 +765,24 @@ class VerifyChanges(aetest.Testcase):
                                     val_to_dump = (
                                         content if content is not None else details
                                     )
+                                    val_to_dump = prune_excluded(
+                                        val_to_dump, path, exclude_paths
+                                    )
                                     html_content += f'<td><pre class="added">{html.escape(json.dumps(val_to_dump, indent=2))}</pre></td></tr>'
                                 elif diff_key == "dictionary_item_removed":
                                     content = extract_path_value(pre_json, path)
                                     val_to_dump = (
                                         content if content is not None else details
                                     )
+                                    val_to_dump = prune_excluded(
+                                        val_to_dump, path, exclude_paths
+                                    )
                                     html_content += f'<td><pre class="removed">{html.escape(json.dumps(val_to_dump, indent=2))}</pre></td></tr>'
                                 else:
-                                    html_content += f"<td><pre>{html.escape(json.dumps(details, indent=2))}</pre></td></tr>"
+                                    pruned_details = prune_excluded(
+                                        details, path, exclude_paths
+                                    )
+                                    html_content += f"<td><pre>{html.escape(json.dumps(pruned_details, indent=2))}</pre></td></tr>"
                         else:
                             for path in diff_data:
                                 readable_path = html.escape(
@@ -738,6 +799,9 @@ class VerifyChanges(aetest.Testcase):
                                 )
                                 content = extract_path_value(target_json, path)
                                 if content is not None:
+                                    content = prune_excluded(
+                                        content, path, exclude_paths
+                                    )
                                     html_content += f'<td><pre class="{css_render}">{html.escape(json.dumps(content, indent=2))}</pre></td></tr>'
                                 else:
                                     html_content += f'<td><pre class="{css_render}">Element structure updated at this layer path.</pre></td></tr>'

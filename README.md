@@ -265,7 +265,8 @@ By default, `deploy.yml` operates with a two-stage transaction lifecycle designe
 3. **Atomic Verification & Commit**:
    - In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the rendered candidate changes before committing.
    - Task `09_commit.yml` (tagged `always`) locks the candidate store, verifies, and executes a single atomic commit (or confirmed commit with auto-rollback).
-   - If any staging task or validation fails, an automated `rescue` block triggers `<discard-changes/>` via NETCONF RPC, rolling back the candidate buffer to prevent dirty state accumulation.
+   - When `sros_confirm_timeout` is set, it issues a confirmed commit and probes management health via `<state xmlns="urn:nokia.com:sros:ns:yang:sr:state"><system><oper-name/></system></state>`. Confirmation is executed immediately (`sros_auto_confirm=true`, default) or deferred for external post-validation (`sros_auto_confirm=false`).
+   - If any staging task, validation check, or post-commit probe fails, the automated `rescue` block triggers `<discard-changes/>` and `<cancel-commit/>` via NETCONF RPC, rolling back candidate changes and unconfirmed commits.
    - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
 
 ```bash
@@ -381,6 +382,7 @@ Optional flags:
 - `--paths`: Comma-separated YANG state paths for targeted operational state capture (defaults to `/nokia-state:state`). Example: `--paths "/nokia-state:state/router[router-name='Base']/interface,/nokia-state:state/service"`.
 - `--max-workers`: Number of concurrent worker threads for parallel multi-router state collection (defaults to `10`).
 - `--timeout`: NETCONF RPC timeout in seconds for long-running state queries across large topologies (defaults to `180`).
+- `--enforce-invariants`: Evaluates operational invariants, ensuring zero interface drops, zero peer session losses, and route table stability while permitting intended additions.
 
 The pyATS test pipeline automatically runs:
 
@@ -390,7 +392,7 @@ The pyATS test pipeline automatically runs:
 4. `OSPFTest`: Asserts configured OSPF neighbors are in `Full` or active adjacency states.
 5. `BGPTest`: Asserts configured BGP peer sessions are established with zero degraded states (`Active`/`Idle`/`Connect`).
 6. `SnapshotState`: Concurrent multi-threaded YANG state capture across all routers.
-7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles, regression invariant assertions, and HTML delta report generation.
+7. `VerifyChanges`: DeepDiff semantic comparison filtering transient operational volatiles (timestamps, watermarks, datastore transaction markers, IPv6 ND caches, subscriber management and queue zero-counters) with recursive telemetry pruning and HTML delta report generation.
 
 The drift report is saved to `snapshots/network_drift_report.html`.
 

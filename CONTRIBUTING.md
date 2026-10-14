@@ -69,10 +69,15 @@ We use `make` for common workflow operations:
 | `make lab-up` | Launch Containerlab topology |
 | `make check` | Run Ansible in dry-run mode with candidate diffs |
 | `make deploy` | Deploy configuration across routers |
+| `make deploy-verified` | Deploy with pre/post validation and auto-rollback |
 | `make canary-deploy` | Deploy in rolling batches of 1 router |
+| `make canary-deploy-verified` | Canary deployment with pre/post validation |
+| `make confirm` | Confirm pending candidate commit |
+| `make rollback` | Cancel unconfirmed commit and discard changes |
 | `make snapshot` | Capture operational state snapshot in JSON |
 | `make test-pre` | Capture pyATS baseline state |
 | `make test-post` | Capture pyATS post-change state and generate HTML drift report |
+| `make test-post-invariants` | Post-change validation with operational invariant checks |
 | `make build-ee` | Build containerized Execution Environment (`sros-ee:latest`) |
 | `make validate` | Fast pre-flight check: Jinja2 AST, XML schema rendering, Python & YAML syntax |
 | `make lint` | Full static analysis: validate, pre-commit hooks (Ruff, YAML, Markdown), and ansible-lint |

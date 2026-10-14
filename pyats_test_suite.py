@@ -527,45 +527,54 @@ class VerifyChanges(aetest.Testcase):
 
         exclude_paths = [
             # --- System, Time & Clock Volatiles ---
-            r"root\[.*\]\['statistics'\]",  # All packet/byte counters
-            r"root\[.*\]\['last-oper-change'\]",  # Time stamps for status changes
-            r"root\[.*\]\['last-state-change'\]",  # Operational state timestamp
-            r"root\[.*\]\['last-mgmt-change'\]",  # Management transaction timestamp
-            r"root\[.*\]\['oper-time'\]",  # Operational uptime counter
-            r"root\[.*\]\['timer'\]",  # Protocol hold/dead/hello timers
-            r"root\[.*\]\['uptime'\]",  # System and process uptimes
-            r"root\[.*\]\['up-time'\]",  # System uptime ticks
-            r"root\[.*\]\['current-time'\]",  # Live system clock
-            r"root\[.*\]\['system-time'\]",  # Live system timestamp
-            r"root\[.*\]\['time-saved'\]",  # Config save timestamp
-            r"root\[.*\]\['saved-time'\]",  # Datastore checkpoint timestamp
-            r"root\[.*\]\['boot-time'\]",  # CPM boot timestamp
-            r"root\[.*\]\['age'\]",  # Route/RIB table entry age in seconds
+            r"root.*?\['statistics'\]",  # All packet/byte counters
+            r"root.*?\['drop-reason'\]",  # Packet drop reason counters
+            r"root.*?\['last-oper-change'\]",  # Timestamp for status changes
+            r"root.*?\['oper-state-last-changed'\]",  # Port oper state change timestamp
+            r"root.*?\['last-state-change'\]",  # Operational state timestamp
+            r"root.*?\['last-mgmt-change'\]",  # Management transaction timestamp
+            r"root.*?\['oper-time'\]",  # Operational uptime counter
+            r"root.*?\['timer'\]",  # Protocol hold/dead/hello timers
+            r"root.*?\['uptime'\]",  # System and process uptimes
+            r"root.*?\['up-time'\]",  # System uptime ticks
+            r"root.*?\['current-time'\]",  # Live system clock
+            r"root.*?\['system-time'\]",  # Live system timestamp
+            r"root.*?\['last-saved-time'\]",  # Datastore checkpoint save timestamp
+            r"root.*?\['last-modified-time'\]",  # Configuration file modification timestamp
+            r"root.*?\['time-last-modified'\]",  # Running datastore modification timestamp
+            r"root.*?\['time-saved'\]",  # Config save timestamp
+            r"root.*?\['saved-time'\]",  # Datastore checkpoint timestamp
+            r"root.*?\['boot-time'\]",  # CPM boot timestamp
+            r"root.*?\['age'\]",  # Route/RIB table entry age in seconds
             # --- Hardware, Memory & Queuing Volatiles ---
-            r"root\[.*\]\['cpu'\]",  # Live CPU utilization percentages
-            r"root\[.*\]\['memory'\]",  # Live memory usage indexes
-            r"root\[.*\]\['memory-pools'\]",  # Dynamic memory pool buffers and allocations
-            r"root\[.*\]\['allocated-memory'\]",  # Dynamic RAM fluctuations
-            r"root\[.*\]\['temperature'\]",  # Environmental sensor readings
-            r"root\[.*\]\['hardware-queue'\]",  # FP ingress/egress queue buffer allocations & burst stats
-            r"root\[.*\]\['burst-control-group'\]",  # Forwarding plane burst calculation metrics
-            r"root\[.*\]\['resource-usage'\]",  # Dynamic ingress queue pool allocation counters
-            r"root\[.*\]\['free-space'\]",  # Compact flash / storage volume available bytes
+            r"root.*?\['cpu'\]",  # Live CPU utilization percentages
+            r"root.*?\['memory'\]",  # Live memory usage indexes
+            r"root.*?\['memory-pools'\]",  # Dynamic memory pool buffers and allocations
+            r"root.*?\['allocated-memory'\]",  # Dynamic RAM fluctuations
+            r"root.*?\['temperature'\]",  # Environmental sensor readings
+            r"root.*?\['hardware-queue'\]",  # FP ingress/egress queue buffer allocations & burst stats
+            r"root.*?\['pool-usage'\]",  # FP ingress/egress buffer pool usage telemetry
+            r"root.*?\['burst-control-group'\]",  # Forwarding plane burst calculation metrics
+            r"root.*?\['resource-usage'\]",  # Dynamic ingress queue pool allocation counters
+            r"root.*?\['free-space'\]",  # Compact flash / storage volume available bytes
             # --- Ephemeral Management & Session Volatiles ---
-            r"root\[.*\]\['connections'\]",  # Ephemeral TCP sockets (NETCONF/SSH ports)
-            r"root\[.*\]\['session'\]",  # Dynamic NETCONF/CLI sessions and idle times
-            r"root\[.*\]\['ssh'\]",  # Dynamic SSH server connection channels
-            r"root\[.*\]\['log'\]",  # System event logs and audit streams
-            r"root\[.*\]\['commit-history'\]",  # Checkpoint commit increment files and commit IDs
+            r"root.*?\['connections'\]",  # Ephemeral TCP sockets (NETCONF/SSH ports)
+            r"root.*?\['active-sessions'\]",  # Active management session table and idle counters
+            r"root.*?\['attempted-logins'\]",  # User login attempt counter
+            r"root.*?\['session'\]",  # Dynamic NETCONF/CLI sessions and idle times
+            r"root.*?\['ssh'\]",  # Dynamic SSH server connection channels
+            r"root.*?\['log'\]",  # System event logs and audit streams
+            r"root.*?\['log-id'\]",  # Log instance and next-event sequence counters
+            r"root.*?\['commit-history'\]",  # Checkpoint commit increment files and commit IDs
             # --- Telemetry & Precision Timing Volatiles ---
-            r"root\[.*\]\['ptp'\]",  # Precision Time Protocol rolling historical records
+            r"root.*?\['ptp'\]",  # Precision Time Protocol rolling historical records
             # --- Protocol Keepalive / Counter Volatiles ---
-            r"root\[.*\]\['sequence-number'\]",  # OSPF/ISIS LSA sequence numbers
-            r"root\[.*\]\['keepalive'\]",  # Protocol keepalive counters
-            r"root\[.*\]\['in-messages'\]",  # Inbound message packet counts
-            r"root\[.*\]\['out-messages'\]",  # Outbound message packet counts
-            r"root\[.*\]\['in-updates'\]",  # Inbound route updates
-            r"root\[.*\]\['out-updates'\]",  # Outbound route updates
+            r"root.*?\['sequence-number'\]",  # OSPF/ISIS LSA sequence numbers
+            r"root.*?\['keepalive'\]",  # Protocol keepalive counters
+            r"root.*?\['in-messages'\]",  # Inbound message packet counts
+            r"root.*?\['out-messages'\]",  # Outbound message packet counts
+            r"root.*?\['in-updates'\]",  # Inbound route updates
+            r"root.*?\['out-updates'\]",  # Outbound route updates
         ]
 
         # Determine devices to compare

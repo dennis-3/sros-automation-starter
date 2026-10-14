@@ -100,6 +100,128 @@ def nokia_to_dict(data):
         return data
 
 
+def check_operational_invariants(pre_json, post_json, dev_label=""):
+    """
+    Analyzes pre- vs post-change state to detect operational regressions:
+    - Downed interfaces (previously operational interfaces dropping)
+    - Downed ports (previously operational physical ports dropping)
+    - Dropped BGP sessions (previously established peers leaving established state)
+    - Routing table collapse (unexpected massive loss of active routes)
+    Returns a list of regression descriptions. Empty list indicates clean pass.
+    """
+    regressions = []
+    if not isinstance(pre_json, dict) or not isinstance(post_json, dict):
+        return regressions
+
+    # 1. Interface Operational State Invariant
+    def _extract_interfaces(data):
+        ifs = {}
+        routers = data.get("router", {})
+        if isinstance(routers, dict):
+            for r_name, r_val in routers.items():
+                if isinstance(r_val, dict) and "interface" in r_val:
+                    if_dict = r_val["interface"]
+                    if isinstance(if_dict, dict):
+                        for if_name, if_obj in if_dict.items():
+                            if isinstance(if_obj, dict):
+                                ifs[(r_name, if_name)] = str(
+                                    if_obj.get("oper-state", "")
+                                ).lower()
+        return ifs
+
+    pre_ifs = _extract_interfaces(pre_json)
+    post_ifs = _extract_interfaces(post_json)
+    for (r_name, if_name), pre_oper in pre_ifs.items():
+        if pre_oper == "up":
+            post_oper = post_ifs.get((r_name, if_name))
+            if post_oper is None:
+                regressions.append(
+                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' was removed (was 'up')"
+                )
+            elif post_oper != "up":
+                regressions.append(
+                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' state dropped from 'up' to '{post_oper}'"
+                )
+
+    # 2. Port Operational State Invariant
+    def _extract_ports(data):
+        ports = {}
+        p_dict = data.get("port", {})
+        if isinstance(p_dict, dict):
+            for p_id, p_obj in p_dict.items():
+                if isinstance(p_obj, dict):
+                    ports[p_id] = str(p_obj.get("oper-state", "")).lower()
+        return ports
+
+    pre_ports = _extract_ports(pre_json)
+    post_ports = _extract_ports(post_json)
+    for p_id, pre_oper in pre_ports.items():
+        if pre_oper == "up":
+            post_oper = post_ports.get(p_id)
+            if post_oper is not None and post_oper != "up":
+                regressions.append(
+                    f"[{dev_label}] Port '{p_id}' operational state dropped from 'up' to '{post_oper}'"
+                )
+
+    # 3. BGP Peer State Invariant
+    def _extract_bgp_peers(data):
+        bgp_peers = {}
+        routers = data.get("router", {})
+        if isinstance(routers, dict):
+            for r_name, r_val in routers.items():
+                if isinstance(r_val, dict) and "bgp" in r_val:
+                    bgp_val = r_val["bgp"]
+                    if isinstance(bgp_val, dict) and "neighbor" in bgp_val:
+                        n_dict = bgp_val["neighbor"]
+                        if isinstance(n_dict, dict):
+                            for peer_ip, peer_obj in n_dict.items():
+                                if isinstance(peer_obj, dict):
+                                    state = str(
+                                        peer_obj.get(
+                                            "session-state",
+                                            peer_obj.get("oper-state", ""),
+                                        )
+                                    ).lower()
+                                    bgp_peers[(r_name, peer_ip)] = state
+        return bgp_peers
+
+    pre_bgp = _extract_bgp_peers(pre_json)
+    post_bgp = _extract_bgp_peers(post_json)
+    for (r_name, peer_ip), pre_state in pre_bgp.items():
+        if pre_state in ("established", "up"):
+            post_state = post_bgp.get((r_name, peer_ip))
+            if post_state not in ("established", "up"):
+                regressions.append(
+                    f"[{dev_label}] BGP neighbor '{peer_ip}' session dropped from '{pre_state}' to '{post_state}'"
+                )
+
+    # 4. Route Table Stability Invariant
+    def _count_routes(data):
+        count = 0
+        routers = data.get("router", {})
+        if isinstance(routers, dict):
+            for r_val in routers.values():
+                if isinstance(r_val, dict):
+                    rt = r_val.get("route-table", {})
+                    if isinstance(rt, dict):
+                        unicast = rt.get("unicast", {})
+                        if isinstance(unicast, dict):
+                            for af in ["ipv4", "ipv6"]:
+                                routes = unicast.get(af, {}).get("route", {})
+                                if isinstance(routes, dict):
+                                    count += len(routes)
+        return count
+
+    pre_routes = _count_routes(pre_json)
+    post_routes = _count_routes(post_json)
+    if pre_routes > 5 and post_routes < (pre_routes * 0.5):
+        regressions.append(
+            f"[{dev_label}] Unicast routing table collapsed: {pre_routes} routes in pre vs {post_routes} in post (>50% drop)"
+        )
+
+    return regressions
+
+
 def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
     """
     Connects to a single SR OS device and captures model-driven YANG state snapshots.
@@ -825,9 +947,38 @@ class VerifyChanges(aetest.Testcase):
                 f.write(html_content)
 
             log.info(f"Visual delta report saved to {html_path}")
-            self.failed(
-                f"Network state has drifted! Isolated exception details here: {html_path}"
+
+            enforce_invariants = self.parent.parameters.get(
+                "enforce_invariants", False
+            ) or os.getenv("SROS_ENFORCE_INVARIANTS", "false").lower() in (
+                "true",
+                "1",
+                "yes",
             )
+
+            if enforce_invariants:
+                all_regressions = []
+                for dev_label, diff, pre_json, post_json in all_diff_sections:
+                    regs = check_operational_invariants(pre_json, post_json, dev_label)
+                    all_regressions.extend(regs)
+
+                if all_regressions:
+                    reg_summary = "; ".join(all_regressions)
+                    log.error(f"Invariant check failed: {reg_summary}")
+                    self.failed(
+                        f"Operational regression detected: {reg_summary}. Report: {html_path}"
+                    )
+                else:
+                    log.info(
+                        f"Invariant check passed. Delta report saved to {html_path}"
+                    )
+                    self.passed(
+                        f"Operational invariants satisfied. Report saved to {html_path}"
+                    )
+            else:
+                self.failed(
+                    f"Network state drift detected. Report saved to {html_path}"
+                )
 
 
 def _resolve_template_var(val, env_key=None, default_val=None):
@@ -1002,6 +1153,11 @@ if __name__ == "__main__":
         default=180,
         help="Device connection and command execution timeout in seconds (default: 180).",
     )
+    parser.add_argument(
+        "--enforce-invariants",
+        action="store_true",
+        help="Enforce operational invariant assertions (fail on regressions such as dropped peers or downed interfaces, permit valid configuration additions).",
+    )
 
     args, unknown = parser.parse_known_args()
 
@@ -1065,6 +1221,7 @@ if __name__ == "__main__":
         testbed=testbed,
         testcases=test_pipeline,
         mode=args.mode,
+        enforce_invariants=args.enforce_invariants,
         yang_paths=yang_paths,
         max_workers=args.max_workers,
         timeout=args.timeout,

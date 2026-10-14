@@ -1,0 +1,20 @@
+---
+- name: Confirm candidate commit
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Confirm commit
+      ansible.netcommon.netconf_rpc:
+        rpc: commit
+        xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+      tags:
+        - always
+        - confirm
+
+    - name: Report confirmation status
+      ansible.builtin.debug:
+        msg: "Commit confirmed on {{ inventory_hostname }}"
+      tags:
+        - always
+        - confirm

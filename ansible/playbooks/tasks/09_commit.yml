@@ -160,6 +160,20 @@
     - not ansible_check_mode
     - (sros_has_staged_changes or (sros_force_commit | default(false)))
     - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+    - (sros_auto_confirm | default(true) | bool)
+  tags:
+    - always
+    - commit
+
+- name: Report deferred commit confirmation
+  ansible.builtin.debug:
+    msg: "Commit confirmed pending validation (timeout: {{ sros_confirm_timeout }}s) on {{ inventory_hostname }}"
+  when:
+    - not (sros_commit_per_task | default(false))
+    - not ansible_check_mode
+    - (sros_has_staged_changes or (sros_force_commit | default(false)))
+    - sros_confirm_timeout is defined and (sros_confirm_timeout | int > 0)
+    - not (sros_auto_confirm | default(true) | bool)
   tags:
     - always
     - commit

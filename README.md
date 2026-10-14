@@ -390,9 +390,43 @@ The pyATS test pipeline automatically runs:
 4. `OSPFTest`: Asserts configured OSPF neighbors are in `Full` or active adjacency states.
 5. `BGPTest`: Asserts configured BGP peer sessions are established with zero degraded states (`Active`/`Idle`/`Connect`).
 6. `SnapshotState`: Concurrent multi-threaded YANG state capture across all routers.
-7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles and HTML delta report generation.
+7. `VerifyChanges`: DeepDiff semantic comparison excluding operational volatiles, regression invariant assertions, and HTML delta report generation.
 
 The drift report is saved to `snapshots/network_drift_report.html`.
+
+### Verified Deployment Pipeline
+
+`run_verified_deployment.py` automates pre-checks, candidate deployment with confirmed commit, soak time, post-checks, and commit confirmation or rollback:
+
+```bash
+# Deployment with pre/post validation:
+make deploy-verified
+# Or CLI (python3 on Linux/macOS, python on Windows):
+python3 run_verified_deployment.py
+
+# Canary deployment (1 router batch):
+make canary-deploy-verified
+# Or CLI:
+python3 run_verified_deployment.py --batch-size 1
+
+# Manual confirmation or rollback:
+make confirm   # Confirm pending candidate commit
+make rollback  # Cancel unconfirmed commit and restore running configuration
+```
+
+**Pipeline Stages**:
+
+1. **Pre-flight**: Runs `tests/validate_templates.py` for template and YAML validation.
+2. **Pre-check**: Captures YANG state snapshot via pyATS.
+3. **Deploy**: Runs Ansible with `commit confirmed` (`sros_auto_confirm=false`, default timeout 600s).
+4. **Soak**: Waits for protocol convergence (default: 30s).
+5. **Post-check**: Captures post-change state and evaluates invariants (`--enforce-invariants`):
+   - Interfaces in `oper-state: up` in pre-check must remain `up`.
+   - BGP peers in `established` in pre-check must remain `established`.
+   - Routing table size must not drop unexpectedly.
+6. **Decision**:
+   - On pass: Runs `ansible/playbooks/confirm.yml` to confirm the commit.
+   - On failure: Runs `ansible/playbooks/rollback.yml` to cancel the commit and restore running configuration.
 
 ## Telemetry & Observability Stack
 

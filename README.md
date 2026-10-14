@@ -33,6 +33,8 @@ sros-automation-starter/
 │   ├── netbox_inventory.yml      # Dynamic NetBox inventory plugin config
 │   ├── playbooks/
 │   │   ├── deploy.yml            # Main deployment orchestrator (two-stage candidate staging)
+│   │   ├── confirm.yml           # Permanent commit confirmation after verification
+│   │   ├── rollback.yml          # Automated rollback (cancel-commit & discard-changes)
 │   │   ├── tasks/                # Modular deployment pipeline tasks (01_preflight to 09_commit)
 │   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
 │   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
@@ -57,6 +59,7 @@ sros-automation-starter/
 ├── grafana_datasource.yaml       # Grafana automated datasource provisioning
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
+├── run_verified_deployment.py    # Closed-loop deployment orchestrator with auto-rollback guard
 ├── .ansible-lint                 # Ansible lint rules & profile configuration
 ├── .editorconfig                 # Cross-editor formatting specifications
 ├── .env.example                  # Centralized environment variable template
@@ -83,16 +86,21 @@ make lab-up          # Spin up Containerlab topology (r1, r2, AAA, telemetry)
 make lab-down        # Destroy Containerlab topology
 
 # Deployment & Staging
-make check           # Dry-run Ansible deployment with candidate diff preview
-make deploy          # Deploy configuration to all routers
-make canary-deploy   # Deploy configuration in rolling canary batches (1 router/batch)
-make snapshot        # Retrieve operational state snapshot in JSON via Ansible
+make check                  # Dry-run Ansible deployment with candidate diff preview
+make deploy                 # Deploy configuration to all routers
+make deploy-verified        # Deploy with pre/post validation and auto-rollback
+make canary-deploy          # Deploy configuration in rolling canary batches (1 router/batch)
+make canary-deploy-verified # Canary deployment with pre/post validation
+make confirm                # Confirm pending candidate commit
+make rollback               # Cancel unconfirmed commit and discard changes
+make snapshot               # Retrieve operational state snapshot in JSON via Ansible
 
 # Testing & Verification
-make test-pre        # Capture pre-change baseline network state via pyATS
-make test-post       # Verify post-change state and generate HTML drift report
-make validate        # Fast pre-flight check: Jinja2 templates, XML render, and schemas
-make lint            # Full static analysis: validate, pre-commit hooks, and ansible-lint
+make test-pre               # Capture pre-change baseline network state via pyATS
+make test-post              # Verify post-change state and generate HTML drift report
+make test-post-invariants   # Post-change validation with operational invariant checks
+make validate               # Fast pre-flight check: Jinja2 templates, XML render, and schemas
+make lint                   # Full static analysis: validate, pre-commit hooks, and ansible-lint
 
 # Containerized Execution & Maintenance
 make build-ee        # Build containerized Execution Environment (sros-ee:latest)
@@ -171,6 +179,20 @@ The repository includes a root `ansible.cfg` configured with `forks = 20`, persi
 
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml
+# Or via Make:
+make deploy
+```
+
+### Verified Deployment with Auto-Rollback
+
+Run the automated orchestrator to execute pre-flight validation, capture a pyATS baseline, deploy with confirmed commit, soak, assert operational invariants, and confirm or rollback:
+
+```bash
+# Via Make:
+make deploy-verified
+
+# Or directly via CLI (python3 on Linux/macOS, python on Windows):
+python3 run_verified_deployment.py
 ```
 
 ### Dry Run with Candidate Delta Preview (Check Mode)
@@ -179,6 +201,8 @@ Run check mode to stage configuration, preview the rendered candidate changes vi
 
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true
+# Or via Make:
+make check
 ```
 
 ### Confirmed Commit with Auto-Rollback
@@ -187,6 +211,10 @@ Deploy core changes with a confirmed commit window (in seconds). If connectivity
 
 ```bash
 ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
+
+# Dedicated playbooks for manual confirmation or rollback:
+make confirm   # Or: ansible-playbook ansible/playbooks/confirm.yml
+make rollback  # Or: ansible-playbook ansible/playbooks/rollback.yml
 ```
 
 ### Canary Rollouts (Rolling Batches)
@@ -194,8 +222,15 @@ ansible-playbook ansible/playbooks/deploy.yml -e sros_confirm_timeout=120
 Deploy changes in rolling batches with failure thresholds:
 
 ```bash
-# Canary deployment: 1 router at a time
+# Standard canary: 1 router at a time
+make canary-deploy
+# Or CLI:
 ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=1
+
+# Verified canary with pre/post checks and auto-rollback:
+make canary-deploy-verified
+# Or CLI:
+python3 run_verified_deployment.py --batch-size 1
 
 # Percentage-based canary batching with zero fail tolerance
 ansible-playbook ansible/playbooks/deploy.yml -e sros_serial_batch=20% -e sros_max_fail_percentage=0

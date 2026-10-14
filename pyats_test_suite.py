@@ -577,9 +577,14 @@ class VerifyChanges(aetest.Testcase):
             r"root.*?\['last-saved-time'\]",  # Datastore checkpoint save timestamp
             r"root.*?\['last-modified-time'\]",  # Configuration file modification timestamp
             r"root.*?\['time-last-modified'\]",  # Running datastore modification timestamp
+            r"root.*?\['user-last-modified'\]",  # Running datastore user edit timestamp
+            r"root.*?\['config-save'\]",  # Configuration save status and telemetry
+            r"root.*?\['last-saved-file'\]",  # Last saved config filename
             r"root.*?\['time-saved'\]",  # Config save timestamp
             r"root.*?\['saved-time'\]",  # Datastore checkpoint timestamp
             r"root.*?\['boot-time'\]",  # CPM boot timestamp
+            r"root.*?\['software-last-boot-time'\]",  # MDA/card boot timestamp
+            r"root.*?\['high-water-mark-hit-time'\]",  # Dynamic policer watermark timestamp
             r"root.*?\['age'\]",  # Route/RIB table entry age in seconds
             # --- Hardware, Memory & Queuing Volatiles ---
             r"root.*?\['cpu'\]",  # Live CPU utilization percentages
@@ -601,6 +606,8 @@ class VerifyChanges(aetest.Testcase):
             r"root.*?\['log'\]",  # System event logs and audit streams
             r"root.*?\['log-id'\]",  # Log instance and next-event sequence counters
             r"root.*?\['commit-history'\]",  # Checkpoint commit increment files and commit IDs
+            r"root.*?\['neighbor-discovery'\]",  # Dynamic IPv6 ND cache / state transitions
+            r"root.*?\['arp-table'\]",  # Dynamic ARP cache entries
             # --- Telemetry & Precision Timing Volatiles ---
             r"root.*?\['ptp'\]",  # Precision Time Protocol rolling historical records
             # --- Interface, Port & Protocol Operational Subtrees ---

@@ -134,7 +134,7 @@
       <filter type="subtree">
         <state xmlns="urn:nokia.com:sros:ns:yang:sr:state">
           <system>
-            <name/>
+            <oper-name/>
           </system>
         </state>
       </filter>

@@ -33,13 +33,12 @@ def run_cmd(cmd_list, desc, check=True):
     res = subprocess.run(cmd_list)
     elapsed = time.time() - start_time
 
-    if check and res.returncode != 0:
-        print(f"{RED}[FAIL]{RESET} {desc} (exit {res.returncode}, {elapsed:.1f}s)\n")
-        return False
-    elif res.returncode == 0:
+    if res.returncode == 0:
         print(f"{GREEN}[OK]{RESET} {desc} ({elapsed:.1f}s)\n")
         return True
-    return False
+    else:
+        print(f"{RED}[FAIL]{RESET} {desc} (exit {res.returncode}, {elapsed:.1f}s)\n")
+        return False
 
 
 def main():

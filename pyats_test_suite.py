@@ -100,13 +100,43 @@ def nokia_to_dict(data):
         return data
 
 
-def check_operational_invariants(pre_json, post_json, dev_label=""):
+def _unwrap_state_root(data):
+    """
+    Normalizes root container whether it's raw, wrapped under 'state',
+    or keyed by full YANG path like '/nokia-state:state'.
+    """
+    if not isinstance(data, dict):
+        return {}
+    for k in ("state", "/nokia-state:state", "nokia-state:state"):
+        if k in data and isinstance(data[k], dict):
+            return data[k]
+    return data
+
+
+def _get_router_entries(data):
+    root = _unwrap_state_root(data)
+    routers = root.get("router", {})
+    entries = []
+    if isinstance(routers, dict):
+        for r_name, r_val in routers.items():
+            if isinstance(r_val, dict):
+                entries.append((r_name, r_val))
+    elif isinstance(routers, list):
+        for item in routers:
+            if isinstance(item, dict):
+                r_name = str(item.get("router-name", "Base"))
+                entries.append((r_name, item))
+    return entries
+
+
+def check_operational_invariants(pre_json, post_json, dev_label="", diff=None):
     """
     Analyzes pre- vs post-change state to detect operational regressions:
-    - Downed interfaces (previously operational interfaces dropping)
+    - Downed interfaces (previously operational interfaces or sub-protocols dropping)
     - Downed ports (previously operational physical ports dropping)
     - Dropped BGP sessions (previously established peers leaving established state)
     - Routing table collapse (unexpected massive loss of active routes)
+    - DeepDiff leaf regressions for any oper-state or session-state
     Returns a list of regression descriptions. Empty list indicates clean pass.
     """
     regressions = []
@@ -116,41 +146,79 @@ def check_operational_invariants(pre_json, post_json, dev_label=""):
     # 1. Interface Operational State Invariant
     def _extract_interfaces(data):
         ifs = {}
-        routers = data.get("router", {})
-        if isinstance(routers, dict):
-            for r_name, r_val in routers.items():
-                if isinstance(r_val, dict) and "interface" in r_val:
-                    if_dict = r_val["interface"]
-                    if isinstance(if_dict, dict):
-                        for if_name, if_obj in if_dict.items():
-                            if isinstance(if_obj, dict):
-                                ifs[(r_name, if_name)] = str(
-                                    if_obj.get("oper-state", "")
-                                ).lower()
+        for r_name, r_val in _get_router_entries(data):
+            if_val = r_val.get("interface", {})
+            if_items = []
+            if isinstance(if_val, dict):
+                for if_name, if_obj in if_val.items():
+                    if isinstance(if_obj, dict):
+                        if_items.append((if_name, if_obj))
+            elif isinstance(if_val, list):
+                for if_obj in if_val:
+                    if isinstance(if_obj, dict):
+                        if_name = str(if_obj.get("interface-name", ""))
+                        if if_name:
+                            if_items.append((if_name, if_obj))
+
+            for if_name, if_obj in if_items:
+                oper = str(if_obj.get("oper-state", "")).lower()
+                ipv4_oper = ""
+                if isinstance(if_obj.get("ipv4"), dict):
+                    ipv4_oper = str(if_obj["ipv4"].get("oper-state", "")).lower()
+                ipv6_oper = ""
+                if isinstance(if_obj.get("ipv6"), dict):
+                    ipv6_oper = str(if_obj["ipv6"].get("oper-state", "")).lower()
+                ifs[(r_name, if_name)] = {
+                    "oper": oper,
+                    "ipv4_oper": ipv4_oper,
+                    "ipv6_oper": ipv6_oper,
+                }
         return ifs
 
     pre_ifs = _extract_interfaces(pre_json)
     post_ifs = _extract_interfaces(post_json)
-    for (r_name, if_name), pre_oper in pre_ifs.items():
-        if pre_oper == "up":
-            post_oper = post_ifs.get((r_name, if_name))
-            if post_oper is None:
+    for (r_name, if_name), pre_info in pre_ifs.items():
+        post_info = post_ifs.get((r_name, if_name))
+        if pre_info["oper"] == "up":
+            if post_info is None:
                 regressions.append(
                     f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' was removed (was 'up')"
                 )
-            elif post_oper != "up":
+            elif post_info["oper"] != "up":
                 regressions.append(
-                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' state dropped from 'up' to '{post_oper}'"
+                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' state dropped from 'up' to '{post_info['oper']}'"
+                )
+        if pre_info["ipv4_oper"] == "up":
+            if post_info is None or post_info["ipv4_oper"] != "up":
+                post_v4 = post_info["ipv4_oper"] if post_info else "removed"
+                regressions.append(
+                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' IPv4 state dropped from 'up' to '{post_v4}'"
+                )
+        if pre_info["ipv6_oper"] == "up":
+            if post_info is None or post_info["ipv6_oper"] != "up":
+                post_v6 = post_info["ipv6_oper"] if post_info else "removed"
+                regressions.append(
+                    f"[{dev_label}] Interface router '{r_name}' interface '{if_name}' IPv6 state dropped from 'up' to '{post_v6}'"
                 )
 
     # 2. Port Operational State Invariant
     def _extract_ports(data):
         ports = {}
-        p_dict = data.get("port", {})
-        if isinstance(p_dict, dict):
-            for p_id, p_obj in p_dict.items():
+        root = _unwrap_state_root(data)
+        p_val = root.get("port", {})
+        p_items = []
+        if isinstance(p_val, dict):
+            for p_id, p_obj in p_val.items():
                 if isinstance(p_obj, dict):
-                    ports[p_id] = str(p_obj.get("oper-state", "")).lower()
+                    p_items.append((p_id, p_obj))
+        elif isinstance(p_val, list):
+            for p_obj in p_val:
+                if isinstance(p_obj, dict):
+                    p_id = str(p_obj.get("port-id", ""))
+                    if p_id:
+                        p_items.append((p_id, p_obj))
+        for p_id, p_obj in p_items:
+            ports[p_id] = str(p_obj.get("oper-state", "")).lower()
         return ports
 
     pre_ports = _extract_ports(pre_json)
@@ -166,23 +234,31 @@ def check_operational_invariants(pre_json, post_json, dev_label=""):
     # 3. BGP Peer State Invariant
     def _extract_bgp_peers(data):
         bgp_peers = {}
-        routers = data.get("router", {})
-        if isinstance(routers, dict):
-            for r_name, r_val in routers.items():
-                if isinstance(r_val, dict) and "bgp" in r_val:
-                    bgp_val = r_val["bgp"]
-                    if isinstance(bgp_val, dict) and "neighbor" in bgp_val:
-                        n_dict = bgp_val["neighbor"]
-                        if isinstance(n_dict, dict):
-                            for peer_ip, peer_obj in n_dict.items():
-                                if isinstance(peer_obj, dict):
-                                    state = str(
-                                        peer_obj.get(
-                                            "session-state",
-                                            peer_obj.get("oper-state", ""),
-                                        )
-                                    ).lower()
-                                    bgp_peers[(r_name, peer_ip)] = state
+        for r_name, r_val in _get_router_entries(data):
+            bgp_val = r_val.get("bgp", {})
+            if isinstance(bgp_val, dict):
+                n_val = bgp_val.get("neighbor", {})
+                n_items = []
+                if isinstance(n_val, dict):
+                    for peer_ip, peer_obj in n_val.items():
+                        if isinstance(peer_obj, dict):
+                            n_items.append((peer_ip, peer_obj))
+                elif isinstance(n_val, list):
+                    for peer_obj in n_val:
+                        if isinstance(peer_obj, dict):
+                            peer_ip = str(
+                                peer_obj.get("ip-address", peer_obj.get("peer-ip", ""))
+                            )
+                            if peer_ip:
+                                n_items.append((peer_ip, peer_obj))
+                for peer_ip, peer_obj in n_items:
+                    state = str(
+                        peer_obj.get(
+                            "session-state",
+                            peer_obj.get("oper-state", ""),
+                        )
+                    ).lower()
+                    bgp_peers[(r_name, peer_ip)] = state
         return bgp_peers
 
     pre_bgp = _extract_bgp_peers(pre_json)
@@ -198,18 +274,17 @@ def check_operational_invariants(pre_json, post_json, dev_label=""):
     # 4. Route Table Stability Invariant
     def _count_routes(data):
         count = 0
-        routers = data.get("router", {})
-        if isinstance(routers, dict):
-            for r_val in routers.values():
-                if isinstance(r_val, dict):
-                    rt = r_val.get("route-table", {})
-                    if isinstance(rt, dict):
-                        unicast = rt.get("unicast", {})
-                        if isinstance(unicast, dict):
-                            for af in ["ipv4", "ipv6"]:
-                                routes = unicast.get(af, {}).get("route", {})
-                                if isinstance(routes, dict):
-                                    count += len(routes)
+        for r_name, r_val in _get_router_entries(data):
+            rt = r_val.get("route-table", {})
+            if isinstance(rt, dict):
+                unicast = rt.get("unicast", {})
+                if isinstance(unicast, dict):
+                    for af in ["ipv4", "ipv6"]:
+                        routes = unicast.get(af, {}).get("route", {})
+                        if isinstance(routes, dict):
+                            count += len(routes)
+                        elif isinstance(routes, list):
+                            count += len(routes)
         return count
 
     pre_routes = _count_routes(pre_json)
@@ -218,6 +293,29 @@ def check_operational_invariants(pre_json, post_json, dev_label=""):
         regressions.append(
             f"[{dev_label}] Unicast routing table collapsed: {pre_routes} routes in pre vs {post_routes} in post (>50% drop)"
         )
+
+    # 5. DeepDiff-level Leaf Regression Invariant
+    if diff and isinstance(diff, dict):
+        values_changed = diff.get("values_changed", {})
+        if isinstance(values_changed, dict):
+            for path, change in values_changed.items():
+                p_str = str(path).lower()
+                old_v = str(change.get("old_value", "")).lower()
+                new_v = str(change.get("new_value", "")).lower()
+                if "oper-state" in p_str and old_v == "up" and new_v != "up":
+                    readable = str(path).replace("root", "YANG")
+                    reg_msg = f"[{dev_label}] Operational state regression at {readable}: dropped from '{old_v}' to '{new_v}'"
+                    if reg_msg not in regressions:
+                        regressions.append(reg_msg)
+                elif (
+                    "session-state" in p_str
+                    and old_v in ("established", "up")
+                    and new_v not in ("established", "up")
+                ):
+                    readable = str(path).replace("root", "YANG")
+                    reg_msg = f"[{dev_label}] BGP session state regression at {readable}: dropped from '{old_v}' to '{new_v}'"
+                    if reg_msg not in regressions:
+                        regressions.append(reg_msg)
 
     return regressions
 
@@ -404,7 +502,7 @@ class InterfaceStateTest(aetest.Testcase):
                     name, adm, opr = parts[0], parts[1], parts[2]
                     if adm.lower() == "up":
                         opr_parts = opr.split("/")
-                        if opr_parts[0].lower() == "down":
+                        if any(p.lower() != "up" for p in opr_parts):
                             down_interfaces.append(f"{name} (adm:{adm}, opr:{opr})")
             if down_interfaces:
                 failed_devices.append(
@@ -959,7 +1057,9 @@ class VerifyChanges(aetest.Testcase):
             if enforce_invariants:
                 all_regressions = []
                 for dev_label, diff, pre_json, post_json in all_diff_sections:
-                    regs = check_operational_invariants(pre_json, post_json, dev_label)
+                    regs = check_operational_invariants(
+                        pre_json, post_json, dev_label, diff=diff
+                    )
                     all_regressions.extend(regs)
 
                 if all_regressions:
@@ -1217,7 +1317,7 @@ if __name__ == "__main__":
     elif args.mode == "post":
         test_pipeline = base_tests + [VerifyChanges]
 
-    aetest.main(
+    result = aetest.main(
         testbed=testbed,
         testcases=test_pipeline,
         mode=args.mode,
@@ -1227,3 +1327,14 @@ if __name__ == "__main__":
         timeout=args.timeout,
         argv=unknown,
     )
+
+    if hasattr(aetest, "exit_cli_code"):
+        aetest.exit_cli_code(result)
+
+    if result is not None:
+        passed = getattr(result, "is_passed", None)
+        if callable(passed) and not passed():
+            sys.exit(1)
+        elif str(result).lower() not in ("passed", "pass", "ok"):
+            sys.exit(1)
+    sys.exit(0)

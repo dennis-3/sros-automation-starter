@@ -13,6 +13,7 @@ import os
 import py_compile
 import re
 import sys
+import unittest
 
 
 def validate_jinja2_templates(template_dir="ansible/templates"):
@@ -216,6 +217,15 @@ def validate_template_rendering(
     return not has_errors
 
 
+def run_unit_tests():
+    print("[*] Running unit test suites in tests/...")
+    test_loader = unittest.TestLoader()
+    suite = test_loader.discover(start_dir="tests", pattern="test_*.py")
+    runner = unittest.TextTestRunner(verbosity=1)
+    result = runner.run(suite)
+    return result.wasSuccessful()
+
+
 def main():
     print("=" * 60)
     print("Pre-Flight CI Validation Suite")
@@ -225,9 +235,10 @@ def main():
     r_ok = validate_template_rendering()
     p_ok = validate_python_files()
     y_ok = validate_yaml_files()
+    u_ok = run_unit_tests()
 
     print("=" * 60)
-    if t_ok and r_ok and p_ok and y_ok:
+    if t_ok and r_ok and p_ok and y_ok and u_ok:
         print("ALL PRE-FLIGHT VALIDATIONS PASSED.")
         sys.exit(0)
     else:

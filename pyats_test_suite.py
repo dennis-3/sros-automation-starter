@@ -526,7 +526,7 @@ class VerifyChanges(aetest.Testcase):
         html_path = "snapshots/network_drift_report.html"
 
         exclude_paths = [
-            # --- System & Time Volatiles ---
+            # --- System, Time & Clock Volatiles ---
             r"root\[.*\]\['statistics'\]",  # All packet/byte counters
             r"root\[.*\]\['last-oper-change'\]",  # Time stamps for status changes
             r"root\[.*\]\['last-state-change'\]",  # Operational state timestamp
@@ -534,11 +534,31 @@ class VerifyChanges(aetest.Testcase):
             r"root\[.*\]\['oper-time'\]",  # Operational uptime counter
             r"root\[.*\]\['timer'\]",  # Protocol hold/dead/hello timers
             r"root\[.*\]\['uptime'\]",  # System and process uptimes
-            r"root\[.*\]\['allocated-memory'\]",  # Dynamic RAM fluctuations
-            # --- Hardware & Resource Volatiles ---
+            r"root\[.*\]\['up-time'\]",  # System uptime ticks
+            r"root\[.*\]\['current-time'\]",  # Live system clock
+            r"root\[.*\]\['system-time'\]",  # Live system timestamp
+            r"root\[.*\]\['time-saved'\]",  # Config save timestamp
+            r"root\[.*\]\['saved-time'\]",  # Datastore checkpoint timestamp
+            r"root\[.*\]\['boot-time'\]",  # CPM boot timestamp
+            r"root\[.*\]\['age'\]",  # Route/RIB table entry age in seconds
+            # --- Hardware, Memory & Queuing Volatiles ---
             r"root\[.*\]\['cpu'\]",  # Live CPU utilization percentages
             r"root\[.*\]\['memory'\]",  # Live memory usage indexes
+            r"root\[.*\]\['memory-pools'\]",  # Dynamic memory pool buffers and allocations
+            r"root\[.*\]\['allocated-memory'\]",  # Dynamic RAM fluctuations
             r"root\[.*\]\['temperature'\]",  # Environmental sensor readings
+            r"root\[.*\]\['hardware-queue'\]",  # FP ingress/egress queue buffer allocations & burst stats
+            r"root\[.*\]\['burst-control-group'\]",  # Forwarding plane burst calculation metrics
+            r"root\[.*\]\['resource-usage'\]",  # Dynamic ingress queue pool allocation counters
+            r"root\[.*\]\['free-space'\]",  # Compact flash / storage volume available bytes
+            # --- Ephemeral Management & Session Volatiles ---
+            r"root\[.*\]\['connections'\]",  # Ephemeral TCP sockets (NETCONF/SSH ports)
+            r"root\[.*\]\['session'\]",  # Dynamic NETCONF/CLI sessions and idle times
+            r"root\[.*\]\['ssh'\]",  # Dynamic SSH server connection channels
+            r"root\[.*\]\['log'\]",  # System event logs and audit streams
+            r"root\[.*\]\['commit-history'\]",  # Checkpoint commit increment files and commit IDs
+            # --- Telemetry & Precision Timing Volatiles ---
+            r"root\[.*\]\['ptp'\]",  # Precision Time Protocol rolling historical records
             # --- Protocol Keepalive / Counter Volatiles ---
             r"root\[.*\]\['sequence-number'\]",  # OSPF/ISIS LSA sequence numbers
             r"root\[.*\]\['keepalive'\]",  # Protocol keepalive counters

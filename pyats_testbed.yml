@@ -8,6 +8,7 @@ devices:
     connections:
       defaults:
         class: unicon.Unicon  # Defines Unicon connection handler
+        via: cli
       cli:
         protocol: ssh
         ip: 172.20.20.9
@@ -22,6 +23,7 @@ devices:
     connections:
       defaults:
         class: unicon.Unicon
+        via: cli
       cli:
         protocol: ssh
         ip: 172.20.20.2

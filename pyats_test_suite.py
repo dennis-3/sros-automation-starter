@@ -403,6 +403,15 @@ def _run_parallel_device_command(testbed, command, max_workers=10):
 
     def _exec(name, d):
         try:
+            if not hasattr(d, "execute"):
+                if getattr(d, "is_connected", lambda: False)() and hasattr(d, "cli"):
+                    out = d.cli.execute(command)
+                    return name, out, None
+                return (
+                    name,
+                    None,
+                    RuntimeError(f"Device '{name}' has no active CLI connection"),
+                )
             out = d.execute(command)
             return name, out, None
         except Exception as exc:
@@ -429,17 +438,23 @@ class CommonSetup(aetest.CommonSetup):
             f"Connecting to {len(testbed.devices)} device(s) concurrently (max_workers={worker_count})..."
         )
         try:
-            testbed.connect(max_workers=worker_count)
+            testbed.connect(via="cli", max_workers=worker_count)
         except Exception as exc:
             log.warning(
                 f"Bulk testbed connect reported: {exc}. Verifying individual connections..."
             )
+            failed_devices = []
             for dev_name, dev in testbed.devices.items():
                 if not getattr(dev, "is_connected", lambda: False)():
                     try:
-                        dev.connect()
+                        dev.connect(via="cli")
                     except Exception as dev_exc:
                         log.error(f"[{dev_name}] Connection failed: {dev_exc}")
+                        failed_devices.append(f"{dev_name} ({dev_exc})")
+            if failed_devices:
+                self.failed(
+                    f"Failed to connect to testbed devices: {', '.join(failed_devices)}"
+                )
 
 
 class ConnectivityTest(aetest.Testcase):
@@ -1184,7 +1199,7 @@ def load_testbed_from_ansible_inventory(inventory_file):
             "os": "sros",
             "type": "router",
             "connections": {
-                "defaults": {"class": "unicon.Unicon"},
+                "defaults": {"class": "unicon.Unicon", "via": "cli"},
                 "cli": cli_conn,
                 "netconf": {
                     "protocol": "netconf",

@@ -9,9 +9,40 @@ import re
 import shutil
 import sys
 
-from deepdiff import DeepDiff
-from pyats import aetest, topology
-from pysros.management import connect as sros_connect
+try:
+    from deepdiff import DeepDiff
+except ImportError:
+    DeepDiff = None
+
+try:
+    from pyats import aetest, topology
+except ImportError:
+
+    class _MockAetest:
+        class CommonSetup:
+            pass
+
+        class CommonCleanup:
+            pass
+
+        class Testcase:
+            pass
+
+        @staticmethod
+        def subsection(f):
+            return f
+
+        @staticmethod
+        def test(f):
+            return f
+
+    aetest = _MockAetest()
+    topology = None
+
+try:
+    from pysros.management import connect as sros_connect
+except ImportError:
+    sros_connect = None
 
 log = logging.getLogger(__name__)
 
@@ -129,6 +160,303 @@ def _get_router_entries(data):
     return entries
 
 
+def _extract_system_info(data):
+    """
+    Extracts system identification and software version from model-driven state.
+    Returns a dict with 'oper-name', 'platform', and 'version'.
+    """
+    root = _unwrap_state_root(data)
+    sys_obj = root.get("system", {})
+    if not isinstance(sys_obj, dict):
+        return {}
+    oper_name = str(sys_obj.get("oper-name", "")).strip()
+    platform = str(sys_obj.get("platform", "")).strip()
+    ver_obj = sys_obj.get("version", {})
+    ver_str = ""
+    if isinstance(ver_obj, dict):
+        ver_str = str(
+            ver_obj.get("version-string") or ver_obj.get("version-number", "")
+        ).strip()
+    elif isinstance(ver_obj, str):
+        ver_str = ver_obj.strip()
+    return {
+        "oper-name": oper_name,
+        "platform": platform,
+        "version": ver_str,
+    }
+
+
+def _extract_interfaces(data):
+    """
+    Extracts router interfaces across all router instances from model-driven state.
+    Returns a dict mapping (r_name, if_name) -> {
+        "oper": oper_state,
+        "admin": admin_state,
+        "ipv4_oper": ipv4_oper_state,
+        "ipv6_oper": ipv6_oper_state,
+    }.
+    """
+    ifs = {}
+    for r_name, r_val in _get_router_entries(data):
+        if_val = r_val.get("interface", {})
+        if_items = []
+        if isinstance(if_val, dict):
+            for if_name, if_obj in if_val.items():
+                if isinstance(if_obj, dict):
+                    if_items.append((if_name, if_obj))
+        elif isinstance(if_val, list):
+            for if_obj in if_val:
+                if isinstance(if_obj, dict):
+                    if_name = str(if_obj.get("interface-name", ""))
+                    if if_name:
+                        if_items.append((if_name, if_obj))
+
+        for if_name, if_obj in if_items:
+            oper = str(if_obj.get("oper-state", "")).lower()
+            admin = str(
+                if_obj.get("admin-state", if_obj.get("admin", "enable"))
+            ).lower()
+            ipv4_oper = ""
+            if isinstance(if_obj.get("ipv4"), dict):
+                ipv4_oper = str(if_obj["ipv4"].get("oper-state", "")).lower()
+            ipv6_oper = ""
+            if isinstance(if_obj.get("ipv6"), dict):
+                ipv6_oper = str(if_obj["ipv6"].get("oper-state", "")).lower()
+            ifs[(r_name, if_name)] = {
+                "oper": oper,
+                "admin": admin,
+                "ipv4_oper": ipv4_oper,
+                "ipv6_oper": ipv6_oper,
+            }
+    return ifs
+
+
+def _extract_ports(data):
+    """
+    Extracts physical ports and their operational states from model-driven state.
+    Returns a dict mapping port_id -> oper_state.
+    """
+    ports = {}
+    root = _unwrap_state_root(data)
+    p_val = root.get("port", {})
+    p_items = []
+    if isinstance(p_val, dict):
+        for p_id, p_obj in p_val.items():
+            if isinstance(p_obj, dict):
+                p_items.append((p_id, p_obj))
+    elif isinstance(p_val, list):
+        for p_obj in p_val:
+            if isinstance(p_obj, dict):
+                p_id = str(p_obj.get("port-id", ""))
+                if p_id:
+                    p_items.append((p_id, p_obj))
+    for p_id, p_obj in p_items:
+        ports[p_id] = str(p_obj.get("oper-state", "")).lower()
+    return ports
+
+
+def _extract_isis_interfaces(data):
+    """
+    Extracts IS-IS interfaces across all router instances and IS-IS instances.
+    Returns a dict mapping (r_name, isis_instance, if_name) -> {"oper": oper_state}.
+    """
+    isis_ifs = {}
+    for r_name, r_val in _get_router_entries(data):
+        isis_obj = r_val.get("isis", {})
+        isis_instances = []
+        if isinstance(isis_obj, dict):
+            if "interface" in isis_obj:
+                isis_instances.append(("0", isis_obj))
+            else:
+                for inst_id, inst_data in isis_obj.items():
+                    if isinstance(inst_data, dict):
+                        isis_instances.append((str(inst_id), inst_data))
+        elif isinstance(isis_obj, list):
+            for inst_data in isis_obj:
+                if isinstance(inst_data, dict):
+                    inst_id = str(inst_data.get("isis-instance", "0"))
+                    isis_instances.append((inst_id, inst_data))
+
+        for inst_id, inst_data in isis_instances:
+            if_val = inst_data.get("interface", {})
+            if_items = []
+            if isinstance(if_val, dict):
+                for if_name, if_data in if_val.items():
+                    if isinstance(if_data, dict):
+                        if_items.append((if_name, if_data))
+            elif isinstance(if_val, list):
+                for if_data in if_val:
+                    if isinstance(if_data, dict):
+                        if_name = str(if_data.get("interface-name", ""))
+                        if if_name:
+                            if_items.append((if_name, if_data))
+            for if_name, if_data in if_items:
+                oper = str(if_data.get("oper-state", "")).lower()
+                isis_ifs[(r_name, inst_id, if_name)] = {"oper": oper}
+    return isis_ifs
+
+
+def _extract_ospf_neighbors(data):
+    """
+    Extracts OSPF neighbors across all router instances, OSPF instances, and areas.
+    Returns a dict mapping (r_name, ospf_inst, area_id, if_name, nbr_addr) -> {
+        "oper": oper_state,
+        "router_id": router_id,
+    }.
+    """
+    ospf_nbrs = {}
+    for r_name, r_val in _get_router_entries(data):
+        ospf_obj = r_val.get("ospf", {})
+        ospf_instances = []
+        if isinstance(ospf_obj, dict):
+            if "area" in ospf_obj:
+                ospf_instances.append(("0", ospf_obj))
+            else:
+                for inst_id, inst_data in ospf_obj.items():
+                    if isinstance(inst_data, dict):
+                        ospf_instances.append((str(inst_id), inst_data))
+        elif isinstance(ospf_obj, list):
+            for inst_data in ospf_obj:
+                if isinstance(inst_data, dict):
+                    inst_id = str(inst_data.get("ospf-instance", "0"))
+                    ospf_instances.append((inst_id, inst_data))
+
+        for inst_id, inst_data in ospf_instances:
+            area_val = inst_data.get("area", {})
+            area_items = []
+            if isinstance(area_val, dict):
+                for area_id, area_data in area_val.items():
+                    if isinstance(area_data, dict):
+                        area_items.append((str(area_id), area_data))
+            elif isinstance(area_val, list):
+                for area_data in area_val:
+                    if isinstance(area_data, dict):
+                        area_id = str(area_data.get("area-id", "0.0.0.0"))
+                        area_items.append((area_id, area_data))
+
+            for area_id, area_data in area_items:
+                if_val = area_data.get("interface", {})
+                if_items = []
+                if isinstance(if_val, dict):
+                    for if_name, if_data in if_val.items():
+                        if isinstance(if_data, dict):
+                            if_items.append((str(if_name), if_data))
+                elif isinstance(if_val, list):
+                    for if_data in if_val:
+                        if isinstance(if_data, dict):
+                            if_name = str(if_data.get("interface-name", ""))
+                            if if_name:
+                                if_items.append((if_name, if_data))
+
+                for if_name, if_data in if_items:
+                    nbr_val = if_data.get("neighbor", {})
+                    nbr_items = []
+                    if isinstance(nbr_val, dict):
+                        for nbr_addr, nbr_data in nbr_val.items():
+                            if isinstance(nbr_data, dict):
+                                nbr_items.append((str(nbr_addr), nbr_data))
+                    elif isinstance(nbr_val, list):
+                        for nbr_data in nbr_val:
+                            if isinstance(nbr_data, dict):
+                                nbr_addr = str(nbr_data.get("address", ""))
+                                if nbr_addr:
+                                    nbr_items.append((nbr_addr, nbr_data))
+
+                    for nbr_addr, nbr_data in nbr_items:
+                        oper = str(nbr_data.get("oper-state", "")).lower()
+                        r_id = str(nbr_data.get("router-id", ""))
+                        ospf_nbrs[(r_name, inst_id, area_id, if_name, nbr_addr)] = {
+                            "oper": oper,
+                            "router_id": r_id,
+                        }
+    return ospf_nbrs
+
+
+def _extract_bgp_peers(data):
+    """
+    Extracts BGP peers across all router instances.
+    Returns a dict mapping (r_name, peer_ip) -> {
+        "session_state": session_state,
+        "oper_state": oper_state,
+        "state": state,
+    }.
+    """
+    bgp_peers = {}
+    for r_name, r_val in _get_router_entries(data):
+        bgp_val = r_val.get("bgp", {})
+        if isinstance(bgp_val, dict):
+            n_val = bgp_val.get("neighbor", {})
+            n_items = []
+            if isinstance(n_val, dict):
+                for peer_ip, peer_obj in n_val.items():
+                    if isinstance(peer_obj, dict):
+                        n_items.append((peer_ip, peer_obj))
+            elif isinstance(n_val, list):
+                for peer_obj in n_val:
+                    if isinstance(peer_obj, dict):
+                        peer_ip = str(
+                            peer_obj.get("ip-address", peer_obj.get("peer-ip", ""))
+                        )
+                        if peer_ip:
+                            n_items.append((peer_ip, peer_obj))
+            for peer_ip, peer_obj in n_items:
+                session_state = str(peer_obj.get("session-state", "")).lower()
+                oper_state = str(peer_obj.get("oper-state", "")).lower()
+                state = session_state or oper_state
+                bgp_peers[(r_name, peer_ip)] = {
+                    "session_state": session_state,
+                    "oper_state": oper_state,
+                    "state": state,
+                }
+    return bgp_peers
+
+
+def _count_routes(data):
+    """
+    Counts active unicast IPv4 and IPv6 routes in the routing table.
+    """
+    count = 0
+    for r_name, r_val in _get_router_entries(data):
+        rt = r_val.get("route-table", {})
+        if isinstance(rt, dict):
+            unicast = rt.get("unicast", {})
+            if isinstance(unicast, dict):
+                for af in ["ipv4", "ipv6"]:
+                    routes = unicast.get(af, {}).get("route", {})
+                    if isinstance(routes, dict):
+                        count += len(routes)
+                    elif isinstance(routes, list):
+                        count += len(routes)
+    return count
+
+
+def get_device_state(test_obj, dev_name, mode="pre"):
+    """
+    Returns the parsed YANG state dict for dev_name.
+    Checks in-memory current_snapshots first, then falls back to snapshots on disk.
+    """
+    parameters = getattr(getattr(test_obj, "parent", None), "parameters", {})
+    snapshots = parameters.get("current_snapshots", {})
+    if dev_name in snapshots and snapshots[dev_name]:
+        return snapshots[dev_name]
+
+    mode_to_check = parameters.get("mode", mode)
+    paths_to_try = [
+        os.path.join("snapshots", f"nokia_snapshot_{dev_name}_{mode_to_check}.json"),
+        os.path.join("snapshots", f"nokia_snapshot_{dev_name}_post.json"),
+        os.path.join("snapshots", f"nokia_snapshot_{dev_name}_pre.json"),
+        os.path.join("snapshots", f"nokia_snapshot_{mode_to_check}.json"),
+    ]
+    for p in paths_to_try:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                log.debug(f"Could not load snapshot from {p}: {e}")
+    return None
+
+
 def check_operational_invariants(pre_json, post_json, dev_label="", diff=None):
     """
     Analyzes pre- vs post-change state to detect operational regressions:
@@ -144,37 +472,6 @@ def check_operational_invariants(pre_json, post_json, dev_label="", diff=None):
         return regressions
 
     # 1. Interface Operational State Invariant
-    def _extract_interfaces(data):
-        ifs = {}
-        for r_name, r_val in _get_router_entries(data):
-            if_val = r_val.get("interface", {})
-            if_items = []
-            if isinstance(if_val, dict):
-                for if_name, if_obj in if_val.items():
-                    if isinstance(if_obj, dict):
-                        if_items.append((if_name, if_obj))
-            elif isinstance(if_val, list):
-                for if_obj in if_val:
-                    if isinstance(if_obj, dict):
-                        if_name = str(if_obj.get("interface-name", ""))
-                        if if_name:
-                            if_items.append((if_name, if_obj))
-
-            for if_name, if_obj in if_items:
-                oper = str(if_obj.get("oper-state", "")).lower()
-                ipv4_oper = ""
-                if isinstance(if_obj.get("ipv4"), dict):
-                    ipv4_oper = str(if_obj["ipv4"].get("oper-state", "")).lower()
-                ipv6_oper = ""
-                if isinstance(if_obj.get("ipv6"), dict):
-                    ipv6_oper = str(if_obj["ipv6"].get("oper-state", "")).lower()
-                ifs[(r_name, if_name)] = {
-                    "oper": oper,
-                    "ipv4_oper": ipv4_oper,
-                    "ipv6_oper": ipv6_oper,
-                }
-        return ifs
-
     pre_ifs = _extract_interfaces(pre_json)
     post_ifs = _extract_interfaces(post_json)
     for (r_name, if_name), pre_info in pre_ifs.items():
@@ -202,25 +499,6 @@ def check_operational_invariants(pre_json, post_json, dev_label="", diff=None):
                 )
 
     # 2. Port Operational State Invariant
-    def _extract_ports(data):
-        ports = {}
-        root = _unwrap_state_root(data)
-        p_val = root.get("port", {})
-        p_items = []
-        if isinstance(p_val, dict):
-            for p_id, p_obj in p_val.items():
-                if isinstance(p_obj, dict):
-                    p_items.append((p_id, p_obj))
-        elif isinstance(p_val, list):
-            for p_obj in p_val:
-                if isinstance(p_obj, dict):
-                    p_id = str(p_obj.get("port-id", ""))
-                    if p_id:
-                        p_items.append((p_id, p_obj))
-        for p_id, p_obj in p_items:
-            ports[p_id] = str(p_obj.get("oper-state", "")).lower()
-        return ports
-
     pre_ports = _extract_ports(pre_json)
     post_ports = _extract_ports(post_json)
     for p_id, pre_oper in pre_ports.items():
@@ -232,61 +510,19 @@ def check_operational_invariants(pre_json, post_json, dev_label="", diff=None):
                 )
 
     # 3. BGP Peer State Invariant
-    def _extract_bgp_peers(data):
-        bgp_peers = {}
-        for r_name, r_val in _get_router_entries(data):
-            bgp_val = r_val.get("bgp", {})
-            if isinstance(bgp_val, dict):
-                n_val = bgp_val.get("neighbor", {})
-                n_items = []
-                if isinstance(n_val, dict):
-                    for peer_ip, peer_obj in n_val.items():
-                        if isinstance(peer_obj, dict):
-                            n_items.append((peer_ip, peer_obj))
-                elif isinstance(n_val, list):
-                    for peer_obj in n_val:
-                        if isinstance(peer_obj, dict):
-                            peer_ip = str(
-                                peer_obj.get("ip-address", peer_obj.get("peer-ip", ""))
-                            )
-                            if peer_ip:
-                                n_items.append((peer_ip, peer_obj))
-                for peer_ip, peer_obj in n_items:
-                    state = str(
-                        peer_obj.get(
-                            "session-state",
-                            peer_obj.get("oper-state", ""),
-                        )
-                    ).lower()
-                    bgp_peers[(r_name, peer_ip)] = state
-        return bgp_peers
-
     pre_bgp = _extract_bgp_peers(pre_json)
     post_bgp = _extract_bgp_peers(post_json)
-    for (r_name, peer_ip), pre_state in pre_bgp.items():
+    for (r_name, peer_ip), pre_info in pre_bgp.items():
+        pre_state = pre_info["state"]
         if pre_state in ("established", "up"):
-            post_state = post_bgp.get((r_name, peer_ip))
+            post_info = post_bgp.get((r_name, peer_ip))
+            post_state = post_info["state"] if post_info else None
             if post_state not in ("established", "up"):
                 regressions.append(
                     f"[{dev_label}] BGP neighbor '{peer_ip}' session dropped from '{pre_state}' to '{post_state}'"
                 )
 
     # 4. Route Table Stability Invariant
-    def _count_routes(data):
-        count = 0
-        for r_name, r_val in _get_router_entries(data):
-            rt = r_val.get("route-table", {})
-            if isinstance(rt, dict):
-                unicast = rt.get("unicast", {})
-                if isinstance(unicast, dict):
-                    for af in ["ipv4", "ipv6"]:
-                        routes = unicast.get(af, {}).get("route", {})
-                        if isinstance(routes, dict):
-                            count += len(routes)
-                        elif isinstance(routes, list):
-                            count += len(routes)
-        return count
-
     pre_routes = _count_routes(pre_json)
     post_routes = _count_routes(post_json)
     if pre_routes > 5 and post_routes < (pre_routes * 0.5):
@@ -375,10 +611,10 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
             json.dump(clean_data, f, indent=2)
 
         log.info(f"Success! [{dev_name}] Structured JSON state saved to {target_path}")
-        return dev_name, True, None
+        return dev_name, True, clean_data, None
     except Exception as exc:
         log.error(f"Failed to capture state from [{dev_name}]: {exc}")
-        return dev_name, False, str(exc)
+        return dev_name, False, None, str(exc)
     finally:
         if conn is not None and hasattr(conn, "disconnect"):
             try:
@@ -435,313 +671,22 @@ class CommonSetup(aetest.CommonSetup):
         max_workers = self.parent.parameters.get("max_workers", 10)
         worker_count = min(max_workers, max(1, len(testbed.devices)))
         log.info(
-            f"Connecting to {len(testbed.devices)} device(s) concurrently (max_workers={worker_count})..."
+            f"Targeting {len(testbed.devices)} device(s) for model-driven validation (workers={worker_count})."
         )
-        try:
-            testbed.connect(max_workers=worker_count, learn_hostname=True)
-        except Exception as exc:
-            log.warning(
-                f"Bulk testbed connect reported: {exc}. Verifying individual connections..."
-            )
-            failed_devices = []
-            for dev_name, dev in testbed.devices.items():
-                if not getattr(dev, "is_connected", lambda: False)():
-                    try:
-                        dev.connect(learn_hostname=True)
-                    except Exception as dev_exc:
-                        log.error(f"[{dev_name}] Connection failed: {dev_exc}")
-                        failed_devices.append(f"{dev_name} ({dev_exc})")
-            if failed_devices:
-                self.failed(
-                    f"Failed to connect to testbed devices: {', '.join(failed_devices)}"
+        # Attempt CLI connect as optional so CLI failures never abort model-driven pySROS validation
+        cli_devices = [
+            d
+            for d in testbed.devices.values()
+            if hasattr(d, "connections") and hasattr(d.connections, "cli")
+        ]
+        if cli_devices:
+            try:
+                testbed.connect(max_workers=worker_count, learn_hostname=True)
+                log.info("CLI connection established across testbed devices.")
+            except Exception as exc:
+                log.warning(
+                    f"Optional CLI connect noticed ({exc}); proceeding with model-driven pySROS validation."
                 )
-
-
-class ConnectivityTest(aetest.Testcase):
-    @aetest.test
-    def check_version(self):
-        testbed = self.parent.parameters["testbed"]
-        max_workers = self.parent.parameters.get("max_workers", 10)
-        results = _run_parallel_device_command(
-            testbed, "show version", max_workers=max_workers
-        )
-        failed_devices = []
-        for dev_name, (output, exc) in results.items():
-            if exc:
-                log.error(f"[{dev_name}] Failed to execute 'show version': {exc}")
-                failed_devices.append(f"{dev_name} ({exc})")
-            elif output and ("Nokia" in output or "TiMOS" in output):
-                log.info(f"[{dev_name}] Nokia SR OS detected successfully")
-            else:
-                log.error(f"[{dev_name}] Nokia OS not detected in output")
-                failed_devices.append(f"{dev_name} (unrecognized OS)")
-
-        if failed_devices:
-            self.failed(
-                f"Connectivity check failed on devices: {', '.join(failed_devices)}"
-            )
-        else:
-            self.passed("Nokia OS detected successfully on all testbed devices")
-
-
-class InterfaceStateTest(aetest.Testcase):
-    @aetest.test
-    def verify_interfaces(self):
-        testbed = self.parent.parameters["testbed"]
-        max_workers = self.parent.parameters.get("max_workers", 10)
-        results = _run_parallel_device_command(
-            testbed, "show router interface", max_workers=max_workers
-        )
-        failed_devices = []
-        for dev_name, (output, exc) in results.items():
-            if exc:
-                log.error(f"[{dev_name}] Interface check exception: {exc}")
-                failed_devices.append(f"{dev_name} ({exc})")
-                continue
-            down_interfaces = []
-            for line in output.splitlines():
-                line_clean = line.strip()
-                if not line_clean or line_clean.startswith(
-                    (
-                        "=",
-                        "-",
-                        "Interface Table",
-                        "Interfaces",
-                        "IP-Address",
-                        "Interface-Name",
-                    )
-                ):
-                    continue
-                parts = line_clean.split()
-                if len(parts) >= 3:
-                    name, adm, opr = parts[0], parts[1], parts[2]
-                    if adm.lower() == "up":
-                        opr_parts = opr.split("/")
-                        if any(p.lower() != "up" for p in opr_parts):
-                            down_interfaces.append(f"{name} (adm:{adm}, opr:{opr})")
-            if down_interfaces:
-                failed_devices.append(
-                    f"{dev_name}: [down: {', '.join(down_interfaces)}]"
-                )
-            else:
-                log.info(f"[{dev_name}] All admin Up interfaces are operationally Up")
-
-        if failed_devices:
-            self.failed(
-                f"Interface operational check failed on devices: {'; '.join(failed_devices)}"
-            )
-        else:
-            self.passed(
-                "All administrative Up interfaces are operationally Up across all testbed devices"
-            )
-
-
-class ISISTest(aetest.Testcase):
-    @aetest.test
-    def verify_isis_interfaces(self):
-        testbed = self.parent.parameters["testbed"]
-        max_workers = self.parent.parameters.get("max_workers", 10)
-        results = _run_parallel_device_command(
-            testbed, "show router isis interface", max_workers=max_workers
-        )
-        configured_count = 0
-        failed_devices = []
-        for dev_name, (output, exc) in results.items():
-            if exc:
-                log.error(f"[{dev_name}] ISIS check exception: {exc}")
-                failed_devices.append(f"{dev_name} ({exc})")
-                continue
-            output_lower = output.lower()
-            not_configured = (
-                "not configured" in output_lower
-                or "disabled" in output_lower
-                or "no matching" in output_lower
-                or "not running" in output_lower
-                or "no. of interfaces: 0" in output_lower
-                or "total interfaces: 0" in output_lower
-            )
-            if not_configured:
-                log.info(
-                    f"[{dev_name}] ISIS is not configured or has 0 interfaces; skipping"
-                )
-                continue
-
-            configured_count += 1
-            down_isis = []
-            up_count = 0
-            for line in output.splitlines():
-                line_clean = line.strip()
-                if not line_clean or line_clean.startswith(
-                    ("=", "-", "Router (", "Interface", "Total", "No. of")
-                ):
-                    continue
-                parts = line_clean.split()
-                if len(parts) >= 4:
-                    if "down" in line_clean.lower():
-                        down_isis.append(parts[0])
-                    elif "up" in line_clean.lower():
-                        up_count += 1
-
-            if down_isis:
-                failed_devices.append(
-                    f"{dev_name} (down ISIS interfaces: {', '.join(down_isis)})"
-                )
-            elif up_count > 0:
-                log.info(
-                    f"[{dev_name}] {up_count} ISIS interface(s) are operationally Up"
-                )
-            else:
-                log.info(f"[{dev_name}] ISIS configured with 0 active interfaces")
-
-        if failed_devices:
-            self.failed(
-                f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}"
-            )
-        elif configured_count == 0:
-            self.passed("ISIS is not configured on any testbed devices; check passed")
-        else:
-            self.passed(
-                f"ISIS interfaces verified Up across {configured_count} configured device(s)"
-            )
-
-
-class OSPFTest(aetest.Testcase):
-    @aetest.test
-    def verify_ospf_neighbors(self):
-        testbed = self.parent.parameters["testbed"]
-        max_workers = self.parent.parameters.get("max_workers", 10)
-        results = _run_parallel_device_command(
-            testbed, "show router ospf neighbor", max_workers=max_workers
-        )
-        configured_count = 0
-        failed_devices = []
-        for dev_name, (output, exc) in results.items():
-            if exc:
-                log.error(f"[{dev_name}] OSPF check exception: {exc}")
-                failed_devices.append(f"{dev_name} ({exc})")
-                continue
-            output_lower = output.lower()
-            if (
-                "not configured" in output_lower
-                or "disabled" in output_lower
-                or "no matching" in output_lower
-                or "not running" in output_lower
-            ):
-                log.info(f"[{dev_name}] OSPF is not configured; skipping")
-                continue
-
-            configured_count += 1
-            degraded_neighbors = []
-            full_count = 0
-            for line in output.splitlines():
-                line_clean = line.strip()
-                if not line_clean or line_clean.startswith(
-                    ("=", "-", "OSPFv", "Interface-Name", "No. of")
-                ):
-                    continue
-                parts = line_clean.split()
-                if len(parts) >= 3:
-                    state = parts[2].lower()
-                    if state in ("down", "init", "attempt"):
-                        degraded_neighbors.append(
-                            f"{parts[0]}:{parts[1]} (state: {parts[2]})"
-                        )
-                    elif state in ("full", "2-way"):
-                        full_count += 1
-
-            if degraded_neighbors:
-                failed_devices.append(
-                    f"{dev_name} (degraded OSPF neighbors: {', '.join(degraded_neighbors)})"
-                )
-            else:
-                log.info(f"[{dev_name}] {full_count} OSPF neighbor(s) active")
-
-        if failed_devices:
-            self.failed(
-                f"OSPF neighbor verification failed on devices: {'; '.join(failed_devices)}"
-            )
-        elif configured_count == 0:
-            self.passed("OSPF is not configured on any testbed devices; check passed")
-        else:
-            self.passed(
-                f"OSPF neighbors verified across {configured_count} configured device(s)"
-            )
-
-
-class BGPTest(aetest.Testcase):
-    @aetest.test
-    def verify_bgp_peers(self):
-        testbed = self.parent.parameters["testbed"]
-        max_workers = self.parent.parameters.get("max_workers", 10)
-        results = _run_parallel_device_command(
-            testbed, "show router bgp summary", max_workers=max_workers
-        )
-        configured_count = 0
-        failed_devices = []
-        for dev_name, (output, exc) in results.items():
-            if exc:
-                log.error(f"[{dev_name}] BGP check exception: {exc}")
-                failed_devices.append(f"{dev_name} ({exc})")
-                continue
-            output_lower = output.lower()
-            if (
-                "not configured" in output_lower
-                or "disabled" in output_lower
-                or "no matching" in output_lower
-                or "bgp is not" in output_lower
-            ):
-                log.info(f"[{dev_name}] BGP is not configured; skipping")
-                continue
-
-            configured_count += 1
-            degraded_peers = []
-            established_count = 0
-            for line in output.splitlines():
-                line_clean = line.strip()
-                if not line_clean or line_clean.startswith(
-                    (
-                        "=",
-                        "-",
-                        "BGP Router",
-                        "BGP Admin",
-                        "Total",
-                        "Neighbor",
-                        "Description",
-                        "ServiceId",
-                    )
-                ):
-                    continue
-                parts = line_clean.split()
-                if len(parts) >= 2:
-                    last_token = parts[-1].lower()
-                    if last_token in (
-                        "idle",
-                        "active",
-                        "connect",
-                        "opensent",
-                        "openconfirm",
-                    ):
-                        degraded_peers.append(f"{parts[0]} (state: {parts[-1]})")
-                    elif "/" in last_token or last_token == "established":
-                        established_count += 1
-
-            if degraded_peers:
-                failed_devices.append(
-                    f"{dev_name} (degraded BGP peers: {', '.join(degraded_peers)})"
-                )
-            else:
-                log.info(f"[{dev_name}] {established_count} BGP peer(s) established")
-
-        if failed_devices:
-            self.failed(
-                f"BGP peer verification failed on devices: {'; '.join(failed_devices)}"
-            )
-        elif configured_count == 0:
-            self.passed("BGP is not configured on any testbed devices; check passed")
-        else:
-            self.passed(
-                f"BGP sessions verified across {configured_count} configured device(s)"
-            )
 
 
 class SnapshotState(aetest.Testcase):
@@ -759,6 +704,7 @@ class SnapshotState(aetest.Testcase):
         )
 
         failures = {}
+        captured_snapshots = {}
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=worker_count
         ) as executor:
@@ -769,9 +715,13 @@ class SnapshotState(aetest.Testcase):
                 for dev_name, dev in testbed.devices.items()
             }
             for future in concurrent.futures.as_completed(future_to_dev):
-                dev_name, success, error_msg = future.result()
+                dev_name, success, clean_data, error_msg = future.result()
                 if not success:
                     failures[dev_name] = error_msg
+                else:
+                    captured_snapshots[dev_name] = clean_data
+
+        self.parent.parameters["current_snapshots"] = captured_snapshots
 
         # Maintain default snapshot file for single-device verification workflows
         if testbed.devices:
@@ -787,6 +737,234 @@ class SnapshotState(aetest.Testcase):
             self.failed(f"Snapshot capture failed on devices: {failures}")
         else:
             self.passed("Data captured and saved to snapshots/")
+
+
+class ConnectivityTest(aetest.Testcase):
+    @aetest.test
+    def check_version(self):
+        testbed = self.parent.parameters["testbed"]
+        mode = self.parent.parameters.get("mode", "pre")
+        failed_devices = []
+        for dev_name in testbed.devices.keys():
+            data = get_device_state(self, dev_name, mode=mode)
+            if not data:
+                failed_devices.append(f"{dev_name} (no snapshot state available)")
+                continue
+            sys_info = _extract_system_info(data)
+            oper_name = sys_info.get("oper-name", "")
+            platform = sys_info.get("platform", "")
+            version = sys_info.get("version", "")
+            if not oper_name and not platform and not version:
+                failed_devices.append(f"{dev_name} (empty system state container)")
+            else:
+                log.info(
+                    f"[{dev_name}] Nokia SR OS verified: platform='{platform}', name='{oper_name}', version='{version}'"
+                )
+
+        if failed_devices:
+            self.failed(
+                f"Model-driven connectivity check failed on devices: {', '.join(failed_devices)}"
+            )
+        else:
+            self.passed(
+                "Nokia SR OS verified via YANG model across all testbed devices"
+            )
+
+
+class InterfaceStateTest(aetest.Testcase):
+    @aetest.test
+    def verify_interfaces(self):
+        testbed = self.parent.parameters["testbed"]
+        mode = self.parent.parameters.get("mode", "pre")
+        failed_devices = []
+        for dev_name in testbed.devices.keys():
+            data = get_device_state(self, dev_name, mode=mode)
+            if not data:
+                failed_devices.append(f"{dev_name} (no snapshot state available)")
+                continue
+            ifs = _extract_interfaces(data)
+            down_interfaces = []
+            for (r_name, if_name), if_info in ifs.items():
+                if if_info.get("admin") in ("disable", "disabled", "down"):
+                    continue
+                oper = if_info.get("oper", "")
+                if oper != "up":
+                    down_interfaces.append(f"{r_name}/{if_name} (oper:{oper})")
+                ipv4_oper = if_info.get("ipv4_oper", "")
+                if ipv4_oper and ipv4_oper != "up":
+                    down_interfaces.append(
+                        f"{r_name}/{if_name} [ipv4] (oper:{ipv4_oper})"
+                    )
+                ipv6_oper = if_info.get("ipv6_oper", "")
+                if ipv6_oper and ipv6_oper != "up":
+                    down_interfaces.append(
+                        f"{r_name}/{if_name} [ipv6] (oper:{ipv6_oper})"
+                    )
+
+            if down_interfaces:
+                failed_devices.append(
+                    f"{dev_name}: [down: {', '.join(down_interfaces)}]"
+                )
+            else:
+                log.info(
+                    f"[{dev_name}] All {len(ifs)} interface(s) are operationally Up"
+                )
+
+        if failed_devices:
+            self.failed(
+                f"Interface operational check failed on devices: {'; '.join(failed_devices)}"
+            )
+        else:
+            self.passed(
+                "All interfaces are operationally Up across all testbed devices"
+            )
+
+
+class ISISTest(aetest.Testcase):
+    @aetest.test
+    def verify_isis_interfaces(self):
+        testbed = self.parent.parameters["testbed"]
+        mode = self.parent.parameters.get("mode", "pre")
+        configured_count = 0
+        failed_devices = []
+        for dev_name in testbed.devices.keys():
+            data = get_device_state(self, dev_name, mode=mode)
+            if not data:
+                failed_devices.append(f"{dev_name} (no snapshot state available)")
+                continue
+            isis_ifs = _extract_isis_interfaces(data)
+            if not isis_ifs:
+                log.info(f"[{dev_name}] IS-IS is not configured; skipping")
+                continue
+
+            configured_count += 1
+            down_isis = []
+            for (r_name, inst_id, if_name), if_info in isis_ifs.items():
+                oper = if_info.get("oper", "")
+                if oper != "up":
+                    down_isis.append(f"{r_name}/isis-{inst_id}/{if_name} (oper:{oper})")
+
+            if down_isis:
+                failed_devices.append(
+                    f"{dev_name} (down ISIS interfaces: {', '.join(down_isis)})"
+                )
+            else:
+                log.info(
+                    f"[{dev_name}] All {len(isis_ifs)} ISIS interface(s) are operationally Up"
+                )
+
+        if failed_devices:
+            self.failed(
+                f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}"
+            )
+        elif configured_count == 0:
+            self.passed("ISIS is not configured on any testbed devices; check passed")
+        else:
+            self.passed(
+                f"ISIS interfaces verified Up across {configured_count} configured device(s)"
+            )
+
+
+class OSPFTest(aetest.Testcase):
+    @aetest.test
+    def verify_ospf_neighbors(self):
+        testbed = self.parent.parameters["testbed"]
+        mode = self.parent.parameters.get("mode", "pre")
+        configured_count = 0
+        failed_devices = []
+        for dev_name in testbed.devices.keys():
+            data = get_device_state(self, dev_name, mode=mode)
+            if not data:
+                failed_devices.append(f"{dev_name} (no snapshot state available)")
+                continue
+            nbrs = _extract_ospf_neighbors(data)
+            if not nbrs:
+                log.info(
+                    f"[{dev_name}] OSPF is not configured or has 0 neighbors; skipping"
+                )
+                continue
+
+            configured_count += 1
+            degraded_neighbors = []
+            healthy_count = 0
+            for (r_name, inst_id, area_id, if_name, nbr_addr), nbr_info in nbrs.items():
+                oper = nbr_info.get("oper", "")
+                if oper in ("full", "two-way", "2-way"):
+                    healthy_count += 1
+                else:
+                    degraded_neighbors.append(
+                        f"{r_name}/{if_name}->{nbr_addr} (oper:{oper})"
+                    )
+
+            if degraded_neighbors:
+                failed_devices.append(
+                    f"{dev_name} (degraded OSPF neighbors: {', '.join(degraded_neighbors)})"
+                )
+            else:
+                log.info(
+                    f"[{dev_name}] All {healthy_count} OSPF neighbor(s) are healthy (full/two-way)"
+                )
+
+        if failed_devices:
+            self.failed(
+                f"OSPF neighbor verification failed on devices: {'; '.join(failed_devices)}"
+            )
+        elif configured_count == 0:
+            self.passed("OSPF is not configured on any testbed devices; check passed")
+        else:
+            self.passed(
+                f"OSPF neighbors verified across {configured_count} configured device(s)"
+            )
+
+
+class BGPTest(aetest.Testcase):
+    @aetest.test
+    def verify_bgp_peers(self):
+        testbed = self.parent.parameters["testbed"]
+        mode = self.parent.parameters.get("mode", "pre")
+        configured_count = 0
+        failed_devices = []
+        for dev_name in testbed.devices.keys():
+            data = get_device_state(self, dev_name, mode=mode)
+            if not data:
+                failed_devices.append(f"{dev_name} (no snapshot state available)")
+                continue
+            peers = _extract_bgp_peers(data)
+            if not peers:
+                log.info(f"[{dev_name}] BGP is not configured or has 0 peers; skipping")
+                continue
+
+            configured_count += 1
+            degraded_peers = []
+            established_count = 0
+            for (r_name, peer_ip), peer_info in peers.items():
+                state = peer_info.get("state", "")
+                if state in ("established", "up"):
+                    established_count += 1
+                else:
+                    degraded_peers.append(
+                        f"{r_name}/{peer_ip} (session-state:{state or 'down'})"
+                    )
+
+            if degraded_peers:
+                failed_devices.append(
+                    f"{dev_name} (degraded BGP peers: {', '.join(degraded_peers)})"
+                )
+            else:
+                log.info(
+                    f"[{dev_name}] All {established_count} BGP peer(s) established"
+                )
+
+        if failed_devices:
+            self.failed(
+                f"BGP peer verification failed on devices: {'; '.join(failed_devices)}"
+            )
+        elif configured_count == 0:
+            self.passed("BGP is not configured on any testbed devices; check passed")
+        else:
+            self.passed(
+                f"BGP sessions verified across {configured_count} configured device(s)"
+            )
 
 
 class VerifyChanges(aetest.Testcase):
@@ -1346,12 +1524,12 @@ if __name__ == "__main__":
     yang_paths = [p.strip() for p in args.paths.split(",") if p.strip()]
 
     base_tests = [
+        SnapshotState,
         ConnectivityTest,
         InterfaceStateTest,
         ISISTest,
         OSPFTest,
         BGPTest,
-        SnapshotState,
     ]
     if args.mode == "pre":
         test_pipeline = base_tests

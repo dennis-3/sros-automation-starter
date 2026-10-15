@@ -8,7 +8,7 @@
     target: candidate
     validate: true
     commit: true
-    lock: always
+    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
     default_operation: merge
     content: "{{ lookup('template', '../templates/hardware_and_system_name_template.j2', template_vars=dict(hardware_stage='connectors')) }}"
   when: system_name is defined or cards is defined or (ports | default([]) | selectattr('connector', 'defined') | list | length > 0)

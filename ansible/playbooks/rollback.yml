@@ -33,6 +33,19 @@
         - always
         - rollback
 
+    - name: Release candidate datastore lock
+      ansible.netcommon.netconf_rpc:
+        rpc: unlock
+        xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+        content: |
+          <target>
+            <candidate/>
+          </target>
+      failed_when: false
+      tags:
+        - always
+        - rollback
+
     - name: Report rollback status
       ansible.builtin.debug:
         msg: "Commit cancelled on {{ inventory_hostname }}. Running configuration restored."

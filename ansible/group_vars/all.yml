@@ -8,3 +8,8 @@ ansible_host_key_auto_add: yes
 ansible_host_key_checking: False
 ansible_connection: ansible.netcommon.netconf
 ansible_network_os: nokia.sros.sros
+
+# Candidate datastore concurrency control:
+# Acquires an exclusive NETCONF lock on the candidate datastore during pre-flight (task 01)
+# and holds it across all staging tasks until commit/release in task 09 to prevent concurrent collisions.
+sros_lock_candidate: true

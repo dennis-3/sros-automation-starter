@@ -198,3 +198,22 @@
   tags:
     - always
     - commit
+
+# Releases the candidate datastore lock held throughout the deployment pipeline
+- name: Release exclusive lock on candidate datastore
+  ansible.netcommon.netconf_rpc:
+    rpc: unlock
+    xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+    content: |
+      <target>
+        <candidate/>
+      </target>
+  check_mode: false
+  when:
+    - not (sros_commit_per_task | default(false))
+    - sros_lock_candidate | default(true)
+  failed_when: false
+  tags:
+    - always
+    - commit
+    - unlock

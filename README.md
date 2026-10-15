@@ -288,21 +288,25 @@ Available tags:
 
 ### Candidate Datastore & Execution Lifecycle
 
-By default, `deploy.yml` operates with a two-stage transaction lifecycle designed around Nokia SR OS hardware dependencies:
+By default, `deploy.yml` operates with a two-stage transaction lifecycle designed around Nokia SR OS hardware dependencies and concurrency protection:
 
-1. **Hardware & Connector Breakout Provisioning (Committed)**:
+1. **Exclusive Candidate Locking & Pre-Flight Cleanup**:
+   - Task `01_preflight.yml` acquires an exclusive NETCONF lock (`<lock><target><candidate/></target></lock>`) on the candidate datastore and clears any stale uncommitted edits (`<discard-changes/>`).
+   - Holding this lock across the entire pipeline prevents other MD-CLI users or automation scripts from staging, committing, or discarding changes while Ansible is in progress (`sros_lock_candidate=true`, default).
+
+2. **Hardware & Connector Breakout Provisioning (Committed)**:
    - Physical chassis components, cards, MDAs, and connector breakouts (`hardware_stage='connectors'`) are committed immediately (`commit: true`).
    - In Nokia SR OS, child breakout ports (e.g. `1/1/c2/1`) do not exist in the hardware table until the connector breakout configuration is active in the running datastore. Committing this hardware foundation first allows SR OS to dynamically instantiate child ports before dependent configurations reference them.
 
-2. **Candidate Datastore Staging (Uncommitted)**:
+3. **Candidate Datastore Staging (Uncommitted & Protected)**:
    - All subsequent configuration tasks—child Ethernet ports (`hardware_stage='ports'`), IP interfaces, underlay routing (IS-IS/OSPF), route policies, BGP, MPLS/LDP, and VPN services (Epipe, VPLS, VPRN, IES)—stage changes to the candidate datastore without committing (`commit: false`).
 
-3. **Atomic Verification & Commit**:
+4. **Atomic Verification, Commit & Lock Release**:
    - In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the rendered candidate changes before committing.
-   - Task `09_commit.yml` (tagged `always`) locks the candidate store, verifies, and executes a single atomic commit (or confirmed commit with auto-rollback).
+   - Task `09_commit.yml` validates, executes the commit (or confirmed commit with auto-rollback), and releases the candidate lock (`<unlock/>`).
    - When `sros_confirm_timeout` is set, it issues a confirmed commit and probes management health via `<state xmlns="urn:nokia.com:sros:ns:yang:sr:state"><system><oper-name/></system></state>`. Confirmation is executed immediately (`sros_auto_confirm=true`, default) or deferred for external post-validation (`sros_auto_confirm=false`).
    - For deferred confirmation, the commit includes `<persist>sros-deploy</persist>` (RFC 6241 / SR OS `:confirmed-commit:1.1`), ensuring the trial configuration remains active in the `running` datastore across session disconnects until confirmed via `confirm.yml` or reverted via `rollback.yml`.
-   - If any staging task, validation check, or post-commit probe fails, the automated `rescue` block triggers `<discard-changes/>` and `<cancel-commit/>` via NETCONF RPC, rolling back candidate changes and unconfirmed commits.
+   - If any staging task, validation check, or post-commit probe fails, the automated `rescue` block triggers `<discard-changes/>`, `<cancel-commit/>`, and `<unlock/>` via NETCONF RPC, rolling back candidate changes and releasing the lock to prevent deadlocks.
    - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
 
 ```bash

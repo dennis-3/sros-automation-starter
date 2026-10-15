@@ -124,6 +124,22 @@
           tags:
             - always
 
+        - name: Release candidate datastore lock on failure
+          ansible.netcommon.netconf_rpc:
+            rpc: unlock
+            xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+            content: |
+              <target>
+                <candidate/>
+              </target>
+          check_mode: false
+          when:
+            - not (sros_commit_per_task | default(false))
+            - sros_lock_candidate | default(true)
+          failed_when: false
+          tags:
+            - always
+
         - name: Fail execution and report candidate discard
           ansible.builtin.fail:
             msg: >

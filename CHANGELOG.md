@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Decoupled `rsvp_template.j2` for independent RSVP-TE and MPLS signaling.
 - Pre-flight automated CI test suite (`tests/validate_templates.py`) parsing Jinja2 AST and XML schema validity.
 - Multi-threaded pyATS test framework (`pyats_test_suite.py`) supporting baseline snapshots, state drift comparison, and HTML report generation.
-- Integrated Containerlab topology (`topology.yaml`) with Nokia SR OS (SR-1), TACACS+ AAA, and Telegraf/Prometheus/Grafana telemetry stack.
+- Integrated Containerlab topology (`topology.yaml`) with Nokia SR OS (SR-1) and Telegraf/Prometheus/Grafana telemetry stack.
 - Ansible Execution Environment (`execution-environment.yml`) and `ansible-navigator.yml` containerized runner settings.
 - GitHub Actions CI/CD workflows: `.github/workflows/ci.yml` (validation) and `.github/workflows/deploy.yml` (automated deployments and canary rollouts).
 - Open source community files: `LICENSE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `.editorconfig`.

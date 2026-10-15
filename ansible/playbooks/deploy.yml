@@ -15,15 +15,11 @@
             - preflight
             - validate
 
-        - name: System identity, hardware & management
+        - name: System identity & hardware provisioning
           ansible.builtin.import_tasks: tasks/02_system.yml
           tags:
             - system
             - hardware
-            - ntp
-            - aaa
-            - tacplus
-            - dns
 
         - name: Filters and interfaces
           ansible.builtin.import_tasks: tasks/03_interfaces.yml

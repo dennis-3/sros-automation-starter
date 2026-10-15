@@ -104,7 +104,7 @@ All pull requests must pass our automated CI pipeline before merging. We provide
 Executes [`tests/validate_templates.py`](tests/validate_templates.py) in $< 2$ seconds on any operating system:
 
 - **Jinja2 AST & Delimiter Balance**: Parses template syntax trees and ensures all statements (`{% if %}`, `{% for %}`) and delimiters (`{{ }}`, `{# #}`) are balanced.
-- **Synthetic XML Rendering & Parsing**: Dynamically renders all 23 Jinja2 templates using test context from [`examples/data_models/`](examples/data_models/) and [`ansible/host_vars/`](ansible/host_vars/), parsing the resulting XML with `xml.etree.ElementTree` to verify schema validity.
+- **Synthetic XML Rendering & Parsing**: Dynamically renders all 22 Jinja2 templates using test context from [`examples/data_models/`](examples/data_models/) and [`ansible/host_vars/`](ansible/host_vars/), parsing the resulting XML with `xml.etree.ElementTree` to verify schema validity.
 - **Syntax Verification**: Validates Python compilation across all `.py` files and YAML document structure across playbooks, inventories, and topologies.
 
 ```bash

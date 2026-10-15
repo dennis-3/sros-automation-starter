@@ -13,8 +13,6 @@
       - bgp is not defined or (bgp.asn is defined and (bgp.asn | int > 0))
       - isis is not defined or (isis.instance is defined or isis.net is defined)
       - ospf is not defined or (ospf.router_id is defined or ospf.area is defined or ospf.areas is defined)
-      - ntp is not defined or (ntp.servers is defined and (ntp.servers | type_debug == 'list'))
-      - tacplus is not defined or (tacplus.servers is defined and (tacplus.servers | type_debug == 'list'))
     fail_msg: "Pre-flight validation failed on {{ inventory_hostname }}: Check host_vars syntax."
     success_msg: "Pre-flight schema validation passed for {{ inventory_hostname }}."
   tags:

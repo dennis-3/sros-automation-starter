@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# 02. SYSTEM IDENTITY, HARDWARE & MANAGEMENT SERVICES
+# 02. SYSTEM IDENTITY & HARDWARE PROVISIONING
 # ==============================================================================
 
 - name: Provision hardware chassis, cards, and connector breakouts
@@ -28,19 +28,3 @@
   tags:
     - system
     - hardware
-
-- name: Configure System Management (NTP, AAA/TACACS+, DNS)
-  ansible.netcommon.netconf_config:
-    target: candidate
-    validate: "{{ sros_commit_per_task | default(false) }}"
-    commit: "{{ sros_commit_per_task | default(false) }}"
-    lock: "{{ 'always' if (sros_commit_per_task | default(false)) else 'never' }}"
-    default_operation: merge
-    content: "{{ lookup('template', '../templates/system_management_template.j2') }}"
-  when: ntp is defined or tacplus is defined or dns is defined
-  tags:
-    - system
-    - ntp
-    - aaa
-    - tacplus
-    - security

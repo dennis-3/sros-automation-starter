@@ -18,14 +18,6 @@ topology:
     r2:
       mgmt-ipv4: 172.20.20.2
 
-    # --- AAA Server ---
-    aaa-server:
-      kind: linux
-      image: lfkeitel/tacacs_plus:ubuntu-202104181633
-      mgmt-ipv4: 172.20.20.100
-      binds:
-        - tac_plus.conf:/etc/tac_plus/tac_plus.conf
-
     # --- Telemetry Stack ---
     telegraf:
       kind: linux

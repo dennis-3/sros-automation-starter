@@ -38,7 +38,7 @@ sros-automation-starter/
 │   │   ├── tasks/                # Modular deployment pipeline tasks (01_preflight to 09_commit)
 │   │   ├── snapshot.yml          # Operational state & config snapshot retrieval
 │   │   └── netconf_ops.yml       # Raw NETCONF operations (BOF, load XML, md-compare)
-│   ├── templates/                # 23 Jinja2 NETCONF XML templates
+│   ├── templates/                # 22 Jinja2 NETCONF XML templates
 │   ├── requirements.yml          # Ansible Galaxy collections requirements
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
@@ -53,8 +53,7 @@ sros-automation-starter/
 ├── tests/
 │   ├── test_invariants.py        # Model-driven invariant assertions & regression unit tests
 │   └── validate_templates.py     # Pre-flight template rendering & XML schema validator
-├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
-├── tac_plus.conf                 # TACACS+ server configuration (AAA container)
+├── topology.yaml                 # Containerlab topology (r1, r2, telemetry)
 ├── telegraf.conf                 # Telegraf gNMI telemetry collector configuration
 ├── prometheus.yml                # Prometheus metrics scraper configuration
 ├── grafana_datasource.yaml       # Grafana automated datasource provisioning
@@ -83,7 +82,7 @@ sros-automation-starter/
 ```bash
 # Setup & Lab Lifecycle
 make install         # Install Python dependencies, Ansible collections & pre-commit hooks
-make lab-up          # Spin up Containerlab topology (r1, r2, AAA, telemetry)
+make lab-up          # Spin up Containerlab topology (r1, r2, telemetry)
 make lab-down        # Destroy Containerlab topology
 
 # Deployment & Staging
@@ -335,7 +334,7 @@ Reference data schemas for supported Nokia SR OS features are located in `exampl
 - `03_bgp_and_policies.yml`: Prefix lists, route policy statements, iBGP/eBGP peering, MP-BGP
 - `04_l2_vpn_services.yml`: Point-to-point Epipes (VPWS) and multipoint VPLS (with BGP-AD & EVPN)
 - `05_l3_vpn_services.yml`: VPRN (L3VPN) with MP-BGP auto-bind tunnels, VRF interfaces, IES services
-- `06_security_and_qos.yml`: IP traffic filters (ACLs), SAP-ingress / SAP-egress QoS queuing, NTP, TACACS+ AAA
+- `06_security_and_qos.yml`: IP traffic filters (ACLs), SAP-ingress / SAP-egress QoS queuing
 - `07_multicast_and_mirror.yml`: IGMP, PIM (Sparse Mode, SSM, Anycast RP), Port Mirroring
 
 ### Pre-Flight Validation & Code Quality
@@ -469,7 +468,7 @@ make rollback  # Cancel unconfirmed commit and restore running configuration
 
 ## Telemetry & Observability Stack
 
-When the lab is launched (`make lab-up`), Containerlab spins up an integrated telemetry and AAA stack alongside the routers:
+When the lab is launched (`make lab-up`), Containerlab spins up an integrated telemetry stack alongside the routers:
 
 - **Grafana (`http://localhost:3000`)**:
   - Automatically provisioned with Prometheus datasource via [`grafana_datasource.yaml`](grafana_datasource.yaml).
@@ -480,9 +479,6 @@ When the lab is launched (`make lab-up`), Containerlab spins up an integrated te
   - Configured via [`telegraf.conf`](telegraf.conf) to subscribe to native Nokia SR OS gNMI sensor paths on port `57400`:
     - CPU utilization: `/state/system/cpu/iom/cpu-usage`
     - Port packet statistics: `/state/port/statistics`
-- **TACACS+ AAA Server (`172.20.20.100:49`)**:
-  - Configured via [`tac_plus.conf`](tac_plus.conf) with shared secret `lab_secret_2026`.
-  - Pre-seeded accounts: `dennis-admin` (privilege level 15) and `junior-tech` (monitor group).
 
 ## CI/CD Deployment Pipeline (GitHub Actions)
 
@@ -505,7 +501,7 @@ The repository includes two GitHub Actions workflows:
 Tasks in `deploy.yml` run in this sequence:
 
 1. Hardware chassis, cards, & connector breakouts (`commit: true` - instantiates child breakout ports in hardware)
-2. Child Ethernet ports & system management (NTP, AAA/TACACS+, DNS)
+2. Child Ethernet ports
 3. IP filters & ACLs
 4. IP interfaces (IPv4 & IPv6 dual-stack)
 5. MPLS label ranges
@@ -527,7 +523,6 @@ Tasks in `deploy.yml` run in this sequence:
 ## Templates Included
 
 - `hardware_and_system_name_template.j2`
-- `system_management_template.j2`
 - `filter_template.j2`
 - `interface_template.j2`
 - `mpls_labels_template.j2`

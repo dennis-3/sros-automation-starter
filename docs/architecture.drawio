@@ -1,148 +1,177 @@
-<mxfile host="app.diagrams.net" modified="2026-10-12T14:05:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+<mxfile host="app.diagrams.net" modified="2026-10-15T20:40:00.000Z" agent="Antigravity" version="24.0.0" type="device">
   <diagram id="sros-automation-architecture" name="SROS System Architecture">
-    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="860" math="0" shadow="0" lineJumps="1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="760" math="0" shadow="0" lineJumps="1">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
 
         <!-- ==================== COLUMN 1: AUTOMATION & VERIFICATION ==================== -->
         <mxCell id="box_auto" value="Automation &amp;amp; Verification Plane" style="swimlane;startSize=34;fillColor=none;strokeColor=#475569;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0F172A;rounded=1;arcSize=4;collapsible=0;html=1;" vertex="1" parent="1">
-          <mxGeometry x="50" y="50" width="300" height="680" as="geometry"/>
+          <mxGeometry x="40" y="50" width="300" height="630" as="geometry"/>
         </mxCell>
 
-        <!-- GitHub Actions CI/CD -->
-        <mxCell id="ci" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#0F172A;&quot;&gt;GitHub Actions CI/CD&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#475569;margin-top:3px;&quot;&gt;Linting, Schema Validation &amp;amp; Deploy&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
-          <mxGeometry x="30" y="55" width="240" height="65" as="geometry"/>
+        <!-- Stage 1: GitHub Actions CI/CD -->
+        <mxCell id="ci" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#0F172A;&quot;&gt;GitHub Actions CI/CD&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:2px;&quot;&gt;Stage 1: Pre-Flight Validation&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;Template Lint, Schema &amp;amp; Unit Tests&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
+          <mxGeometry x="30" y="45" width="240" height="66" as="geometry"/>
         </mxCell>
 
-        <!-- Ansible Controller -->
-        <mxCell id="ansible" value="&lt;div style=&quot;font-weight:bold;font-size:14px;color:#1E40AF;&quot;&gt;Ansible Controller&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:3px;&quot;&gt;Atomic NETCONF Candidate&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;Port :830 &amp;bull; Commit &amp;amp; Rollback&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
-          <mxGeometry x="30" y="195" width="240" height="90" as="geometry"/>
+        <!-- Stage 2: pyATS Pre-Change Snapshot -->
+        <mxCell id="pyats_pre" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#B45309;&quot;&gt;pyATS Pre-Change Snapshot&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:2px;&quot;&gt;Stage 2: Operational Baseline&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;pySROS State Capture &amp;bull; Port :830&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
+          <mxGeometry x="30" y="152" width="240" height="70" as="geometry"/>
         </mxCell>
 
-        <!-- pyATS Test Suite -->
-        <mxCell id="pyats" value="&lt;div style=&quot;font-weight:bold;font-size:14px;color:#B45309;&quot;&gt;pyATS Test Suite&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:3px;&quot;&gt;State Snapshot &amp;amp; Drift Analysis&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;SSH :22 &amp;bull; Pre/Post Verification&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
-          <mxGeometry x="30" y="475" width="240" height="90" as="geometry"/>
+        <!-- Stage 3: Ansible Controller -->
+        <mxCell id="ansible" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#1E40AF;&quot;&gt;Ansible Controller&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:2px;&quot;&gt;Stage 3: Candidate Deployment&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;Port :830 &amp;bull; Confirmed Commit (Stage 4 Soak)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
+          <mxGeometry x="30" y="264" width="240" height="76" as="geometry"/>
         </mxCell>
 
-        <mxCell id="e_ci_ans" value="Triggers Deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;html=1;" edge="1" source="ci" target="ansible" parent="box_auto">
+        <!-- Stage 5: pyATS Post-Change Verification -->
+        <mxCell id="pyats_post" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#B45309;&quot;&gt;pyATS Post-Change Verification&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:2px;&quot;&gt;Stage 5: Invariant Assertions&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;DeepDiff Drift Report &amp;bull; HTML Diff&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
+          <mxGeometry x="30" y="382" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Stage 6: Deployment Decision Gate -->
+        <mxCell id="gate" value="&lt;div style=&quot;font-weight:bold;font-size:12px;color:#0F172A;&quot;&gt;Stage 6: Deployment Decision&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#16A34A;margin-top:3px;&quot;&gt;[PASS] &amp;bull; Commit Confirm (confirm.yml)&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#DC2626;margin-top:2px;&quot;&gt;[FAIL] &amp;bull; Auto-Rollback (rollback.yml)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#334155;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_auto">
+          <mxGeometry x="30" y="494" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Internal Pipeline Flow Edges -->
+        <mxCell id="e_ci_pre" value="Pre-Flight OK ➔ Stage 2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="ci" target="pyats_pre" parent="box_auto">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <mxCell id="e_ans_pyats" value="Post-Deploy Verification" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;html=1;" edge="1" source="ansible" target="pyats" parent="box_auto">
+        <mxCell id="e_pre_ans" value="Baseline Captured ➔ Stage 3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="pyats_pre" target="ansible" parent="box_auto">
           <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_ans_post" value="Stage 4: 30s Soak Window" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="ansible" target="pyats_post" parent="box_auto">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_post_gate" value="Verification Result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1.5;strokeColor=#475569;dashed=1;fontColor=#475569;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="pyats_post" target="gate" parent="box_auto">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ==================== OOB MANAGEMENT NETWORK BUS ==================== -->
+        <!-- Symmetrically positioned at x=435 (95px from box_auto, 110px to box_lab) -->
+        <mxCell id="bus" value="&lt;div style=&quot;font-weight:bold;font-size:12px;color:#0284C7;&quot;&gt;OOB Mgmt Network&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0F172A;margin-top:3px;&quot;&gt;172.20.20.0/24&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;margin-top:2px;&quot;&gt;NETCONF &amp;bull; Port :830&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F9FF;strokeColor=#0284C7;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="435" y="302" width="120" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Inbound Lines into Bus (TOP IN, LEFT IN, BOTTOM IN = ZERO CROSSINGS!) -->
+        <!-- 1. pyATS Pre-Change -> Bus (enters TOP face via dedicated x=495 channel) -->
+        <mxCell id="e_pre_bus" value="pySROS Baseline" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#D97706;fontColor=#B45309;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;html=1;" edge="1" source="pyats_pre" target="bus" parent="1">
+          <mxGeometry x="-0.3" relative="1" as="geometry">
+            <mxPoint as="offset" y="-10"/>
+            <Array as="points">
+              <mxPoint x="495" y="237"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2. Ansible -> Bus (enters LEFT face; label centered at x=387 in 95px open corridor, 0 box piercing, 0 arrow overlap) -->
+        <mxCell id="e_ans_bus" value="Candidate Commit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2.5;strokeColor=#2563EB;fontColor=#1E40AF;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;html=1;" edge="1" source="ansible" target="bus" parent="1">
+          <mxGeometry x="0.23" relative="1" as="geometry">
+            <mxPoint as="offset" y="-12"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3. pyATS Post-Change -> Bus (enters BOTTOM face via dedicated x=495 channel) -->
+        <mxCell id="e_post_bus" value="Invariants &amp;amp; Drift" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#D97706;fontColor=#B45309;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;html=1;" edge="1" source="pyats_post" target="bus" parent="1">
+          <mxGeometry x="-0.3" relative="1" as="geometry">
+            <mxPoint as="offset" y="10"/>
+            <Array as="points">
+              <mxPoint x="495" y="467"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Outbound Lines from Bus to Routers (LABELS FLOAT IN 90px CORRIDOR: 0 LINE CLIPPING, 0 BORDER TOUCH) -->
+        <mxCell id="e_bus_r1" value="172.20.20.9:830" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2.5;strokeColor=#0284C7;fontColor=#0369A1;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;html=1;" edge="1" source="bus" target="r1" parent="1">
+          <mxGeometry x="0.43" relative="1" as="geometry">
+            <mxPoint as="offset" y="-11"/>
+            <Array as="points">
+              <mxPoint x="575" y="332"/>
+              <mxPoint x="575" y="170"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e_bus_r2" value="172.20.20.2:830" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2.5;strokeColor=#0284C7;fontColor=#0369A1;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;html=1;" edge="1" source="bus" target="r2" parent="1">
+          <mxGeometry x="0.36" relative="1" as="geometry">
+            <mxPoint as="offset" y="-11"/>
+            <Array as="points">
+              <mxPoint x="575" y="372"/>
+              <mxPoint x="575" y="500"/>
+            </Array>
+          </mxGeometry>
         </mxCell>
 
         <!-- ==================== COLUMN 2: CONTAINERLAB TOPOLOGY ==================== -->
         <mxCell id="box_lab" value="Containerlab Topology (sros-lab)" style="swimlane;startSize=34;fillColor=none;strokeColor=#0284C7;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0369A1;rounded=1;arcSize=4;collapsible=0;html=1;" vertex="1" parent="1">
-          <mxGeometry x="500" y="50" width="350" height="680" as="geometry"/>
+          <mxGeometry x="665" y="50" width="340" height="630" as="geometry"/>
         </mxCell>
 
         <mxCell id="r1" value="&lt;div style=&quot;font-weight:bold;font-size:14px;color:#0F172A;&quot;&gt;R1 (Edge PE)&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0369A1;margin-top:3px;&quot;&gt;Nokia sr-1 (SR OS 25.7.R1)&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:12px;color:#0F172A;margin-top:4px;&quot;&gt;172.20.20.9&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=2.5;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_lab">
-          <mxGeometry x="45" y="115" width="260" height="110" as="geometry"/>
+          <mxGeometry x="40" y="65" width="260" height="110" as="geometry"/>
         </mxCell>
 
         <mxCell id="r2" value="&lt;div style=&quot;font-weight:bold;font-size:14px;color:#0F172A;&quot;&gt;R2 (Edge PE)&lt;/div&gt;&lt;div style=&quot;font-size:11px;font-weight:600;color:#0369A1;margin-top:3px;&quot;&gt;Nokia sr-1 (SR OS 25.7.R1)&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:12px;color:#0F172A;margin-top:4px;&quot;&gt;172.20.20.2&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=2.5;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_lab">
-          <mxGeometry x="45" y="445" width="260" height="110" as="geometry"/>
+          <mxGeometry x="40" y="395" width="260" height="110" as="geometry"/>
         </mxCell>
 
         <!-- Direct Data Plane Link Between R1 and R2 -->
-        <mxCell id="e_peer" value="&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;&quot;&gt;Port 1/1/c2/1&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;&quot;&gt;100GE Data Link&lt;/div&gt;" style="endArrow=oval;startArrow=oval;endFill=1;startFill=1;strokeWidth=3.5;strokeColor=#0F172A;fontColor=#0F172A;html=1;" edge="1" source="r1" target="r2" parent="box_lab">
+        <mxCell id="e_dataplane" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CBD5E1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="r1" target="r2" parent="box_lab">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- ==================== COLUMN 3: TELEMETRY & AAA STACK ==================== -->
-        <mxCell id="box_telemetry" value="Telemetry &amp;amp; AAA Stack" style="swimlane;startSize=34;fillColor=none;strokeColor=#16A34A;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#15803D;rounded=1;arcSize=4;collapsible=0;html=1;" vertex="1" parent="1">
-          <mxGeometry x="1030" y="50" width="340" height="680" as="geometry"/>
+        <mxCell id="badge_link" value="&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;&quot;&gt;Port 1/1/c2/1&lt;/div&gt;&lt;div style=&quot;font-size:10px;color:#475569;&quot;&gt;100GE Data Link&lt;/div&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.5;fontColor=#0F172A;" vertex="1" parent="box_lab">
+          <mxGeometry x="115" y="255" width="110" height="55" as="geometry"/>
         </mxCell>
 
-        <mxCell id="tacacs" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#DC2626;&quot;&gt;TACACS+ AAA Server&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#991B1B;margin-top:2px;&quot;&gt;Authentication &amp;amp; Accounting&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;margin-top:3px;&quot;&gt;172.20.20.100:49&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#DC2626;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_telemetry">
-          <mxGeometry x="35" y="45" width="270" height="80" as="geometry"/>
+        <!-- ==================== COLUMN 3: TELEMETRY & OBSERVABILITY STACK ==================== -->
+        <mxCell id="box_telemetry" value="Telemetry &amp;amp; Observability Stack" style="swimlane;startSize=34;fillColor=none;strokeColor=#16A34A;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#15803D;rounded=1;arcSize=4;collapsible=0;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1085" y="50" width="330" height="630" as="geometry"/>
         </mxCell>
 
+        <!-- Telegraf (height 100) -->
         <mxCell id="telegraf" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#16A34A;&quot;&gt;Telegraf (gNMI Collector)&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#166534;margin-top:2px;&quot;&gt;Telemetry Ingestion (:57400)&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;margin-top:3px;&quot;&gt;172.20.20.101&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_telemetry">
-          <mxGeometry x="35" y="175" width="270" height="85" as="geometry"/>
+          <mxGeometry x="30" y="65" width="270" height="100" as="geometry"/>
         </mxCell>
 
+        <!-- Prometheus aligns horizontally with Data Link -->
         <mxCell id="prometheus" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#EA580C;&quot;&gt;Prometheus TSDB&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#9A3412;margin-top:2px;&quot;&gt;Time Series Metrics Store&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;margin-top:3px;&quot;&gt;172.20.20.102:9090&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_telemetry">
-          <mxGeometry x="35" y="335" width="270" height="80" as="geometry"/>
+          <mxGeometry x="30" y="240" width="270" height="90" as="geometry"/>
         </mxCell>
 
+        <!-- Grafana aligns horizontally with R2 and Stage 6 Gate -->
         <mxCell id="grafana" value="&lt;div style=&quot;font-weight:bold;font-size:13px;color:#CA8A04;&quot;&gt;Grafana Dashboards&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-weight:600;color:#854D0E;margin-top:2px;&quot;&gt;Real-Time Telemetry Visualization&lt;/div&gt;&lt;div style=&quot;font-weight:bold;font-size:11px;color:#0F172A;margin-top:3px;&quot;&gt;172.20.20.103:3000&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFCE8;strokeColor=#CA8A04;strokeWidth=2;fontColor=#0F172A;arcSize=8;" vertex="1" parent="box_telemetry">
-          <mxGeometry x="35" y="485" width="270" height="80" as="geometry"/>
+          <mxGeometry x="30" y="410" width="270" height="95" as="geometry"/>
         </mxCell>
 
-        <mxCell id="e_tel_prom" value="Scrape Target (:9273)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#EA580C;fontColor=#EA580C;fontSize=10;fontStyle=1;html=1;" edge="1" source="telegraf" target="prometheus" parent="box_telemetry">
+        <mxCell id="e_tel_prom" value="Scrape Target (:9273)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#EA580C;fontColor=#EA580C;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="telegraf" target="prometheus" parent="box_telemetry">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <mxCell id="e_prom_graf" value="Datasource Query" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#CA8A04;fontColor=#CA8A04;fontSize=10;fontStyle=1;html=1;" edge="1" source="prometheus" target="grafana" parent="box_telemetry">
+        <mxCell id="e_prom_graf" value="Datasource Query" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#CA8A04;fontColor=#CA8A04;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=7;html=1;" edge="1" source="prometheus" target="grafana" parent="box_telemetry">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
-        <!-- ==================== CROSS-PLANE CONNECTIONS ==================== -->
-        <!-- 1. Ansible -> R1: Clean Horizontal Upper Link -->
-        <mxCell id="e_ans_r1" value="NETCONF (:830)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2.5;strokeColor=#2563EB;fontColor=#1E40AF;fontSize=10;fontStyle=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;html=1;" edge="1" source="ansible" target="r1" parent="1">
-          <mxGeometry x="-0.4" relative="1" as="geometry"/>
+        <!-- ==================== LAB TO TELEMETRY (CLEAN DUAL STREAM, FULLY VISIBLE ARROWS) ==================== -->
+        <!-- R1 -> Telegraf: Clean direct horizontal link into Telegraf upper port (y=150) -->
+        <mxCell id="e_r1_telegraf" value="gNMI Telemetry (:57400)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#16A34A;fontColor=#16A34A;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.32;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;html=1;" edge="1" source="r1" target="telegraf" parent="1">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" y="-11"/>
+          </mxGeometry>
         </mxCell>
 
-        <!-- 2. Ansible -> R2: Routes down via dedicated Channel x=400 -->
-        <mxCell id="e_ans_r2" value="NETCONF (:830)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2.5;strokeColor=#2563EB;fontColor=#1E40AF;fontSize=10;fontStyle=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;html=1;" edge="1" source="ansible" target="r2" parent="1">
+        <!-- R2 -> Telegraf: Dedicated channel x=1045, horizontal ingress to lower port (y=190) with prominent classic arrowhead -->
+        <mxCell id="e_r2_telegraf" value="gNMI Telemetry (:57400)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#16A34A;fontColor=#16A34A;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;endArrow=classic;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;html=1;" edge="1" source="r2" target="telegraf" parent="1">
           <mxGeometry x="-0.75" relative="1" as="geometry">
+            <mxPoint as="offset" y="-11"/>
             <Array as="points">
-              <mxPoint x="400" y="313"/>
-              <mxPoint x="400" y="523"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-
-        <!-- 3. pyATS -> R2: Clean Horizontal Lower Link -->
-        <mxCell id="e_pyats_r2" value="SSH State (:22)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#D97706;fontColor=#B45309;fontSize=10;fontStyle=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;html=1;" edge="1" source="pyats" target="r2" parent="1">
-          <mxGeometry x="-0.3" relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- 4. pyATS -> R1: Routes up via dedicated Channel x=460 (60px separation from x=400) -->
-        <mxCell id="e_pyats_r1" value="SSH State (:22)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#D97706;fontColor=#B45309;fontSize=10;fontStyle=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;html=1;" edge="1" source="pyats" target="r1" parent="1">
-          <mxGeometry x="-0.75" relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="460" y="548"/>
-              <mxPoint x="460" y="248"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-
-        <!-- ==================== LAB TO TELEMETRY & AAA ==================== -->
-        <!-- 5. R1 -> TACACS+: Routes via dedicated Channel x=895 to TACACS+ -->
-        <mxCell id="e_r1_tacacs" value="AAA Auth (:49)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#DC2626;fontColor=#DC2626;fontSize=10;fontStyle=1;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;html=1;" edge="1" source="r1" target="tacacs" parent="1">
-          <mxGeometry x="-0.5" relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="895" y="187"/>
-              <mxPoint x="895" y="135"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-
-        <!-- 6. R1 -> Telegraf: Direct horizontal link into Telegraf upper port -->
-        <mxCell id="e_r1_telegraf" value="gNMI Telemetry (:57400)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#16A34A;fontColor=#16A34A;fontSize=10;fontStyle=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;html=1;" edge="1" source="r1" target="telegraf" parent="1">
-          <mxGeometry x="-0.2" relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- 7. R2 -> Telegraf: Label positioned cleanly in the vertical channel corridor (x=0) well away from R2 -->
-        <mxCell id="e_r2_telegraf" value="gNMI Telemetry (:57400)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#16A34A;fontColor=#16A34A;fontSize=10;fontStyle=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;html=1;" edge="1" source="r2" target="telegraf" parent="1">
-          <mxGeometry x="0" relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="940" y="523"/>
-              <mxPoint x="940" y="289"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-
-        <!-- 8. R2 -> TACACS+: Routes up via dedicated Channel x=990 (50px separation from x=940) -->
-        <mxCell id="e_r2_tacacs" value="AAA Auth (:49)" style="edgeStyle=orthogonalEdgeStyle;dashed=1;rounded=1;strokeWidth=2;strokeColor=#DC2626;fontColor=#DC2626;fontSize=10;fontStyle=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;html=1;" edge="1" source="r2" target="tacacs" parent="1">
-          <mxGeometry x="0.75" relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="990" y="578"/>
-              <mxPoint x="990" y="159"/>
+              <mxPoint x="1045" y="500"/>
+              <mxPoint x="1045" y="190"/>
             </Array>
           </mxGeometry>
         </mxCell>

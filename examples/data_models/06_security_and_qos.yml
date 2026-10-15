@@ -1,10 +1,8 @@
-# =============================================================================
-# DATA MODEL EXAMPLE: Security ACLs, QoS Policies & AAA Management
+# DATA MODEL EXAMPLE: Security ACLs & QoS Policies
 # =============================================================================
 # Used with:
 # - templates/filter_template.j2
 # - templates/qos_template.j2
-# - templates/system_management_template.j2
 # =============================================================================
 
 # 1. IP Traffic Filters / ACLs
@@ -54,27 +52,3 @@ qos_policies:
       queues:
         - id: 1
           rate_pir: "100000"
-
-# 3. System Management Services (NTP, AAA / TACACS+, DNS)
-ntp:
-  admin_state: "enable"
-  servers:
-    - address: "172.20.20.1"
-      prefer: true
-      router_instance: "Base"
-
-tacplus:
-  servers:
-    - index: 1
-      address: "172.20.20.100"
-      secret: "lab_secret_2026"
-      port: 49
-      timeout: 5
-  authentication_order:
-    - "tacplus"
-    - "local"
-
-dns:
-  servers:
-    - "1.1.1.1"
-    - "8.8.8.8"

@@ -115,6 +115,9 @@
     content: |
       <confirmed/>
       <confirm-timeout>{{ sros_confirm_timeout | int }}</confirm-timeout>
+      {% if sros_persist_id is defined or not (sros_auto_confirm | default(true) | bool) %}
+      <persist>{{ sros_persist_id | default('sros-deploy') }}</persist>
+      {% endif %}
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode
@@ -155,6 +158,10 @@
   ansible.netcommon.netconf_rpc:
     rpc: commit
     xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+    content: |
+      {% if sros_persist_id is defined or not (sros_auto_confirm | default(true) | bool) %}
+      <persist-id>{{ sros_persist_id | default('sros-deploy') }}</persist-id>
+      {% endif %}
   when:
     - not (sros_commit_per_task | default(false))
     - not ansible_check_mode

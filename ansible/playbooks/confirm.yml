@@ -8,6 +8,8 @@
       ansible.netcommon.netconf_rpc:
         rpc: commit
         xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+        content: |
+          <persist-id>{{ sros_persist_id | default('sros-deploy') }}</persist-id>
       tags:
         - always
         - confirm

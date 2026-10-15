@@ -116,6 +116,10 @@
           ansible.netcommon.netconf_rpc:
             rpc: cancel-commit
             xmlns: "urn:ietf:params:xml:ns:netconf:base:1.0"
+            content: |
+              {% if sros_persist_id is defined or not (sros_auto_confirm | default(true) | bool) %}
+              <persist-id>{{ sros_persist_id | default('sros-deploy') }}</persist-id>
+              {% endif %}
           check_mode: false
           when:
             - not (sros_commit_per_task | default(false))

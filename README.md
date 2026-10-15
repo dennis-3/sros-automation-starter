@@ -42,6 +42,8 @@ sros-automation-starter/
 │   ├── requirements.yml          # Ansible Galaxy collections requirements
 │   ├── execution-environment.yml # Ansible Execution Environment (EE) definition
 │   └── ansible-navigator.yml     # Containerized execution settings
+├── dashboards/
+│   └── sros_telemetry_dashboard.json # Pre-provisioned Grafana telemetry dashboard
 ├── docs/
 │   ├── architecture.drawio       # Canonical vector architecture diagram source
 │   └── architecture.svg          # High-resolution vector diagram for README
@@ -57,6 +59,7 @@ sros-automation-starter/
 ├── telegraf.conf                 # Telegraf gNMI telemetry collector configuration
 ├── prometheus.yml                # Prometheus metrics scraper configuration
 ├── grafana_datasource.yaml       # Grafana automated datasource provisioning
+├── grafana_dashboards.yaml       # Grafana automated dashboard provider config
 ├── pyats_testbed.yml             # pyATS testbed definition
 ├── pyats_test_suite.py           # Multi-threaded snapshot & diff test suite
 ├── run_verified_deployment.py    # Closed-loop deployment orchestrator with auto-rollback guard

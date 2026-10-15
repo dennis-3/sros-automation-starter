@@ -3,6 +3,7 @@
 
 *.log
 *.json
+!dashboards/*.json
 
 .env
 *.env

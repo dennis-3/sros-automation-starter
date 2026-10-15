@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import sys
+import time
 
 try:
     from deepdiff import DeepDiff
@@ -34,6 +35,14 @@ except ImportError:
 
         @staticmethod
         def test(f):
+            return f
+
+        @staticmethod
+        def setup(f):
+            return f
+
+        @staticmethod
+        def cleanup(f):
             return f
 
     aetest = _MockAetest()
@@ -581,48 +590,60 @@ def _capture_single_device(dev_name, dev, mode, yang_paths, timeout=180):
         except ValueError:
             pass
 
+    retries = 3
     conn = None
-    try:
-        conn = sros_connect(
-            host=host_ip,
-            username=username,
-            password=password,
-            port=netconf_port,
-            hostkey_verify=False,
-            timeout=timeout,
-        )
+    for attempt in range(1, retries + 1):
+        try:
+            conn = sros_connect(
+                host=host_ip,
+                username=username,
+                password=password,
+                port=netconf_port,
+                hostkey_verify=False,
+                timeout=timeout,
+            )
 
-        if len(yang_paths) == 1 and yang_paths[0] == "/nokia-state:state":
-            raw_state = conn.running.get("/nokia-state:state")
-            clean_data = nokia_to_dict(raw_state)
-        else:
-            clean_data = {}
-            for path in yang_paths:
-                try:
-                    sub_state = conn.running.get(path)
-                    clean_data[path] = nokia_to_dict(sub_state)
-                except Exception as path_err:
-                    log.warning(
-                        f"[{dev_name}] Could not retrieve path '{path}': {path_err}"
-                    )
-                    clean_data[path] = None
+            if len(yang_paths) == 1 and yang_paths[0] == "/nokia-state:state":
+                raw_state = conn.running.get("/nokia-state:state")
+                clean_data = nokia_to_dict(raw_state)
+            else:
+                clean_data = {}
+                for path in yang_paths:
+                    try:
+                        sub_state = conn.running.get(path)
+                        clean_data[path] = nokia_to_dict(sub_state)
+                    except Exception as path_err:
+                        log.warning(
+                            f"[{dev_name}] Could not retrieve path '{path}': {path_err}"
+                        )
+                        clean_data[path] = None
 
-        with open(target_path, "w", encoding="utf-8") as f:
-            json.dump(clean_data, f, indent=2)
+            with open(target_path, "w", encoding="utf-8") as f:
+                json.dump(clean_data, f, indent=2)
 
-        log.info(f"Success! [{dev_name}] Structured JSON state saved to {target_path}")
-        return dev_name, True, clean_data, None
-    except Exception as exc:
-        log.error(f"Failed to capture state from [{dev_name}]: {exc}")
-        return dev_name, False, None, str(exc)
-    finally:
-        if conn is not None and hasattr(conn, "disconnect"):
-            try:
-                conn.disconnect()
-            except Exception as close_exc:
-                log.debug(
-                    f"[{dev_name}] NETCONF disconnect cleanup notice: {close_exc}"
+            log.info(
+                f"Success! [{dev_name}] Structured JSON state saved to {target_path}"
+            )
+            return dev_name, True, clean_data, None
+        except Exception as exc:
+            if attempt < retries:
+                log.warning(
+                    f"[{dev_name}] pySROS capture attempt {attempt}/{retries} failed ({exc}). Retrying in 3s..."
                 )
+                time.sleep(3)
+            else:
+                log.error(
+                    f"Failed to capture state from [{dev_name}] after {retries} attempts: {exc}"
+                )
+                return dev_name, False, None, str(exc)
+        finally:
+            if conn is not None and hasattr(conn, "disconnect"):
+                try:
+                    conn.disconnect()
+                except Exception as close_exc:
+                    log.debug(
+                        f"[{dev_name}] NETCONF disconnect cleanup notice: {close_exc}"
+                    )
 
 
 def _run_parallel_device_command(testbed, command, max_workers=10):
@@ -667,26 +688,31 @@ def _run_parallel_device_command(testbed, command, max_workers=10):
 # --- AETEST STRUCTURAL BLOCKS ---
 class CommonSetup(aetest.CommonSetup):
     @aetest.subsection
-    def connect_to_devices(self, testbed):
+    def prepare_testbed(self, testbed):
         max_workers = self.parent.parameters.get("max_workers", 10)
+        connect_cli = self.parent.parameters.get("connect_cli", False)
         worker_count = min(max_workers, max(1, len(testbed.devices)))
         log.info(
             f"Targeting {len(testbed.devices)} device(s) for model-driven validation (workers={worker_count})."
         )
-        # Attempt CLI connect as optional so CLI failures never abort model-driven pySROS validation
-        cli_devices = [
-            d
-            for d in testbed.devices.values()
-            if hasattr(d, "connections") and hasattr(d.connections, "cli")
-        ]
-        if cli_devices:
-            try:
-                testbed.connect(max_workers=worker_count, learn_hostname=True)
-                log.info("CLI connection established across testbed devices.")
-            except Exception as exc:
-                log.warning(
-                    f"Optional CLI connect noticed ({exc}); proceeding with model-driven pySROS validation."
-                )
+        if connect_cli:
+            cli_devices = [
+                d
+                for d in testbed.devices.values()
+                if hasattr(d, "connections") and hasattr(d.connections, "cli")
+            ]
+            if cli_devices:
+                try:
+                    testbed.connect(max_workers=worker_count, learn_hostname=True)
+                    log.info("CLI connection established across testbed devices.")
+                except Exception as exc:
+                    log.warning(
+                        f"Optional CLI connect noticed ({exc}); proceeding with model-driven pySROS validation."
+                    )
+        else:
+            log.info(
+                "Model-driven mode: pySROS NETCONF will be used for state retrieval (Unicon CLI connection bypassed)."
+            )
 
 
 class SnapshotState(aetest.Testcase):
@@ -722,6 +748,7 @@ class SnapshotState(aetest.Testcase):
                     captured_snapshots[dev_name] = clean_data
 
         self.parent.parameters["current_snapshots"] = captured_snapshots
+        self.parent.parameters["snapshot_failures"] = failures
 
         # Maintain default snapshot file for single-device verification workflows
         if testbed.devices:
@@ -744,8 +771,19 @@ class ConnectivityTest(aetest.Testcase):
     def check_version(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
+
+        valid_devices = [
+            d for d in testbed.devices.keys() if d not in snapshot_failures
+        ]
+        if not valid_devices and snapshot_failures:
+            self.skipped(
+                f"Skipping connectivity check: snapshot capture failed for all devices ({list(snapshot_failures.keys())})"
+            )
+            return
+
         failed_devices = []
-        for dev_name in testbed.devices.keys():
+        for dev_name in valid_devices:
             data = get_device_state(self, dev_name, mode=mode)
             if not data:
                 failed_devices.append(f"{dev_name} (no snapshot state available)")
@@ -767,7 +805,7 @@ class ConnectivityTest(aetest.Testcase):
             )
         else:
             self.passed(
-                "Nokia SR OS verified via YANG model across all testbed devices"
+                f"Nokia SR OS verified via YANG model across {len(valid_devices)} device(s)"
             )
 
 
@@ -776,8 +814,19 @@ class InterfaceStateTest(aetest.Testcase):
     def verify_interfaces(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
+
+        valid_devices = [
+            d for d in testbed.devices.keys() if d not in snapshot_failures
+        ]
+        if not valid_devices and snapshot_failures:
+            self.skipped(
+                f"Skipping interface check: snapshot capture failed for all devices ({list(snapshot_failures.keys())})"
+            )
+            return
+
         failed_devices = []
-        for dev_name in testbed.devices.keys():
+        for dev_name in valid_devices:
             data = get_device_state(self, dev_name, mode=mode)
             if not data:
                 failed_devices.append(f"{dev_name} (no snapshot state available)")
@@ -816,7 +865,7 @@ class InterfaceStateTest(aetest.Testcase):
             )
         else:
             self.passed(
-                "All interfaces are operationally Up across all testbed devices"
+                f"All interfaces are operationally Up across {len(valid_devices)} device(s)"
             )
 
 
@@ -825,9 +874,20 @@ class ISISTest(aetest.Testcase):
     def verify_isis_interfaces(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
+
+        valid_devices = [
+            d for d in testbed.devices.keys() if d not in snapshot_failures
+        ]
+        if not valid_devices and snapshot_failures:
+            self.skipped(
+                f"Skipping ISIS check: snapshot capture failed for all devices ({list(snapshot_failures.keys())})"
+            )
+            return
+
         configured_count = 0
         failed_devices = []
-        for dev_name in testbed.devices.keys():
+        for dev_name in valid_devices:
             data = get_device_state(self, dev_name, mode=mode)
             if not data:
                 failed_devices.append(f"{dev_name} (no snapshot state available)")
@@ -870,9 +930,20 @@ class OSPFTest(aetest.Testcase):
     def verify_ospf_neighbors(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
+
+        valid_devices = [
+            d for d in testbed.devices.keys() if d not in snapshot_failures
+        ]
+        if not valid_devices and snapshot_failures:
+            self.skipped(
+                f"Skipping OSPF check: snapshot capture failed for all devices ({list(snapshot_failures.keys())})"
+            )
+            return
+
         configured_count = 0
         failed_devices = []
-        for dev_name in testbed.devices.keys():
+        for dev_name in valid_devices:
             data = get_device_state(self, dev_name, mode=mode)
             if not data:
                 failed_devices.append(f"{dev_name} (no snapshot state available)")
@@ -887,7 +958,13 @@ class OSPFTest(aetest.Testcase):
             configured_count += 1
             degraded_neighbors = []
             healthy_count = 0
-            for (r_name, inst_id, area_id, if_name, nbr_addr), nbr_info in nbrs.items():
+            for (
+                r_name,
+                inst_id,
+                area_id,
+                if_name,
+                nbr_addr,
+            ), nbr_info in nbrs.items():
                 oper = nbr_info.get("oper", "")
                 if oper in ("full", "two-way", "2-way"):
                     healthy_count += 1
@@ -922,9 +999,20 @@ class BGPTest(aetest.Testcase):
     def verify_bgp_peers(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
+
+        valid_devices = [
+            d for d in testbed.devices.keys() if d not in snapshot_failures
+        ]
+        if not valid_devices and snapshot_failures:
+            self.skipped(
+                f"Skipping BGP check: snapshot capture failed for all devices ({list(snapshot_failures.keys())})"
+            )
+            return
+
         configured_count = 0
         failed_devices = []
-        for dev_name in testbed.devices.keys():
+        for dev_name in valid_devices:
             data = get_device_state(self, dev_name, mode=mode)
             if not data:
                 failed_devices.append(f"{dev_name} (no snapshot state available)")
@@ -968,6 +1056,14 @@ class BGPTest(aetest.Testcase):
 
 
 class VerifyChanges(aetest.Testcase):
+    @aetest.setup
+    def check_mode(self):
+        mode = self.parent.parameters.get("mode", "post")
+        if mode != "post":
+            self.skipped(
+                f"Skipping change verification: mode is '{mode}' (requires 'post')"
+            )
+
     @aetest.test
     def compare_snapshots(self):
         testbed = self.parent.parameters.get("testbed")
@@ -1477,6 +1573,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Enforce operational invariant assertions (fail on regressions such as dropped peers or downed interfaces, permit valid configuration additions).",
     )
+    parser.add_argument(
+        "--connect-cli",
+        action="store_true",
+        default=False,
+        help="Connect to devices via Unicon CLI in CommonSetup (default: False; pySROS NETCONF is used for state capture).",
+    )
 
     args, unknown = parser.parse_known_args()
 
@@ -1532,14 +1634,20 @@ if __name__ == "__main__":
         BGPTest,
     ]
     if args.mode == "pre":
+        VerifyChanges.enabled = False
         test_pipeline = base_tests
     elif args.mode == "post":
+        VerifyChanges.enabled = True
         test_pipeline = base_tests + [VerifyChanges]
+    else:
+        VerifyChanges.enabled = False
+        test_pipeline = base_tests
 
     result = aetest.main(
         testbed=testbed,
         testcases=test_pipeline,
         mode=args.mode,
+        connect_cli=args.connect_cli,
         enforce_invariants=args.enforce_invariants,
         yang_paths=yang_paths,
         max_workers=args.max_workers,

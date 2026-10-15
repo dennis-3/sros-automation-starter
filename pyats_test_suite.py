@@ -1108,21 +1108,12 @@ class BGPTest(aetest.Testcase):
 
 
 class VerifyChanges(aetest.Testcase):
-    @aetest.setup
-    def check_mode(self):
-        mode = self.parent.parameters.get("mode", "post")
-        if mode != "post":
-            self.skipped(
-                f"Skipping change verification: mode is '{mode}' (requires 'post')",
-                goto=["common_cleanup"],
-            )
-
     @aetest.test
     def compare_snapshots(self):
         mode = self.parent.parameters.get("mode", "post")
         if mode != "post":
             self.skipped(
-                f"Skipping snapshot comparison: mode is '{mode}' (requires 'post')"
+                f"Skipping change verification: mode is '{mode}' (requires 'post')"
             )
             return
 

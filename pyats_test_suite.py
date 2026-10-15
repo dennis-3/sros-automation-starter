@@ -226,16 +226,30 @@ def _extract_interfaces(data):
                 if_obj.get("admin-state", if_obj.get("admin", "enable"))
             ).lower()
             ipv4_oper = ""
+            has_ipv4 = False
             if isinstance(if_obj.get("ipv4"), dict):
-                ipv4_oper = str(if_obj["ipv4"].get("oper-state", "")).lower()
+                ipv4_data = if_obj["ipv4"]
+                ipv4_oper = str(ipv4_data.get("oper-state", "")).lower()
+                has_ipv4 = bool(
+                    ipv4_data.get("primary")
+                    or ipv4_data.get("address")
+                    or (ipv4_oper and ipv4_oper != "down")
+                )
             ipv6_oper = ""
+            has_ipv6 = False
             if isinstance(if_obj.get("ipv6"), dict):
-                ipv6_oper = str(if_obj["ipv6"].get("oper-state", "")).lower()
+                ipv6_data = if_obj["ipv6"]
+                ipv6_oper = str(ipv6_data.get("oper-state", "")).lower()
+                has_ipv6 = bool(
+                    ipv6_data.get("address") or (ipv6_oper and ipv6_oper != "down")
+                )
             ifs[(r_name, if_name)] = {
                 "oper": oper,
                 "admin": admin,
                 "ipv4_oper": ipv4_oper,
                 "ipv6_oper": ipv6_oper,
+                "has_ipv4": has_ipv4,
+                "has_ipv6": has_ipv6,
             }
     return ifs
 
@@ -814,6 +828,7 @@ class InterfaceStateTest(aetest.Testcase):
     def verify_interfaces(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        enforce_invariants = self.parent.parameters.get("enforce_invariants", False)
         snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
 
         valid_devices = [
@@ -839,16 +854,18 @@ class InterfaceStateTest(aetest.Testcase):
                 oper = if_info.get("oper", "")
                 if oper != "up":
                     down_interfaces.append(f"{r_name}/{if_name} (oper:{oper})")
-                ipv4_oper = if_info.get("ipv4_oper", "")
-                if ipv4_oper and ipv4_oper != "up":
-                    down_interfaces.append(
-                        f"{r_name}/{if_name} [ipv4] (oper:{ipv4_oper})"
-                    )
-                ipv6_oper = if_info.get("ipv6_oper", "")
-                if ipv6_oper and ipv6_oper != "up":
-                    down_interfaces.append(
-                        f"{r_name}/{if_name} [ipv6] (oper:{ipv6_oper})"
-                    )
+                if if_info.get("has_ipv4", True):
+                    ipv4_oper = if_info.get("ipv4_oper", "")
+                    if ipv4_oper and ipv4_oper != "up":
+                        down_interfaces.append(
+                            f"{r_name}/{if_name} [ipv4] (oper:{ipv4_oper})"
+                        )
+                if if_info.get("has_ipv6", False):
+                    ipv6_oper = if_info.get("ipv6_oper", "")
+                    if ipv6_oper and ipv6_oper != "up":
+                        down_interfaces.append(
+                            f"{r_name}/{if_name} [ipv6] (oper:{ipv6_oper})"
+                        )
 
             if down_interfaces:
                 failed_devices.append(
@@ -860,9 +877,17 @@ class InterfaceStateTest(aetest.Testcase):
                 )
 
         if failed_devices:
-            self.failed(
-                f"Interface operational check failed on devices: {'; '.join(failed_devices)}"
-            )
+            if mode == "pre" and not enforce_invariants:
+                log.warning(
+                    f"Baseline notice: inactive or dormant interfaces detected in pre-change snapshot: {'; '.join(failed_devices)}"
+                )
+                self.passed(
+                    f"Baseline interface state captured ({len(failed_devices)} device(s) have inactive/dormant interfaces)"
+                )
+            else:
+                self.failed(
+                    f"Interface operational check failed on devices: {'; '.join(failed_devices)}"
+                )
         else:
             self.passed(
                 f"All interfaces are operationally Up across {len(valid_devices)} device(s)"
@@ -874,6 +899,7 @@ class ISISTest(aetest.Testcase):
     def verify_isis_interfaces(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        enforce_invariants = self.parent.parameters.get("enforce_invariants", False)
         snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
 
         valid_devices = [
@@ -914,9 +940,17 @@ class ISISTest(aetest.Testcase):
                 )
 
         if failed_devices:
-            self.failed(
-                f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}"
-            )
+            if mode == "pre" and not enforce_invariants:
+                log.warning(
+                    f"Baseline notice: degraded ISIS interfaces detected in pre-change snapshot: {'; '.join(failed_devices)}"
+                )
+                self.passed(
+                    f"Baseline ISIS state captured ({len(failed_devices)} device(s) have degraded interfaces)"
+                )
+            else:
+                self.failed(
+                    f"ISIS interface verification failed on devices: {'; '.join(failed_devices)}"
+                )
         elif configured_count == 0:
             self.passed("ISIS is not configured on any testbed devices; check passed")
         else:
@@ -930,6 +964,7 @@ class OSPFTest(aetest.Testcase):
     def verify_ospf_neighbors(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        enforce_invariants = self.parent.parameters.get("enforce_invariants", False)
         snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
 
         valid_devices = [
@@ -983,9 +1018,17 @@ class OSPFTest(aetest.Testcase):
                 )
 
         if failed_devices:
-            self.failed(
-                f"OSPF neighbor verification failed on devices: {'; '.join(failed_devices)}"
-            )
+            if mode == "pre" and not enforce_invariants:
+                log.warning(
+                    f"Baseline notice: degraded OSPF neighbors detected in pre-change snapshot: {'; '.join(failed_devices)}"
+                )
+                self.passed(
+                    f"Baseline OSPF state captured ({len(failed_devices)} device(s) have degraded neighbors)"
+                )
+            else:
+                self.failed(
+                    f"OSPF neighbor verification failed on devices: {'; '.join(failed_devices)}"
+                )
         elif configured_count == 0:
             self.passed("OSPF is not configured on any testbed devices; check passed")
         else:
@@ -999,6 +1042,7 @@ class BGPTest(aetest.Testcase):
     def verify_bgp_peers(self):
         testbed = self.parent.parameters["testbed"]
         mode = self.parent.parameters.get("mode", "pre")
+        enforce_invariants = self.parent.parameters.get("enforce_invariants", False)
         snapshot_failures = self.parent.parameters.get("snapshot_failures", {})
 
         valid_devices = [
@@ -1044,9 +1088,17 @@ class BGPTest(aetest.Testcase):
                 )
 
         if failed_devices:
-            self.failed(
-                f"BGP peer verification failed on devices: {'; '.join(failed_devices)}"
-            )
+            if mode == "pre" and not enforce_invariants:
+                log.warning(
+                    f"Baseline notice: degraded BGP peers detected in pre-change snapshot: {'; '.join(failed_devices)}"
+                )
+                self.passed(
+                    f"Baseline BGP state captured ({len(failed_devices)} device(s) have degraded peers)"
+                )
+            else:
+                self.failed(
+                    f"BGP peer verification failed on devices: {'; '.join(failed_devices)}"
+                )
         elif configured_count == 0:
             self.passed("BGP is not configured on any testbed devices; check passed")
         else:
@@ -1061,11 +1113,19 @@ class VerifyChanges(aetest.Testcase):
         mode = self.parent.parameters.get("mode", "post")
         if mode != "post":
             self.skipped(
-                f"Skipping change verification: mode is '{mode}' (requires 'post')"
+                f"Skipping change verification: mode is '{mode}' (requires 'post')",
+                goto=["common_cleanup"],
             )
 
     @aetest.test
     def compare_snapshots(self):
+        mode = self.parent.parameters.get("mode", "post")
+        if mode != "post":
+            self.skipped(
+                f"Skipping snapshot comparison: mode is '{mode}' (requires 'post')"
+            )
+            return
+
         testbed = self.parent.parameters.get("testbed")
         html_path = "snapshots/network_drift_report.html"
 

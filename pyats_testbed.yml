@@ -12,6 +12,8 @@ devices:
       cli:
         protocol: ssh
         ip: 172.20.20.9
+        arguments:
+          learn_hostname: True
     credentials:
       default:
         username: "%ENV{SROS_USER:-admin}"
@@ -27,6 +29,8 @@ devices:
       cli:
         protocol: ssh
         ip: 172.20.20.2
+        arguments:
+          learn_hostname: True
     credentials:
       default:
         username: "%ENV{SROS_USER:-admin}"

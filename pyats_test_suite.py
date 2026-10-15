@@ -438,7 +438,7 @@ class CommonSetup(aetest.CommonSetup):
             f"Connecting to {len(testbed.devices)} device(s) concurrently (max_workers={worker_count})..."
         )
         try:
-            testbed.connect(via="cli", max_workers=worker_count)
+            testbed.connect(max_workers=worker_count, learn_hostname=True)
         except Exception as exc:
             log.warning(
                 f"Bulk testbed connect reported: {exc}. Verifying individual connections..."
@@ -447,7 +447,7 @@ class CommonSetup(aetest.CommonSetup):
             for dev_name, dev in testbed.devices.items():
                 if not getattr(dev, "is_connected", lambda: False)():
                     try:
-                        dev.connect(via="cli")
+                        dev.connect(learn_hostname=True)
                     except Exception as dev_exc:
                         log.error(f"[{dev_name}] Connection failed: {dev_exc}")
                         failed_devices.append(f"{dev_name} ({dev_exc})")
@@ -1171,6 +1171,18 @@ def load_testbed_from_ansible_inventory(inventory_file):
     for dev_name, dev_vars in all_hosts.items():
         if not dev_vars or not isinstance(dev_vars, dict):
             dev_vars = {}
+        # Resolve host_vars if present
+        for hv_ext in [".yml", ".yaml"]:
+            hv_path = os.path.join(inv_dir, "host_vars", f"{dev_name}{hv_ext}")
+            if os.path.exists(hv_path):
+                try:
+                    with open(hv_path, "r", encoding="utf-8") as hvf:
+                        hv_data = yaml.safe_load(hvf) or {}
+                        if isinstance(hv_data, dict):
+                            dev_vars = {**hv_data, **dev_vars}
+                except Exception as e:
+                    log.debug(f"Could not load host_vars from {hv_path}: {e}")
+
         dev_ip = str(dev_vars.get("ansible_host", dev_name))
         user = _resolve_template_var(
             dev_vars.get("ansible_user", default_user), "SROS_USER", "admin"
@@ -1191,11 +1203,21 @@ def load_testbed_from_ansible_inventory(inventory_file):
         )
         netconf_port = _resolve_template_var(netconf_raw_port, "SROS_PORT", 830)
 
-        cli_conn = {"protocol": "ssh", "ip": dev_ip}
+        cli_conn = {
+            "protocol": "ssh",
+            "ip": dev_ip,
+            "arguments": {
+                "learn_hostname": True,
+            },
+            "settings": {
+                "GRACEFUL_DISCONNECT_WAIT_SEC": 0,
+                "LEARN_HOSTNAME": True,
+            },
+        }
         if ssh_port and int(ssh_port) != 22:
             cli_conn["port"] = int(ssh_port)
 
-        devices[dev_name] = {
+        dev_entry = {
             "os": "sros",
             "type": "router",
             "connections": {
@@ -1209,6 +1231,10 @@ def load_testbed_from_ansible_inventory(inventory_file):
             },
             "credentials": {"default": {"username": user, "password": pwd}},
         }
+        if dev_vars.get("system_name"):
+            dev_entry["alias"] = dev_vars["system_name"]
+
+        devices[dev_name] = dev_entry
 
     return {"testbed": {"name": "ansible-synthesized-testbed"}, "devices": devices}
 

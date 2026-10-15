@@ -323,36 +323,36 @@ class TestOperationalInvariants(unittest.TestCase):
 
     def test_cli_parsing_up_down_flagged(self):
         cli = """
-===============================================================================
-Interface Table (Router: Base)
-===============================================================================
-Interface-Name                   Adm       Opr(L/I)     Mode    Port/SapId
-   IP-Address                                                   PfxState
--------------------------------------------------------------------------------
-system                           Up        Up/Down      Network system
-   10.0.0.1/32                                                  n/a
-to-r2                            Up        Up/Up        Network 1/1/1
-   192.168.1.1/30                                               n/a
-===============================================================================
-"""
+        ===============================================================================
+        Interface Table (Router: Base)
+        ===============================================================================
+        Interface-Name                   Adm       Opr(L/I)     Mode    Port/SapId
+        IP-Address                                                   PfxState
+        -------------------------------------------------------------------------------
+        system                           Up        Up/Down      Network system
+        10.0.0.1/32                                                  n/a
+        to-r2                            Up        Up/Up        Network 1/1/1
+        192.168.1.1/30                                               n/a
+        ===============================================================================
+        """
         down = parse_cli_interface_states(cli)
         self.assertEqual(len(down), 1)
         self.assertIn("system (adm:Up, opr:Up/Down)", down[0])
 
     def test_cli_parsing_clean_pass(self):
         cli = """
-===============================================================================
-Interface Table (Router: Base)
-===============================================================================
-Interface-Name                   Adm       Opr(L/I)     Mode    Port/SapId
-   IP-Address                                                   PfxState
--------------------------------------------------------------------------------
-system                           Up        Up/Up        Network system
-   10.0.0.1/32                                                  n/a
-to-r2                            Up        Up/Up        Network 1/1/1
-   192.168.1.1/30                                               n/a
-===============================================================================
-"""
+        ===============================================================================
+        Interface Table (Router: Base)
+        ===============================================================================
+        Interface-Name                   Adm       Opr(L/I)     Mode    Port/SapId
+        IP-Address                                                   PfxState
+        -------------------------------------------------------------------------------
+        system                           Up        Up/Up        Network system
+        10.0.0.1/32                                                  n/a
+        to-r2                            Up        Up/Up        Network 1/1/1
+        192.168.1.1/30                                               n/a
+        ===============================================================================
+        """
         down = parse_cli_interface_states(cli)
         self.assertEqual(len(down), 0)
 

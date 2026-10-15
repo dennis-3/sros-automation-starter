@@ -337,6 +337,50 @@ Reference data schemas for supported Nokia SR OS features are located in `exampl
 - `06_security_and_qos.yml`: IP traffic filters (ACLs), SAP-ingress / SAP-egress QoS queuing
 - `07_multicast_and_mirror.yml`: IGMP, PIM (Sparse Mode, SSM, Anycast RP), Port Mirroring
 
+### Adding Features to Host Variables
+
+Each task in `ansible/playbooks/deploy.yml` executes conditionally when its corresponding variable block is defined. To enable features on a router:
+
+1. **Select a Schema from `examples/data_models/`**:
+   Find the feature block you need (e.g., OSPF in `01_underlay_routing.yml`, BGP peering in `03_bgp_and_policies.yml`, or VPRN in `05_l3_vpn_services.yml`).
+
+2. **Paste & Customize into `ansible/host_vars/<hostname>.yml`**:
+   Append the block to your router's YAML file:
+
+   ```yaml
+   # Example: Adding Underlay OSPF to ansible/host_vars/r1.yml
+   ospf:
+     router_id: "10.10.10.1"
+     area: "0.0.0.0"
+     interfaces:
+       - name: "system"
+         passive: true
+       - name: "toR2"
+         interface_type: "point-to-point"
+         metric: 10
+   ```
+
+   *(For shared policies, filters, or global parameters, define them in `ansible/group_vars/all.yml` instead).*
+
+3. **Validate Pre-Flight**:
+
+   ```bash
+   make validate
+   ```
+
+   Verifies YAML syntax, data types, and XML rendering against Nokia YANG schemas.
+
+4. **Review Candidate Diff Before Commit**:
+
+   ```bash
+   make check
+   ```
+
+   Renders and stages candidate changes to display the exact MD-CLI delta without committing.
+
+5. **Decommissioning / Deletion**:
+   To remove an existing interface, policy, or service without leaving orphaned configurations, mark `state: absent` rather than deleting the YAML block (see [Resource Decommissioning](#resource-decommissioning-preventing-config-drift)).
+
 ### Pre-Flight Validation & Code Quality
 
 Run fast pre-flight validation (Jinja2 AST, XML schema rendering, Python syntax, and YAML schemas):

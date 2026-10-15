@@ -225,6 +225,15 @@ def _extract_interfaces(data):
             admin = str(
                 if_obj.get("admin-state", if_obj.get("admin", "enable"))
             ).lower()
+            port = str(if_obj.get("port", "")).strip()
+            is_loopback = (
+                str(if_obj.get("loopback", "")).lower() in ("true", "1")
+                or bool(if_obj.get("loopback"))
+                or if_name.lower() == "system"
+                or bool(if_obj.get("system-if-index"))
+                or bool(if_obj.get("loopback-if-index"))
+                or not port
+            )
             ipv4_oper = ""
             has_ipv4 = False
             if isinstance(if_obj.get("ipv4"), dict):
@@ -246,6 +255,8 @@ def _extract_interfaces(data):
             ifs[(r_name, if_name)] = {
                 "oper": oper,
                 "admin": admin,
+                "port": port,
+                "is_loopback": is_loopback,
                 "ipv4_oper": ipv4_oper,
                 "ipv6_oper": ipv6_oper,
                 "has_ipv4": has_ipv4,
@@ -852,17 +863,54 @@ class InterfaceStateTest(aetest.Testcase):
                 if if_info.get("admin") in ("disable", "disabled", "down"):
                     continue
                 oper = if_info.get("oper", "")
-                if oper != "up":
-                    down_interfaces.append(f"{r_name}/{if_name} (oper:{oper})")
-                if if_info.get("has_ipv4", True):
-                    ipv4_oper = if_info.get("ipv4_oper", "")
-                    if ipv4_oper and ipv4_oper != "up":
+                is_loopback = if_info.get("is_loopback", False)
+                ipv4_oper = if_info.get("ipv4_oper", "")
+                ipv6_oper = if_info.get("ipv6_oper", "")
+
+                # Loopback and system interfaces in Nokia SR OS report oper-state 'dormant' in YANG state
+                # because they have no underlying layer-1 physical carrier. Their operational health
+                # is determined by whether their Layer-3 protocol state (IPv4 or IPv6) is active.
+                if is_loopback:
+                    l3_up = (ipv4_oper == "up") or (ipv6_oper == "up")
+                    if oper not in ("up", "dormant"):
+                        down_interfaces.append(f"{r_name}/{if_name} (oper:{oper})")
+                    elif not l3_up:
+                        down_interfaces.append(
+                            f"{r_name}/{if_name} (oper:{oper}, l3:down)"
+                        )
+                    else:
+                        if (
+                            if_info.get("has_ipv4", True)
+                            and ipv4_oper
+                            and ipv4_oper != "up"
+                        ):
+                            down_interfaces.append(
+                                f"{r_name}/{if_name} [ipv4] (oper:{ipv4_oper})"
+                            )
+                        if (
+                            if_info.get("has_ipv6", False)
+                            and ipv6_oper
+                            and ipv6_oper != "up"
+                        ):
+                            down_interfaces.append(
+                                f"{r_name}/{if_name} [ipv6] (oper:{ipv6_oper})"
+                            )
+                else:
+                    if oper != "up":
+                        down_interfaces.append(f"{r_name}/{if_name} (oper:{oper})")
+                    if (
+                        if_info.get("has_ipv4", True)
+                        and ipv4_oper
+                        and ipv4_oper != "up"
+                    ):
                         down_interfaces.append(
                             f"{r_name}/{if_name} [ipv4] (oper:{ipv4_oper})"
                         )
-                if if_info.get("has_ipv6", False):
-                    ipv6_oper = if_info.get("ipv6_oper", "")
-                    if ipv6_oper and ipv6_oper != "up":
+                    if (
+                        if_info.get("has_ipv6", False)
+                        and ipv6_oper
+                        and ipv6_oper != "up"
+                    ):
                         down_interfaces.append(
                             f"{r_name}/{if_name} [ipv6] (oper:{ipv6_oper})"
                         )

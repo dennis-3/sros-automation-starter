@@ -114,6 +114,38 @@ class TestOperationalInvariants(unittest.TestCase):
         ifs_list = _extract_interfaces(list_data)
         self.assertEqual(ifs_list[("Base", "system")]["oper"], "up")
 
+    def test_extract_interfaces_loopback_and_dormant(self):
+        data = {
+            "router": {
+                "Base": {
+                    "interface": {
+                        "system": {
+                            "system-if-index": "256",
+                            "oper-state": "dormant",
+                            "ipv4": {
+                                "oper-state": "up",
+                                "primary": {"address": "10.10.10.1"},
+                            },
+                        },
+                        "to-r2": {
+                            "port": "1/1/c2/1",
+                            "oper-state": "up",
+                            "ipv4": {"oper-state": "up"},
+                        },
+                    }
+                }
+            }
+        }
+        ifs = _extract_interfaces(data)
+        self.assertTrue(ifs[("Base", "system")]["is_loopback"])
+        self.assertEqual(ifs[("Base", "system")]["oper"], "dormant")
+        self.assertEqual(ifs[("Base", "system")]["ipv4_oper"], "up")
+        self.assertTrue(ifs[("Base", "system")]["has_ipv4"])
+
+        self.assertFalse(ifs[("Base", "to-r2")]["is_loopback"])
+        self.assertEqual(ifs[("Base", "to-r2")]["port"], "1/1/c2/1")
+        self.assertEqual(ifs[("Base", "to-r2")]["oper"], "up")
+
     def test_extract_isis_interfaces(self):
         data = {
             "router": {

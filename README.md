@@ -302,6 +302,7 @@ By default, `deploy.yml` operates with a two-stage transaction lifecycle designe
    - In check mode (`--check`) or with `-e sros_show_diff=true`, the playbook queries Nokia's native `md-compare` RPC to preview the rendered candidate changes before committing.
    - Task `09_commit.yml` (tagged `always`) locks the candidate store, verifies, and executes a single atomic commit (or confirmed commit with auto-rollback).
    - When `sros_confirm_timeout` is set, it issues a confirmed commit and probes management health via `<state xmlns="urn:nokia.com:sros:ns:yang:sr:state"><system><oper-name/></system></state>`. Confirmation is executed immediately (`sros_auto_confirm=true`, default) or deferred for external post-validation (`sros_auto_confirm=false`).
+   - For deferred confirmation, the commit includes `<persist>sros-deploy</persist>` (RFC 6241 / SR OS `:confirmed-commit:1.1`), ensuring the trial configuration remains active in the `running` datastore across session disconnects until confirmed via `confirm.yml` or reverted via `rollback.yml`.
    - If any staging task, validation check, or post-commit probe fails, the automated `rescue` block triggers `<discard-changes/>` and `<cancel-commit/>` via NETCONF RPC, rolling back candidate changes and unconfirmed commits.
    - If task-by-task committing is required for troubleshooting, pass `-e sros_commit_per_task=true`:
 

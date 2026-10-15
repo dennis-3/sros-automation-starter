@@ -51,6 +51,7 @@ sros-automation-starter/
 │   ├── README.md                 # License instructions & Containerlab integration
 │   └── license.txt.example       # Example template for Nokia TiMOS license
 ├── tests/
+│   ├── test_invariants.py        # Model-driven invariant assertions & regression unit tests
 │   └── validate_templates.py     # Pre-flight template rendering & XML schema validator
 ├── topology.yaml                 # Containerlab topology (r1, r2, AAA, telemetry)
 ├── tac_plus.conf                 # TACACS+ server configuration (AAA container)

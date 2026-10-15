@@ -28,9 +28,9 @@ on:
         default: '100%'
         type: string
       confirm_timeout:
-        description: 'Confirmed commit timeout in seconds (0 for immediate)'
+        description: 'Confirmed commit timeout in seconds (default: 600)'
         required: false
-        default: '0'
+        default: '600'
         type: string
 
 jobs:
@@ -49,57 +49,37 @@ jobs:
           pip install -r requirements.txt
           ansible-galaxy collection install -r ansible/requirements.yml
 
-      # PR validation: Dry-run check mode only
+      # PR validation: Dry-run check mode only with candidate diff preview
       - name: Dry Run Deployment (Check Mode)
         if: github.event_name == 'pull_request' || inputs.dry_run == true
         run: |
-          EXTRA_ARGS=""
+          ARGS="--check --diff"
           if [ -n "${{ inputs.limit }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --limit ${{ inputs.limit }}"
+            ARGS="$ARGS --limit ${{ inputs.limit }}"
           fi
           if [ -n "${{ inputs.tags }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --tags ${{ inputs.tags }}"
+            ARGS="$ARGS --tags ${{ inputs.tags }}"
           fi
-          ansible-playbook ansible/playbooks/deploy.yml --check -e sros_show_diff=true $EXTRA_ARGS
+          python run_verified_deployment.py $ARGS
 
-      # Production pipeline step 1: Pre-change baseline snapshot
-      - name: Capture Pre-Change Baseline State (pyATS)
+      # Production pipeline: 6-stage verified deployment with pre/post validation, soak, and auto-rollback
+      - name: Execute Verified Deployment Pipeline
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
         run: |
+          ARGS=""
           if [ -n "${{ inputs.limit }}" ]; then
-            python pyats_test_suite.py --mode pre --limit "${{ inputs.limit }}"
-          else
-            python pyats_test_suite.py --mode pre
+            ARGS="$ARGS --limit ${{ inputs.limit }}"
           fi
-
-      # Production pipeline step 2: Execute configuration deployment
-      - name: Deploy Nokia Configuration
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
-        run: |
-          EXTRA_ARGS=""
           if [ -n "${{ inputs.tags }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --tags ${{ inputs.tags }}"
-          fi
-          if [ -n "${{ inputs.limit }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --limit ${{ inputs.limit }}"
+            ARGS="$ARGS --tags ${{ inputs.tags }}"
           fi
           if [ -n "${{ inputs.serial_batch }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS -e sros_serial_batch=${{ inputs.serial_batch }}"
+            ARGS="$ARGS --batch-size ${{ inputs.serial_batch }}"
           fi
-          if [ -n "${{ inputs.confirm_timeout }}" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS -e sros_confirm_timeout=${{ inputs.confirm_timeout }}"
+          if [ -n "${{ inputs.confirm_timeout }}" ] && [ "${{ inputs.confirm_timeout }}" != "0" ]; then
+            ARGS="$ARGS --confirm-timeout ${{ inputs.confirm_timeout }}"
           fi
-          ansible-playbook ansible/playbooks/deploy.yml $EXTRA_ARGS
-
-      # Production pipeline step 3: Post-change state verification and drift detection
-      - name: Verify Network State & Drift Detection (pyATS)
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && inputs.dry_run != true
-        run: |
-          if [ -n "${{ inputs.limit }}" ]; then
-            python pyats_test_suite.py --mode post --limit "${{ inputs.limit }}"
-          else
-            python pyats_test_suite.py --mode post
-          fi
+          python run_verified_deployment.py $ARGS
 
       # Production pipeline step 4: Upload HTML visual drift report artifact
       - name: Upload Network Drift Report Artifact

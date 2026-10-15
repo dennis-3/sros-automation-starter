@@ -87,6 +87,11 @@ def main():
         action="store_true",
         help="Show candidate configuration diff",
     )
+    parser.add_argument(
+        "--tags",
+        default=None,
+        help="Specific Ansible tag(s) to execute (e.g. interfaces, bgp)",
+    )
 
     args = parser.parse_args()
     py_bin = sys.executable
@@ -98,6 +103,8 @@ def main():
     print(f"Soak Window:       {args.soak_seconds}s")
     if args.limit:
         print(f"Limit:             {args.limit}")
+    if args.tags:
+        print(f"Tags:              {args.tags}")
 
     # Stage 1: Static Validation
     print_stage("Stage 1: Pre-flight Validation")
@@ -144,6 +151,8 @@ def main():
     ]
     if args.limit:
         deploy_cmd.extend(["--limit", args.limit])
+    if args.tags:
+        deploy_cmd.extend(["--tags", args.tags])
     if args.check:
         deploy_cmd.append("--check")
     if args.diff:

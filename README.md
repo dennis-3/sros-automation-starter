@@ -497,8 +497,8 @@ The repository includes two GitHub Actions workflows:
     - `limit`: Restrict deployment and pyATS testing scope to specific hosts/groups (e.g., `edge_pe`, `r1`).
     - `tags`: Run specific configuration tags (e.g., `interfaces`, `bgp`).
     - `serial_batch`: Control canary rollout batch size (e.g., `1`, `20%`, `100%`).
-    - `confirm_timeout`: Timeout in seconds for confirmed commits with automatic rollback on unconfirmed changes.
-  - Automatically captures pre-change pyATS snapshots, deploys staged NETCONF candidates, and runs post-change operational verifications, publishing HTML drift reports as artifacts.
+    - `confirm_timeout`: Timeout in seconds for confirmed commits (default: `600s`) with automatic rollback on unconfirmed changes.
+  - Executes `run_verified_deployment.py` to orchestrate the 6-stage lifecycle (pre-flight validation, baseline snapshot, candidate deployment with persistent confirmed commit, convergence soak, post-change invariant enforcement, and decision gate confirmation/rollback), uploading the HTML visual drift report as an artifact.
 
 ## Configuration Order
 

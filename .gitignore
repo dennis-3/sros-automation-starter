@@ -49,3 +49,6 @@ Thumbs.db
 
 # ignore google drive sync files
 .tmp.drive*
+
+# Ignore AI agent workspace configurations
+.agents/

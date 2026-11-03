@@ -37,6 +37,7 @@ topology:
         - 9090:9090
       binds:
         - prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        - alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
 
     grafana:
       kind: linux

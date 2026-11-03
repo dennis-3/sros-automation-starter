@@ -1,0 +1,60 @@
+# =====================================================================
+# Prometheus Alert Rules for Nokia SR OS Infrastructure
+# =====================================================================
+
+groups:
+  - name: sros_alerts
+    rules:
+      - alert: SROSNodeUnreachable
+        expr: up{job="telegraf"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Telegraf target unreachable"
+          description: "Telegraf exporter '{{ $labels.instance }}' has been unreachable for > 1m."
+
+      - alert: SROSCorePortDown
+        expr: sros_port_oper_oper_state_value == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Port operational state DOWN"
+          description: "Port '{{ $labels.port_id }}' on node '{{ $labels.source }}' is DOWN."
+
+      - alert: SROSBGPNeighborDown
+        expr: sros_bgp_neighbor_session_state_value == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BGP neighbor DOWN"
+          description: "BGP neighbor '{{ $labels.ip_address }}' on node '{{ $labels.source }}' is not established."
+
+      - alert: SROSHighInterfaceDiscards
+        expr: (rate(sros_port_stats_in_discards[1m]) > 10) or (rate(sros_port_stats_out_discards[1m]) > 10)
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High interface packet discard rate"
+          description: "Port '{{ $labels.port_id }}' on node '{{ $labels.source }}' discard rate exceeds 10 pps."
+
+      - alert: SROSHighInterfaceErrors
+        expr: (rate(sros_port_stats_in_errors[1m]) > 0) or (rate(sros_port_stats_out_errors[1m]) > 0)
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Interface errors detected"
+          description: "Port '{{ $labels.port_id }}' on node '{{ $labels.source }}' reports interface errors."
+
+      - alert: SROSHighCPUUtilization
+        expr: (sros_cpu_cpu_usage > 85) or (sros_cpu_summary_cpu_usage > 85)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU utilization"
+          description: "CPU utilization on node '{{ $labels.source }}' exceeded 85% for > 5m."

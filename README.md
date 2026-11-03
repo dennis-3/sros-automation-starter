@@ -525,11 +525,12 @@ When the lab is launched (`make lab-up`), Containerlab spins up an integrated te
   - Automatically provisioned with Prometheus datasource via [`grafana_datasource.yaml`](grafana_datasource.yaml).
   - Anonymous Admin access enabled for instant dashboard exploration without login prompts.
 - **Prometheus (`http://localhost:9090`)**:
-  - Metric time-series database configured via [`prometheus.yml`](prometheus.yml), scraping Telegraf on port `9273`.
+  - Time-series database configured via [`prometheus.yml`](prometheus.yml), scraping Telegraf on port `9273` and evaluating alerting rules in [`alert.rules.yml`](alert.rules.yml).
 - **Telegraf (gNMI Streaming Collector)**:
   - Configured via [`telegraf.conf`](telegraf.conf) to subscribe to native Nokia SR OS gNMI sensor paths on port `57400`:
-    - CPU utilization: `/state/system/cpu/iom/cpu-usage`
-    - Port packet statistics: `/state/port/statistics`
+    - System & datapath CPU: `/state/system/cpu/summary/usage/cpu-usage`, `/state/system/cpu/iom/cpu-usage`
+    - Port statistics & operational states: `/state/port/statistics`, `/state/port/oper-state`
+    - Base router interfaces & BGP peers: `/state/router[router-name=Base]/interface`, `/state/router[router-name=Base]/bgp/neighbor`
 
 ## CI/CD Deployment Pipeline (GitHub Actions)
 

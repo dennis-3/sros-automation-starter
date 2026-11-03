@@ -14,7 +14,7 @@
       }
     ]
   },
-  "description": "Nokia SR OS Streaming Telemetry Dashboard (gNMI -> Telegraf -> Prometheus -> Grafana)",
+  "description": "Nokia SR OS Observability Dashboard (gNMI -> Telegraf -> Prometheus -> Grafana)",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -31,7 +31,7 @@
         "y": 0
       },
       "id": 100,
-      "title": "System & Telemetry Status",
+      "title": "Network Health Overview",
       "type": "row"
     },
     {
@@ -77,7 +77,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 1
       },
@@ -139,8 +139,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 4,
         "y": 1
       },
       "id": 2,
@@ -183,6 +183,138 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(sros_bgp_neighbor_session_state_value == 1) or vector(0)",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Established BGP Peers",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Active Alerts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "mappings": [],
@@ -201,11 +333,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 12,
+        "w": 4,
+        "x": 16,
         "y": 1
       },
-      "id": 3,
+      "id": 5,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -263,11 +395,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 20,
         "y": 1
       },
-      "id": 4,
+      "id": 6,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -308,7 +440,106 @@
         "y": 5
       },
       "id": 101,
-      "title": "CPU Utilization & Hardware Health",
+      "title": "Active Alerts",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Firing Alerts Table",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 102,
+      "title": "System CPU Utilization",
       "type": "row"
     },
     {
@@ -372,9 +603,9 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 6
+        "y": 13
       },
-      "id": 5,
+      "id": 20,
       "options": {
         "legend": {
           "calcs": [
@@ -400,12 +631,23 @@
           },
           "editorMode": "code",
           "expr": "sros_cpu_cpu_usage{source=~\"$router\"}",
-          "legendFormat": "{{source}} - Slot {{slot}}",
+          "legendFormat": "{{source}} - IOM Slot {{slot}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sros_cpu_summary_cpu_usage{source=~\"$router\"}",
+          "legendFormat": "{{source}} - System Overall CPU",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "IOM CPU Utilization History",
+      "title": "CPU Utilization History",
       "type": "timeseries"
     },
     {
@@ -446,9 +688,9 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 6
+        "y": 13
       },
-      "id": 6,
+      "id": 21,
       "options": {
         "minVizHeight": 75,
         "minVizWidth": 75,
@@ -486,11 +728,311 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 21
       },
-      "id": 102,
-      "title": "Port Performance & Traffic Throughput",
+      "id": 103,
+      "title": "BGP Protocol Status",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "DOWN / ACTIVE"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "ESTABLISHED"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "id": 30,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sros_bgp_neighbor_session_state_value{source=~\"$router\"}",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "BGP Neighbor Status",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Prefix Count",
+            "axisPlacement": "auto",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sros_bgp_neighbor_statistics_active_routes{source=~\"$router\"} or sros_bgp_neighbor_statistics_received_routes{source=~\"$router\"}",
+          "legendFormat": "{{source}} - Neighbor {{ip_address}} Routes",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "BGP Received and Active Routes",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 104,
+      "title": "Port Performance & Throughput",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "DOWN"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "UP"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 31
+      },
+      "id": 40,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sros_port_oper_oper_state_value{source=~\"$router\", port_id=~\"$port\"}",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Port Operational State",
+      "type": "table"
     },
     {
       "datasource": {
@@ -541,11 +1083,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 15
+        "w": 9,
+        "x": 6,
+        "y": 31
       },
-      "id": 7,
+      "id": 41,
       "options": {
         "legend": {
           "calcs": [
@@ -570,7 +1112,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(sros_port_stats_in_octets{source=~\"$router\"}[30s]) * 8",
+          "expr": "rate(sros_port_stats_in_octets{source=~\"$router\", port_id=~\"$port\"}[30s]) * 8",
           "legendFormat": "{{source}} - Port {{port_id}} In",
           "range": true,
           "refId": "A"
@@ -628,11 +1170,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 15
+        "w": 9,
+        "x": 15,
+        "y": 31
       },
-      "id": 8,
+      "id": 42,
       "options": {
         "legend": {
           "calcs": [
@@ -657,7 +1199,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(sros_port_stats_out_octets{source=~\"$router\"}[30s]) * 8",
+          "expr": "rate(sros_port_stats_out_octets{source=~\"$router\", port_id=~\"$port\"}[30s]) * 8",
           "legendFormat": "{{source}} - Port {{port_id}} Out",
           "range": true,
           "refId": "A"
@@ -672,11 +1214,112 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 39
       },
-      "id": 103,
-      "title": "Port Discards & Error Monitoring",
+      "id": 105,
+      "title": "Port Discards & Errors",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Discards/sec",
+            "axisPlacement": "auto",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "pps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 50,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(sros_port_stats_in_discards{source=~\"$router\", port_id=~\"$port\"}[30s]) or vector(0)",
+          "legendFormat": "{{source}} - Port {{port_id}} Ingress Discards",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(sros_port_stats_out_discards{source=~\"$router\", port_id=~\"$port\"}[30s]) or vector(0)",
+          "legendFormat": "{{source}} - Port {{port_id}} Egress Discards",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Port Discards (Inbound / Outbound)",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -708,7 +1351,7 @@
             "showPoints": "auto",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "line"
             }
           },
           "mappings": [],
@@ -731,11 +1374,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
+        "w": 12,
+        "x": 12,
+        "y": 40
       },
-      "id": 9,
+      "id": 51,
       "options": {
         "legend": {
           "calcs": [
@@ -759,7 +1402,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(sros_port_stats_in_errors{source=~\"$router\"}[30s]) or vector(0)",
+          "expr": "rate(sros_port_stats_in_errors{source=~\"$router\", port_id=~\"$port\"}[30s]) or vector(0)",
           "legendFormat": "{{source}} - Port {{port_id}} Ingress Errors",
           "range": true,
           "refId": "A"
@@ -770,13 +1413,13 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(sros_port_stats_out_errors{source=~\"$router\"}[30s]) or vector(0)",
+          "expr": "rate(sros_port_stats_out_errors{source=~\"$router\", port_id=~\"$port\"}[30s]) or vector(0)",
           "legendFormat": "{{source}} - Port {{port_id}} Egress Errors",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Port Errors & Discards (Inbound / Outbound)",
+      "title": "Port Errors (Inbound / Outbound)",
       "type": "timeseries"
     }
   ],
@@ -786,7 +1429,8 @@
     "sros",
     "nokia",
     "telemetry",
-    "gnmi"
+    "gnmi",
+    "bgp"
   ],
   "templating": {
     "list": [
@@ -817,6 +1461,34 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "definition": "label_values(sros_port_stats_in_octets, port_id)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Port Interface",
+        "multi": true,
+        "name": "port",
+        "options": [],
+        "query": {
+          "query": "label_values(sros_port_stats_in_octets, port_id)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
       }
     ]
   },
@@ -834,7 +1506,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Nokia SR OS Telemetry Overview",
+  "title": "Nokia SR OS Operations Overview",
   "uid": "sros-telemetry-overview",
-  "version": 1
+  "version": 2
 }
